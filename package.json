@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@types/paho-mqtt": "^1.0.5",
+    "jquery": "^3.6.0"
+  },
+  "devDependencies": {
+    "@types/jquery": "^3.5.8"
+  }
+}
