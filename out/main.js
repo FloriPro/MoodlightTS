@@ -1,5 +1,6 @@
 "use strict";
 //utility variables
+var font = "47px msyi";
 var host = "hotti.info";
 var port = 10833;
 var myTopic = "fablab114/ML";
@@ -11,6 +12,7 @@ var mouse = {};
 var pressedKeys = {};
 var canvas = document.getElementById('canvas');
 var ctx = canvas.getContext("2d");
+var c = document.getElementById("canvas");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 createUserEvents();
@@ -40,6 +42,7 @@ function createUserEvents() {
         }
     }
     function keyEvent(e) {
+        e.preventDefault();
         if (e.type == "keyup") {
             pressedKeys[e.key] = false;
         }
@@ -144,8 +147,8 @@ var drawApp = /** @class */ (function () {
     };
     ;
     drawApp.prototype.text = function (pox, posy, Text, color, align, ctx) {
-        if (ctx.font != '37px sans-serif') {
-            ctx.font = '37px sans-serif';
+        if (ctx.font != font) {
+            ctx.font = font;
         }
         ctx.fillStyle = color;
         ctx.textAlign = align;
@@ -213,30 +216,6 @@ var Utilitys = /** @class */ (function () {
     ;
     return Utilitys;
 }());
-//Game Variables
-var sidebarSize = 250;
-var sidebarFadeIn = 100;
-var textLength = 0;
-var mouseSelectionLeft = -1;
-var mouseDataLeft = -1;
-mqttConstructor();
-var draw = new drawApp();
-var util = new Utilitys();
-var available = [["Füllen", ["R", "G", "B"]], ["Bild anzeigen", ["Bild id"]]];
-var colors = { "background": "#f7f7f7", "backgroundPoints": "#646464", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0" };
-var setYellow = ["Loop", "Unendlich", "Start", "End"];
-var setPurple = ["Bild anzeigen", "Animationen", "Laden"];
-var notDragable = ["Start", "End"];
-var pictures = ["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"];
-var Elements = [[["Start", ["0"]], ["Füllen1", ["0", "255", "255"]], ["Bild anzeigen", ["0"]]], [["Start", ["1"]]]];
-var ElementPositions = [[0, 0], [255, 0]];
-var FreeElements = [["Füllen2", ["255", "255", "0"], [300, 300]], ["Füllen3", ["255", "255", "0"], [600, 300]]];
-var drawcolor = "";
-var drawcolorAccent = "";
-var drawcolorO = "";
-var drawcolorAccentO = "";
-console.log(Elements);
-var backgroundPointSize = 20;
 function removeItem(data, index) {
     var tempList = data;
     data = [];
@@ -246,10 +225,96 @@ function removeItem(data, index) {
     }
     return data;
 }
+function elementLenghtAndDraw(Element, px, py) {
+    var text = Element[0];
+    if (setYellow.indexOf(text) != -1) {
+        drawcolor = colors["YellowBlock"];
+        drawcolorAccent = colors["YellowBlockAccent"];
+    }
+    else if (setPurple.indexOf(text) != -1) {
+        drawcolor = colors["PurpleBlock"];
+        drawcolorAccent = colors["PurpleBlockAccent"];
+    }
+    else {
+        drawcolor = colors["blueBlock"];
+        drawcolorAccent = colors["blueBlockAccent"];
+    }
+    var l = ctx.measureText(Element[0]).width + 10;
+    //space between options: 5;
+    for (var x = 0; x < Element[1].length; x++) {
+        l += 5;
+        var t = Element[1][x];
+        if (t == "") {
+            t = " ";
+        }
+        l += ctx.measureText(t).width;
+        l += 5;
+    }
+    draw.roundedRect(px, py, l, -(blockheight - 10), drawcolorAccent, 10, ctx); //body outline
+    draw.roundedRect(px + 1, py - 1, l - 2, -blockheight + 12, drawcolor, 10, ctx); //body
+    draw.text(px, py, text, "#000000", "left", ctx);
+    l = ctx.measureText(text).width + 7;
+    for (var x = 0; x < Element[1].length; x++) {
+        var t = Element[1][x];
+        if (t == "") {
+            t = " ";
+        }
+        l += 5;
+        draw.roundedRect(px + l + 2, py - 5, ctx.measureText(t).width - 4, -(blockheight - 10) + 10, "#ffffff", 10, ctx); //body outline
+        draw.text(px + l, py, t, "#000000", "left", ctx);
+        l += 5;
+        l += ctx.measureText(t).width;
+    }
+    return l;
+}
+function elementLenght(Element) {
+    var text = Element[0];
+    var l = ctx.measureText(Element[0]).width + 10;
+    //space between options: 5;
+    for (var x = 0; x < Element[1].length; x++) {
+        l += 5;
+        var t = Element[1][x];
+        if (t == "") {
+            t = " ";
+        }
+        l += ctx.measureText(t).width;
+        l += 5;
+    }
+    return l;
+}
+//Game Variables
+var menuOpen = 0;
+var menuImg = new Image();
+menuImg.src = '/files/menu.png';
+var menuButtons = { "Speichern": function () { console.log("speichern"); }, "Laden": function () { console.log("load"); }, "Hinzufügen": function () { console.log("hinzufügen"); } };
+var sidebarSize = 250;
+var sidebarFadeIn = 100;
+var textLength = 0;
+var mouseSelectionLeft = -1;
+var mouseDataLeft = -1;
+mqttConstructor();
+var draw = new drawApp();
+var util = new Utilitys();
+var available = [["Wait", ["0"]], ["Laden", ["0"]], ["Text", ["Text", "10"]], ["Uhrzeit", ["10"]], ["Bild anzeigen", ["0", "0"]], ["Animationen", ["0", "0", "10"]], ["Füllen", ["0", "0", "0"]], ["Loop", ["2"]], ["Unendlich", []], ["Custom", [""]]];
+var description = [["Wait", ["Sekunden"]], ["Laden", ["Nummer"]], ["Text", ["Text", "Geschwindigkeit"]], ["Uhrzeit", ["Geschwindigkeit"]], ["Bild anzeigen", ["[Bild]", "Übergangszeit"]], ["Animationen", ["[Animation]", "Übergangszeit", "Wartezeit"]], ["Füllen", ["R", "G", "B"]], ["Loop", ["Wiederholungen"]], ["Unendlich", []], ["Custom", ["Code"]]];
+var colors = { "background": "#f7f7f7", "backgroundPoints": "#646464", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0" };
+var setYellow = ["Loop", "Unendlich", "Start", "End"];
+var setPurple = ["Bild anzeigen", "Animationen", "Laden"];
+var notDragable = ["Start", "End"];
+var pictures = ["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"];
+var Elements = [[["Start", ["0"]], ["Füllen1", ["0", "255", "255"]], ["Bild anzeigen", ["0"]]], [["Start", ["1"]]]];
+var ElementPositions = [[0, 0], [370, -50]];
+var FreeElements = [["Füllen2", ["255", "255", "0"], [300, 300]], ["Füllen3", ["255", "255", "0"], [600, 300]]];
+var drawcolor = "";
+var drawcolorAccent = "";
+var drawcolorO = "";
+var drawcolorAccentO = "";
+console.log(Elements);
+var backgroundPointSize = 20;
 var offsetX = 0;
 var offsetY = 0;
-var posx = 0;
-var posy = 0;
+var posx = 100;
+var posy = 100;
 var px = 0;
 var py = 0;
 var pyC = 0;
@@ -258,28 +323,56 @@ function drawScreen() {
     ////////////
     // Update //
     ////////////
-    // mouseSelectionLeft types: 0=move Screen; 1=move Element; 
+    // mouseSelectionLeft types: 0=move Screen; 1=move Elements; -2=none;
     //check what mouse Should doo
     if (mouse[0] && mouseSelectionLeft == -1) {
-        //search Free Elements
-        for (var ElementLoadPos = 0; ElementLoadPos < FreeElements.length; ElementLoadPos++) {
-            var px_1 = posx + FreeElements[ElementLoadPos][2][0];
-            var py_1 = posy + FreeElements[ElementLoadPos][2][1];
-            var text = FreeElements[ElementLoadPos][0];
-            textLength = ctx.measureText(text).width;
-            if (mouseX > px_1 && mouseX < px_1 + textLength && mouseY < py_1 && mouseY > py_1 - blockheight) {
-                mouseSelectionLeft = 1;
-                mouseDataLeft = ElementLoadPos;
-                break;
+        //Menu
+        if (mouseSelectionLeft == -1) {
+            if (mouseX > canvas.width - 50 && mouseY < 50) {
+                if (menuOpen == 0) {
+                    mouseSelectionLeft = -2;
+                    menuOpen = 0.01;
+                }
+                if (menuOpen > 1) {
+                    mouseSelectionLeft = -2;
+                    menuOpen = -0.01;
+                }
             }
         }
+        //new Element
         if (mouseSelectionLeft == -1) {
-            //search non Free Elements
+            if (mouseX < sidebarSize) {
+                var sel = Math.ceil((-blockheight + mouseY - 10) / (blockheight + 10));
+                if (sel < available.length) {
+                    offsetX = mouseX - 10 + mouseX;
+                    offsetY = mouseY - (blockheight / 2);
+                    mouseSelectionLeft = 1;
+                    mouseDataLeft = FreeElements.length;
+                    var i = available[sel];
+                    FreeElements.push([i[0], i[1], [mouseX - posx, mouseY - posy]]);
+                }
+            }
+        }
+        //search Free Elements
+        if (mouseSelectionLeft == -1) {
+            for (var ElementLoadPos = 0; ElementLoadPos < FreeElements.length; ElementLoadPos++) {
+                var px_1 = posx + FreeElements[ElementLoadPos][2][0];
+                var py_1 = posy + FreeElements[ElementLoadPos][2][1];
+                textLength = elementLenght([FreeElements[ElementLoadPos][0], FreeElements[ElementLoadPos][1]]);
+                if (mouseX > px_1 && mouseX < px_1 + textLength && mouseY < py_1 && mouseY > py_1 - blockheight) {
+                    mouseSelectionLeft = 1;
+                    mouseDataLeft = ElementLoadPos;
+                    break;
+                }
+            }
+        }
+        //search non Free Elements
+        if (mouseSelectionLeft == -1) {
             for (var ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
                 for (var ElementList = 0; ElementList < Elements[ElementLoadPos].length; ElementList++) {
                     var px_2 = posx + ElementPositions[ElementLoadPos][0];
                     var py_2 = posy + ElementPositions[ElementLoadPos][1] + ElementList * blockheight;
-                    textLength = ctx.measureText(Elements[ElementLoadPos][ElementList][0]).width;
+                    textLength = elementLenght(Elements[ElementLoadPos][ElementList]);
                     if (mouseX > px_2 && mouseX < px_2 + textLength && mouseY < py_2 && mouseY > py_2 - blockheight && notDragable.indexOf(Elements[ElementLoadPos][ElementList][0]) == -1) {
                         offsetX = mouseX + (mouseX - px_2);
                         offsetY = mouseY + (mouseY - py_2);
@@ -295,6 +388,7 @@ function drawScreen() {
                 }
             }
         }
+        //else
         if (mouseSelectionLeft == -1) {
             offsetX = mouseX;
             offsetY = mouseY;
@@ -303,6 +397,10 @@ function drawScreen() {
     }
     //mouse let go
     if (mouseSelectionLeft != -1 && !mouse[0]) {
+        if (mouseX < sidebarSize && mouseSelectionLeft == 1) {
+            FreeElements = removeItem(FreeElements, mouseDataLeft);
+            mouseSelectionLeft = -1;
+        }
         //dropFree Element
         if (mouseSelectionLeft == 1) {
             for (var ElementList = 0; ElementList < Elements.length; ElementList++) {
@@ -320,6 +418,7 @@ function drawScreen() {
                     }
                 }
             }
+            mouseSelectionLeft = -1;
         }
         mouseSelectionLeft = -1;
     }
@@ -358,7 +457,7 @@ function drawScreen() {
                 if (ElementPositions[ElementLoadPos][0] - 50 < FreeElements[mouseDataLeft][2][0] && ElementPositions[ElementLoadPos][0] + 200 > FreeElements[mouseDataLeft][2][0]) {
                     if (ElementList == Math.round((FreeElements[mouseDataLeft][2][1] - ElementPositions[ElementLoadPos][1]) / blockheight)) {
                         if (ElementList != 0) {
-                            textLength = ctx.measureText(FreeElements[mouseDataLeft][0]).width;
+                            textLength = elementLenght([FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]]);
                             ctx.globalAlpha = 0.6;
                             draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), colors["MoveBlockShaddow"], 10, ctx); //body
                             ctx.globalAlpha = 1;
@@ -369,6 +468,7 @@ function drawScreen() {
             }
             px = posx + ElementPositions[ElementLoadPos][0];
             py = posy + ElementPositions[ElementLoadPos][1] + i * blockheight;
+            textLength = elementLenghtAndDraw(Elements[ElementLoadPos][ElementList], px, py);
             var text = Elements[ElementLoadPos][ElementList][0];
             if (setYellow.indexOf(text) != -1) {
                 drawcolor = colors["YellowBlock"];
@@ -382,9 +482,7 @@ function drawScreen() {
                 drawcolor = colors["blueBlock"];
                 drawcolorAccent = colors["blueBlockAccent"];
             }
-            textLength = ctx.measureText(text).width;
-            draw.roundedRect(px, py, textLength, -(blockheight - 10), drawcolorAccent, 10, ctx); //body outline
-            draw.roundedRect(px + 1, py - 1, textLength - 2, -blockheight + 12, drawcolor, 10, ctx); //body
+            //connector
             if (ElementList != 0) {
                 pyC = (py + 4) - blockheight;
                 draw.polygon(ctx, drawcolorO, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]]); //connector
@@ -392,7 +490,6 @@ function drawScreen() {
             }
             drawcolorO = drawcolor;
             drawcolorAccentO = drawcolorAccent;
-            draw.text(px, py, text, "#000000", "left", ctx);
             i++;
         }
         pyC = (py + 4);
@@ -403,7 +500,7 @@ function drawScreen() {
             if (ElementPositions[ElementLoadPos][0] - 50 < FreeElements[mouseDataLeft][2][0] && ElementPositions[ElementLoadPos][0] + 200 > FreeElements[mouseDataLeft][2][0]) {
                 if ((Elements[ElementLoadPos].length) == Math.round((FreeElements[mouseDataLeft][2][1] - ElementPositions[ElementLoadPos][1]) / blockheight)) {
                     if ((Elements[ElementLoadPos].length) != 0) {
-                        textLength = ctx.measureText(FreeElements[mouseDataLeft][0]).width;
+                        textLength = elementLenght([FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]]);
                         ctx.globalAlpha = 0.6;
                         draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), colors["MoveBlockShaddow"], 10, ctx); //body
                         ctx.globalAlpha = 1;
@@ -415,28 +512,16 @@ function drawScreen() {
     //Free Elements
     ctx.globalAlpha = 0.5;
     for (var FreeElementPos = 0; FreeElementPos < FreeElements.length; FreeElementPos++) {
-        var text = FreeElements[FreeElementPos][0];
-        textLength = ctx.measureText(text).width;
-        if (setYellow.indexOf(text) != -1) {
-            drawcolor = colors["YellowBlock"];
-            drawcolorAccent = colors["YellowBlockAccent"];
-        }
-        else if (setPurple.indexOf(text) != -1) {
-            drawcolor = colors["PurpleBlock"];
-            drawcolorAccent = colors["PurpleBlockAccent"];
-        }
-        else {
-            drawcolor = colors["blueBlock"];
-            drawcolorAccent = colors["blueBlockAccent"];
-        }
+        var text = FreeElements[FreeElementPos][0] + " |" + FreeElements[FreeElementPos][1].join("|") + "|";
         px = FreeElements[FreeElementPos][2][0] + posx;
         py = FreeElements[FreeElementPos][2][1] + posy;
-        draw.roundedRect(px, py, textLength, -(blockheight - 10), drawcolorAccent, 10, ctx); //body outline
-        draw.roundedRect(px + 1, py - 1, textLength - 2, -blockheight + 12, drawcolor, 10, ctx); //body
+        textLength = elementLenghtAndDraw([FreeElements[FreeElementPos][0], FreeElements[FreeElementPos][1]], px, py);
+        //draw.roundedRect(px, py, textLength, -(blockheight - 10), drawcolorAccent, 10, ctx) //body outline
+        //draw.roundedRect(px + 1, py - 1, textLength - 2, -blockheight + 12, drawcolor, 10, ctx) //body
         pyC = (py + 4);
         draw.polygon(ctx, drawcolor, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]]); //connector
         draw.polygonOutline(ctx, drawcolorAccent, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]], 1); //connector outline
-        draw.text(px, py, text, "#000000", "left", ctx);
+        //draw.text(px, py, text, "#000000", "left", ctx);
     }
     ctx.globalAlpha = 1;
     //rightClickMenu
@@ -481,6 +566,57 @@ function drawScreen() {
         }
         ctx.globalAlpha = 1;
     }
+    //Menu
+    var mOpen = menuOpen;
+    if (mOpen < 0) {
+        mOpen = 1 + mOpen;
+    }
+    if (mOpen != 0) {
+        if (mOpen > 1) {
+            mOpen = 1;
+        }
+        ctx.globalAlpha = 0.7 * mOpen;
+        draw.rect(canvas.width - 200, 0, 200, canvas.height * mOpen, "#000000", ctx);
+        var k = Object.keys(menuButtons);
+        ctx.globalAlpha = mOpen;
+        for (var x = 0; x < k.length; x++) {
+            draw.text(canvas.width - 10, 90 + x * 35, k[x], "#ffffff", "right", ctx);
+        }
+        if (menuOpen > 0 && menuOpen < 1) {
+            menuOpen += 0.05;
+        }
+        if (menuOpen < 0) {
+            menuOpen -= 0.05;
+        }
+        if (menuOpen <= -1) {
+            menuOpen = 0;
+        }
+        ctx.globalAlpha = 1;
+    }
+    var r = 30;
+    var s = 30;
+    for (var x = 0; x < 3; x++) {
+        px = canvas.width - s - r / 2;
+        py = 0 + r / 2 + (x * (s / 2));
+        draw.roundedRect(px, py, s, 1, "#000000", 5, ctx);
+    }
+    //ctx.drawImage(menuImg, canvas.width - 50, 0, 50, 50);
 }
+function cursorUpdate() {
+    var normal = true;
+    if (keyDown("Alt")) {
+        c.style.cursor = "copy";
+        normal = false;
+    }
+    if (mouseX > canvas.width - 50 - 15 && mouseY < 50 + 15) {
+        c.style.cursor = "pointer";
+        normal = false;
+    }
+    //else
+    if (normal) {
+        c.style.cursor = "default";
+    }
+}
+setInterval(cursorUpdate, 100);
 setInterval(drawScreen, 5);
 //# sourceMappingURL=main.js.map
