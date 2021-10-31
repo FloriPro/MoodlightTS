@@ -42,7 +42,9 @@ function createUserEvents() {
         }
     }
     function keyEvent(e) {
-        e.preventDefault();
+        if (e.key == "Alt") {
+            e.preventDefault();
+        }
         if (e.type == "keyup") {
             pressedKeys[e.key] = false;
         }
@@ -121,8 +123,13 @@ var drawApp = /** @class */ (function () {
         ctx.lineWidth = radius;
         ctx.beginPath();
         ctx.strokeRect(posx, posy, width, height);
-        ctx.fillRect(posx, posy, width, height);
         ctx.stroke();
+        if (ctx.globalAlpha != 1) {
+            ctx.fillRect(posx + (radius / 2), posy - (radius / 2), width - radius, height + radius);
+        }
+        else {
+            ctx.fillRect(posx, posy, width, height);
+        }
         ctx.fill();
         ctx.closePath();
         ctx.strokeStyle = "";
@@ -286,7 +293,7 @@ function elementLenght(Element) {
 var menuOpen = 0;
 var menuImg = new Image();
 menuImg.src = '/files/menu.png';
-var menuButtons = { "Speichern": function () { console.log("speichern"); }, "Laden": function () { console.log("load"); }, "Hinzufügen": function () { console.log("hinzufügen"); } };
+var menuButtons = { "Speichern": downloadProject, "Laden": function () { var i = document.getElementById("avatar"); i.click(); }, "Hinzufügen": function () { console.log("hinzufügen"); }, "Einstellungen": function () { console.log("einstellungen"); } };
 var sidebarSize = 250;
 var sidebarFadeIn = 100;
 var textLength = 0;
@@ -319,6 +326,19 @@ var px = 0;
 var py = 0;
 var pyC = 0;
 var blockheight = 38;
+function download(content, mimeType, filename) {
+    var a = document.createElement('a');
+    var blob = new Blob([content], { type: mimeType });
+    var url = URL.createObjectURL(blob);
+    a.setAttribute('href', url);
+    a.setAttribute('download', filename);
+    a.click();
+}
+function downloadProject() {
+    var filename = "data.moproj";
+    var myJSON = JSON.stringify(Elements);
+    download(myJSON, "text", filename);
+}
 function drawScreen() {
     ////////////
     // Update //
@@ -326,17 +346,27 @@ function drawScreen() {
     // mouseSelectionLeft types: 0=move Screen; 1=move Elements; -2=none;
     //check what mouse Should doo
     if (mouse[0] && mouseSelectionLeft == -1) {
-        //Menu
+        //open Menu
         if (mouseSelectionLeft == -1) {
             if (mouseX > canvas.width - 50 && mouseY < 50) {
                 if (menuOpen == 0) {
                     mouseSelectionLeft = -2;
                     menuOpen = 0.01;
                 }
-                if (menuOpen > 1) {
+                else if (menuOpen == 1) {
                     mouseSelectionLeft = -2;
                     menuOpen = -0.01;
                 }
+            }
+        }
+        //use Menu
+        if (mouseSelectionLeft == -1) {
+            if (menuOpen == 1 && mouseX > canvas.width - 250) {
+                mouseSelectionLeft = -2;
+                try {
+                    menuButtons[Object.keys(menuButtons)[Math.round((mouseY - (90 - (35 / 2))) / 35)]]();
+                }
+                catch (_a) { }
             }
         }
         //new Element
@@ -348,8 +378,8 @@ function drawScreen() {
                     offsetY = mouseY - (blockheight / 2);
                     mouseSelectionLeft = 1;
                     mouseDataLeft = FreeElements.length;
-                    var i = available[sel];
-                    FreeElements.push([i[0], i[1], [mouseX - posx, mouseY - posy]]);
+                    var i_1 = available[sel];
+                    FreeElements.push([i_1[0], i_1[1], [mouseX - posx, mouseY - posy]]);
                 }
             }
         }
@@ -378,8 +408,8 @@ function drawScreen() {
                         offsetY = mouseY + (mouseY - py_2);
                         mouseSelectionLeft = 1;
                         mouseDataLeft = FreeElements.length;
-                        var i = Elements[ElementLoadPos][ElementList];
-                        FreeElements.push([i[0], i[1], [mouseX - posx, mouseY - posy]]);
+                        var i_2 = Elements[ElementLoadPos][ElementList];
+                        FreeElements.push([i_2[0], i_2[1], [mouseX - posx, mouseY - posy]]);
                         if (!keyDown("Alt")) {
                             Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList);
                         }
@@ -450,7 +480,7 @@ function drawScreen() {
     }
     //Elements
     for (var ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
-        var i = 0;
+        var i_3 = 0;
         for (var ElementList = 0; ElementList < Elements[ElementLoadPos].length; ElementList++) {
             //if dragElement in middle
             if (mouseSelectionLeft == 1) {
@@ -461,13 +491,13 @@ function drawScreen() {
                             ctx.globalAlpha = 0.6;
                             draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), colors["MoveBlockShaddow"], 10, ctx); //body
                             ctx.globalAlpha = 1;
-                            i++;
+                            i_3++;
                         }
                     }
                 }
             }
             px = posx + ElementPositions[ElementLoadPos][0];
-            py = posy + ElementPositions[ElementLoadPos][1] + i * blockheight;
+            py = posy + ElementPositions[ElementLoadPos][1] + i_3 * blockheight;
             textLength = elementLenghtAndDraw(Elements[ElementLoadPos][ElementList], px, py);
             var text = Elements[ElementLoadPos][ElementList][0];
             if (setYellow.indexOf(text) != -1) {
@@ -490,7 +520,7 @@ function drawScreen() {
             }
             drawcolorO = drawcolor;
             drawcolorAccentO = drawcolorAccent;
-            i++;
+            i_3++;
         }
         pyC = (py + 4);
         draw.polygon(ctx, drawcolor, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]]); //connector
@@ -540,11 +570,11 @@ function drawScreen() {
         ctx.globalAlpha = 0.5 * mul;
         draw.rect(0, 0, sidebarSize, canvas.height, "#c0c0c0", ctx);
         ctx.globalAlpha = mul;
-        for (var i = 0; i < available.length; i++) {
-            var text = available[i][0];
+        for (var i_4 = 0; i_4 < available.length; i_4++) {
+            var text = available[i_4][0];
             textLength = ctx.measureText(text).width;
             px = 10;
-            py = i * (blockheight + 10) + blockheight;
+            py = i_4 * (blockheight + 10) + blockheight;
             if (setYellow.indexOf(text) != -1) {
                 drawcolor = colors["YellowBlock"];
                 drawcolorAccent = colors["YellowBlockAccent"];
@@ -574,13 +604,14 @@ function drawScreen() {
     if (mOpen != 0) {
         if (mOpen > 1) {
             mOpen = 1;
+            menuOpen = 1;
         }
         ctx.globalAlpha = 0.7 * mOpen;
-        draw.rect(canvas.width - 200, 0, 200, canvas.height * mOpen, "#000000", ctx);
-        var k = Object.keys(menuButtons);
+        draw.rect(canvas.width - (150 + (100 * mOpen)), 0, 150 + (100 * mOpen), canvas.height * mOpen, "#000000", ctx);
+        var k_1 = Object.keys(menuButtons);
         ctx.globalAlpha = mOpen;
-        for (var x = 0; x < k.length; x++) {
-            draw.text(canvas.width - 10, 90 + x * 35, k[x], "#ffffff", "right", ctx);
+        for (var x = 0; x < k_1.length; x++) {
+            draw.text(canvas.width - 10, 90 + x * 35, k_1[x], "#ffffff", "right", ctx);
         }
         if (menuOpen > 0 && menuOpen < 1) {
             menuOpen += 0.05;
@@ -600,7 +631,15 @@ function drawScreen() {
         py = 0 + r / 2 + (x * (s / 2));
         draw.roundedRect(px, py, s, 1, "#000000", 5, ctx);
     }
-    //ctx.drawImage(menuImg, canvas.width - 50, 0, 50, 50);
+    //keysDown
+    var k = Object.keys(pressedKeys);
+    var i = 0;
+    for (var x = 0; x < k.length; x++) {
+        if (pressedKeys[k[x]]) {
+            draw.text(0, i * 35 + 35, k[x], "#000000", "left", ctx);
+            i++;
+        }
+    }
 }
 function cursorUpdate() {
     var normal = true;
@@ -612,11 +651,22 @@ function cursorUpdate() {
         c.style.cursor = "pointer";
         normal = false;
     }
+    if (menuOpen == 1 && mouseX > canvas.width - 250 && mouseY > 90 - 35 && mouseY < 90 + (Object.keys(menuButtons).length - 1) * 35) {
+        c.style.cursor = "pointer";
+        normal = false;
+    }
     //else
     if (normal) {
         c.style.cursor = "default";
     }
+    //other
+    if (document.hidden) {
+        pressedKeys["Alt"] = false;
+    }
 }
+document.addEventListener("visibilitychange", function () {
+    pressedKeys["Alt"] = false;
+});
 setInterval(cursorUpdate, 100);
 setInterval(drawScreen, 5);
 //# sourceMappingURL=main.js.map

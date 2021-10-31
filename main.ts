@@ -51,7 +51,7 @@ function createUserEvents() {
         }
     }
     function keyEvent(e: KeyboardEvent) {
-        e.preventDefault();
+        if (e.key == "Alt") { e.preventDefault(); }
         if (e.type == "keyup") {
             pressedKeys[e.key] = false;
         }
@@ -124,17 +124,22 @@ class drawApp {
         ctx.strokeStyle = color;
         ctx.fillStyle = color;
         ctx.lineJoin = "round";
+
         ctx.lineWidth = radius;
 
         ctx.beginPath();
+
         ctx.strokeRect(posx, posy, width, height);
-
-        ctx.fillRect(posx, posy, width, height);
-
         ctx.stroke();
-        ctx.fill();
-        ctx.closePath();
 
+        if (ctx.globalAlpha != 1) {
+            ctx.fillRect(posx + (radius / 2), posy - (radius / 2), width - radius, height + radius);
+        } else {
+            ctx.fillRect(posx, posy, width, height);
+        }
+        ctx.fill();
+
+        ctx.closePath();
         ctx.strokeStyle = "";
         ctx.fillStyle = "";
         ctx.lineJoin = "";
@@ -282,7 +287,7 @@ function elementLenght(Element: [string, string[]]) {
 let menuOpen = 0;
 var menuImg = new Image();
 menuImg.src = '/files/menu.png';
-let menuButtons = { "Speichern": function () { console.log("speichern"); }, "Laden": function () { console.log("load"); }, "Hinzufügen": function () { console.log("hinzufügen"); } }
+let menuButtons: { [name: string]: Function } = { "Speichern": downloadProject, "Laden": function () { let i = document.getElementById("avatar") as HTMLElement; i.click(); }, "Hinzufügen": function () { console.log("hinzufügen"); }, "Einstellungen": function () { console.log("einstellungen"); } }
 
 let sidebarSize = 250;
 let sidebarFadeIn = 100;
@@ -331,6 +336,20 @@ let pyC: number = 0;
 
 let blockheight = 38;
 
+function download(content: BlobPart, mimeType: string, filename: string) {
+    const a = document.createElement('a')
+    const blob = new Blob([content], { type: mimeType })
+    const url = URL.createObjectURL(blob)
+    a.setAttribute('href', url)
+    a.setAttribute('download', filename)
+    a.click()
+}
+
+function downloadProject() {
+    var filename = "data.moproj"
+    let myJSON = JSON.stringify(Elements);
+    download(myJSON, "text", filename);
+}
 
 function drawScreen() {
     ////////////
@@ -342,17 +361,26 @@ function drawScreen() {
     //check what mouse Should doo
     if (mouse[0] && mouseSelectionLeft == -1) {
 
-
-        //Menu
+        //open Menu
         if (mouseSelectionLeft == -1) {
             if (mouseX > canvas.width - 50 && mouseY < 50) {
                 if (menuOpen == 0) {
                     mouseSelectionLeft = -2;
                     menuOpen = 0.01;
-                } if (menuOpen > 1) {
+                }
+                else if (menuOpen == 1) {
                     mouseSelectionLeft = -2;
                     menuOpen = -0.01
                 }
+            }
+        }
+        //use Menu
+        if (mouseSelectionLeft == -1) {
+            if (menuOpen == 1 && mouseX > canvas.width - 250) {
+                mouseSelectionLeft = -2;
+                try {
+                    menuButtons[Object.keys(menuButtons)[Math.round((mouseY - (90 - (35 / 2))) / 35)]]();
+                } catch { }
             }
         }
 
@@ -616,16 +644,16 @@ function drawScreen() {
     let mOpen = menuOpen;
     if (mOpen < 0) { mOpen = 1 + mOpen }
     if (mOpen != 0) {
-        if (mOpen>1){mOpen=1;}
+        if (mOpen > 1) { mOpen = 1; menuOpen = 1; }
         ctx.globalAlpha = 0.7 * mOpen;
-        draw.rect(canvas.width - 200, 0, 200, canvas.height * mOpen, "#000000", ctx);
-        let k=Object.keys(menuButtons);
+        draw.rect(canvas.width - (150 + (100 * mOpen)), 0, 150 + (100 * mOpen), canvas.height * mOpen, "#000000", ctx);
+        let k = Object.keys(menuButtons);
 
-        ctx.globalAlpha=mOpen;
-        for (let x=0; x<k.length;x++){
-            draw.text(canvas.width-10,90+x*35,k[x],"#ffffff","right",ctx);
+        ctx.globalAlpha = mOpen;
+        for (let x = 0; x < k.length; x++) {
+            draw.text(canvas.width - 10, 90 + x * 35, k[x], "#ffffff", "right", ctx);
         }
-        
+
         if (menuOpen > 0 && menuOpen < 1) { menuOpen += 0.05; }
         if (menuOpen < 0) { menuOpen -= 0.05 }
         if (menuOpen <= -1) { menuOpen = 0; }
@@ -638,15 +666,32 @@ function drawScreen() {
         py = 0 + r / 2 + (x * (s / 2));
         draw.roundedRect(px, py, s, 1, "#000000", 5, ctx);
     }
-    //ctx.drawImage(menuImg, canvas.width - 50, 0, 50, 50);
+
+    //keysDown
+    let k = Object.keys(pressedKeys);
+    let i = 0;
+    for (let x = 0; x < k.length; x++) {
+        if (pressedKeys[k[x]]) {
+            draw.text(0, i * 35 + 35, k[x], "#000000", "left", ctx);
+            i++
+        }
+    }
 }
 
 function cursorUpdate() {
     let normal = true
     if (keyDown("Alt")) { c.style.cursor = "copy"; normal = false; }
     if (mouseX > canvas.width - 50 - 15 && mouseY < 50 + 15) { c.style.cursor = "pointer"; normal = false; }
+    if (menuOpen == 1 && mouseX > canvas.width - 250 && mouseY > 90 - 35 && mouseY < 90 + (Object.keys(menuButtons).length - 1) * 35) { c.style.cursor = "pointer"; normal = false; }
     //else
     if (normal) { c.style.cursor = "default"; }
+
+    //other
+    if (document.hidden) { pressedKeys["Alt"] = false; }
 }
+document.addEventListener("visibilitychange", function () {
+    pressedKeys["Alt"] = false;
+});
+
 setInterval(cursorUpdate, 100);
 setInterval(drawScreen, 5);
