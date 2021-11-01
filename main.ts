@@ -18,8 +18,7 @@ let ctx: CanvasRenderingContext2D = <CanvasRenderingContext2D>canvas.getContext(
 
 let c = document.getElementById("canvas") as HTMLElement;
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+let sizeChange = true;
 
 createUserEvents();
 
@@ -51,7 +50,7 @@ function createUserEvents() {
         }
     }
     function keyEvent(e: KeyboardEvent) {
-        if (e.key == "Alt") { e.preventDefault(); }
+        if (e.key == "Alt" || e.key == "Tab") { e.preventDefault(); }
         if (e.type == "keyup") {
             pressedKeys[e.key] = false;
         }
@@ -61,8 +60,7 @@ function createUserEvents() {
 
     }
     function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        sizeChange = true;
     }
 }
 function keyDown(key: string) {
@@ -233,7 +231,7 @@ function removeItem(data: any[], index: number) {
     }
     return data;
 }
-function elementLenghtAndDraw(Element: [string, string[]], px: number, py: number) {
+function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: number) {
     let text = Element[0];
     if (setYellow.indexOf(text) != -1) {
         drawcolor = colors["YellowBlock"];
@@ -254,17 +252,17 @@ function elementLenghtAndDraw(Element: [string, string[]], px: number, py: numbe
         l += ctx.measureText(t).width
         l += 5;
     }
-    draw.roundedRect(px, py, l, -(blockheight - 10), drawcolorAccent, 10, ctx) //body outline
-    draw.roundedRect(px + 1, py - 1, l - 2, -blockheight + 12, drawcolor, 10, ctx) //body
-    draw.text(px, py, text, "#000000", "left", ctx);
+    draw.roundedRect(plx, ply, l, -(blockheight - 10), drawcolorAccent, 10, ctx) //body outline
+    draw.roundedRect(plx + 1, ply - 1, l - 2, -blockheight + 12, drawcolor, 10, ctx) //body
+    draw.text(plx, ply, text, "#000000", "left", ctx);
 
     l = ctx.measureText(text).width + 7;
     for (let x = 0; x < Element[1].length; x++) {
         let t = Element[1][x];
         if (t == "") { t = " "; }
         l += 5;
-        draw.roundedRect(px + l + 2, py - 5, ctx.measureText(t).width - 4, -(blockheight - 10) + 10, "#ffffff", 10, ctx) //body outline
-        draw.text(px + l, py, t, "#000000", "left", ctx);
+        draw.roundedRect(plx + l + 2, ply - 5, ctx.measureText(t).width - 4, -(blockheight - 10) + 10, "#ffffff", 10, ctx) //body outline
+        draw.text(plx + l, ply, t, "#000000", "left", ctx);
         l += 5;
         l += ctx.measureText(t).width;
     }
@@ -294,8 +292,11 @@ let sidebarFadeIn = 100;
 
 let textLength = 0;
 
-let mouseSelectionLeft = -1;
-let mouseDataLeft: any = -1;
+let mouseSelectionLeft: number = -1;
+let mouseDataLeft: number = -1;
+
+let mouseSelectionRight: number = -1;
+let mouseDataRight = [-1, -1];
 
 mqttConstructor();
 
@@ -304,7 +305,7 @@ let util = new Utilitys();
 
 let available: [string, string[]][] = [["Wait", ["0"]], ["Laden", ["0"]], ["Text", ["Text", "10"]], ["Uhrzeit", ["10"]], ["Bild anzeigen", ["0", "0"]], ["Animationen", ["0", "0", "10"]], ["Füllen", ["0", "0", "0"]], ["Loop", ["2"]], ["Unendlich", []], ["Custom", [""]]];
 let description: [string, string[]][] = [["Wait", ["Sekunden"]], ["Laden", ["Nummer"]], ["Text", ["Text", "Geschwindigkeit"]], ["Uhrzeit", ["Geschwindigkeit"]], ["Bild anzeigen", ["[Bild]", "Übergangszeit"]], ["Animationen", ["[Animation]", "Übergangszeit", "Wartezeit"]], ["Füllen", ["R", "G", "B"]], ["Loop", ["Wiederholungen"]], ["Unendlich", []], ["Custom", ["Code"]]];
-let colors = { "background": "#f7f7f7", "backgroundPoints": "#646464", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0" };
+let colors = { "background": "#f7f7f7", "backgroundPoints": "#646464", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac" };
 let setYellow = ["Loop", "Unendlich", "Start", "End"];
 let setPurple = ["Bild anzeigen", "Animationen", "Laden"];
 let notDragable = ["Start", "End"];
@@ -346,8 +347,10 @@ function download(content: BlobPart, mimeType: string, filename: string) {
 }
 
 function downloadProject() {
-    var filename = "data.moproj"
-    let myJSON = JSON.stringify(Elements);
+    var filename = prompt("Dateiname:", "Projekt");
+    if (filename == "") { filename = "Unnamed"; }
+    filename = filename + ".moproj";
+    let myJSON = JSON.stringify({ "Elements": Elements, "pictures": pictures, "ElementPositions": ElementPositions, "FreeElements": FreeElements });
     download(myJSON, "text", filename);
 }
 
@@ -356,97 +359,139 @@ function drawScreen() {
     // Update //
     ////////////
 
+    //size change
+    if (sizeChange) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        sizeChange = false;
+    }
+
     // mouseSelectionLeft types: 0=move Screen; 1=move Elements; -2=none;
 
-    //check what mouse Should doo
+
+    //right mouse click
+    if (mouse[2] && (mouseSelectionRight == -1 || mouseSelectionRight == 0)) {
+        let c = true;
+        for (let ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
+            for (let ElementList = 0; ElementList < Elements[ElementLoadPos].length; ElementList++) {
+                let px = posx + ElementPositions[ElementLoadPos][0];
+                let py = posy + ElementPositions[ElementLoadPos][1] + ElementList * blockheight;
+                textLength = elementLenght(Elements[ElementLoadPos][ElementList]);
+                if (mouseX > px && mouseX < px + textLength && mouseY < py && mouseY > py - blockheight && notDragable.indexOf(Elements[ElementLoadPos][ElementList][0]) == -1) {
+                    c = false;
+                    mouseDataRight = [ElementLoadPos, ElementList];
+                    console.log(mouseDataRight);
+
+                    //1=EditMenu Geöffnet; 2=EditMenu Text Bearbeiten
+                    mouseSelectionRight = 10;
+                }
+            }
+        }
+        if (c) { mouseSelectionRight = -1; }
+    }
+    if (mouseSelectionRight == 10 && !mouse[2]) { mouseSelectionRight = 0; }
+
+
+    //left mouse click
     if (mouse[0] && mouseSelectionLeft == -1) {
 
-        //open Menu
-        if (mouseSelectionLeft == -1) {
-            if (mouseX > canvas.width - 50 && mouseY < 50) {
-                if (menuOpen == 0) {
+        //if EditMenu closed
+        if (mouseSelectionRight == -1) {
+            //open Menu
+            if (mouseSelectionLeft == -1) {
+                if (mouseX > canvas.width - 50 && mouseY < 50) {
+                    if (menuOpen == 0) {
+                        mouseSelectionLeft = -2;
+                        menuOpen = 0.01;
+                    }
+                    else if (menuOpen == 1) {
+                        mouseSelectionLeft = -2;
+                        menuOpen = -0.01
+                    }
+                }
+            }
+            //use Menu
+            if (mouseSelectionLeft == -1) {
+                if (menuOpen == 1 && mouseX > canvas.width - 250) {
                     mouseSelectionLeft = -2;
-                    menuOpen = 0.01;
-                }
-                else if (menuOpen == 1) {
-                    mouseSelectionLeft = -2;
-                    menuOpen = -0.01
+                    try {
+                        menuButtons[Object.keys(menuButtons)[Math.round((mouseY - (90 - (35 / 2))) / 35)]]();
+                    } catch { }
                 }
             }
-        }
-        //use Menu
-        if (mouseSelectionLeft == -1) {
-            if (menuOpen == 1 && mouseX > canvas.width - 250) {
-                mouseSelectionLeft = -2;
-                try {
-                    menuButtons[Object.keys(menuButtons)[Math.round((mouseY - (90 - (35 / 2))) / 35)]]();
-                } catch { }
-            }
-        }
 
-        //new Element
-        if (mouseSelectionLeft == -1) {
-            if (mouseX < sidebarSize) {
-                let sel = Math.ceil((-blockheight + mouseY - 10) / (blockheight + 10))
+            //new Element
+            if (mouseSelectionLeft == -1) {
+                if (mouseX < sidebarSize) {
+                    let sel = Math.ceil((-blockheight + mouseY - 10) / (blockheight + 10))
 
-                if (sel < available.length) {
-                    offsetX = mouseX - 10 + mouseX;
-                    offsetY = mouseY - (blockheight / 2);
-                    mouseSelectionLeft = 1;
-                    mouseDataLeft = FreeElements.length;
-                    let i = available[sel];
-                    FreeElements.push([i[0], i[1], [mouseX - posx, mouseY - posy]])
-                }
-            }
-        }
-
-        //search Free Elements
-        if (mouseSelectionLeft == -1) {
-            for (let ElementLoadPos = 0; ElementLoadPos < FreeElements.length; ElementLoadPos++) {
-                let px = posx + FreeElements[ElementLoadPos][2][0];
-                let py = posy + FreeElements[ElementLoadPos][2][1];
-                textLength = elementLenght([FreeElements[ElementLoadPos][0], FreeElements[ElementLoadPos][1]])
-                if (mouseX > px && mouseX < px + textLength && mouseY < py && mouseY > py - blockheight) {
-                    mouseSelectionLeft = 1;
-                    mouseDataLeft = ElementLoadPos;
-                    break;
-                }
-            }
-        }
-
-        //search non Free Elements
-        if (mouseSelectionLeft == -1) {
-            for (let ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
-                for (let ElementList = 0; ElementList < Elements[ElementLoadPos].length; ElementList++) {
-                    let px = posx + ElementPositions[ElementLoadPos][0];
-                    let py = posy + ElementPositions[ElementLoadPos][1] + ElementList * blockheight;
-                    textLength = elementLenght(Elements[ElementLoadPos][ElementList]);
-                    if (mouseX > px && mouseX < px + textLength && mouseY < py && mouseY > py - blockheight && notDragable.indexOf(Elements[ElementLoadPos][ElementList][0]) == -1) {
-                        offsetX = mouseX + (mouseX - px);
-                        offsetY = mouseY + (mouseY - py);
+                    if (sel < available.length) {
+                        offsetX = mouseX - 10 + mouseX;
+                        offsetY = mouseY - (blockheight / 2);
                         mouseSelectionLeft = 1;
                         mouseDataLeft = FreeElements.length;
-                        let i = Elements[ElementLoadPos][ElementList];
+                        let i = available[sel];
                         FreeElements.push([i[0], i[1], [mouseX - posx, mouseY - posy]])
-                        if (!keyDown("Alt")) {
-                            Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList)
-                        }
+                    }
+                }
+            }
+
+            //search Free Elements
+            if (mouseSelectionLeft == -1) {
+                for (let ElementLoadPos = 0; ElementLoadPos < FreeElements.length; ElementLoadPos++) {
+                    let px = posx + FreeElements[ElementLoadPos][2][0];
+                    let py = posy + FreeElements[ElementLoadPos][2][1];
+                    textLength = elementLenght([FreeElements[ElementLoadPos][0], FreeElements[ElementLoadPos][1]])
+                    if (mouseX > px && mouseX < px + textLength && mouseY < py && mouseY > py - blockheight) {
+                        mouseSelectionLeft = 1;
+                        mouseDataLeft = ElementLoadPos;
                         break;
                     }
                 }
             }
-        }
+
+            //search non Free Elements
+            if (mouseSelectionLeft == -1) {
+                for (let ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
+                    for (let ElementList = 0; ElementList < Elements[ElementLoadPos].length; ElementList++) {
+                        let px = posx + ElementPositions[ElementLoadPos][0];
+                        let py = posy + ElementPositions[ElementLoadPos][1] + ElementList * blockheight;
+                        textLength = elementLenght(Elements[ElementLoadPos][ElementList]);
+                        if (mouseX > px && mouseX < px + textLength && mouseY < py && mouseY > py - blockheight && notDragable.indexOf(Elements[ElementLoadPos][ElementList][0]) == -1) {
+                            offsetX = mouseX + (mouseX - px);
+                            offsetY = mouseY + (mouseY - py);
+                            mouseSelectionLeft = 1;
+                            mouseDataLeft = FreeElements.length;
+                            let i = Elements[ElementLoadPos][ElementList];
+                            FreeElements.push([i[0], i[1], [mouseX - posx, mouseY - posy]])
+                            if (!keyDown("Alt")) {
+                                Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList)
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
 
 
-        //else
-        if (mouseSelectionLeft == -1) {
-            offsetX = mouseX;
-            offsetY = mouseY;
-            mouseSelectionLeft = 0;
+            //else
+            if (mouseSelectionLeft == -1) {
+                offsetX = mouseX;
+                offsetY = mouseY;
+                mouseSelectionLeft = 0;
+            }
         }
+
+        //if EditMenu open
+        else {
+            //if not in menu decrease number:
+            mouseSelectionRight--;
+            mouseSelectionLeft = -2;
+        }
+
     }
 
-    //mouse let go
+    //left mouse let go
     if (mouseSelectionLeft != -1 && !mouse[0]) {
         if (mouseX < sidebarSize && mouseSelectionLeft == 1) {
             FreeElements = removeItem(FreeElements, mouseDataLeft);
@@ -497,11 +542,11 @@ function drawScreen() {
 
     //background
     draw.fill(colors["background"], ctx);
-    for (let x = 0; x < Math.ceil((canvas.width + 10) / backgroundPointSize); x++) {
-        for (let y = 0; y < Math.ceil((canvas.height + 10) / backgroundPointSize); y++) {
-            let px = x * backgroundPointSize + posx + 10;
+    for (let x = 0; x < (canvas.width) / backgroundPointSize; x++) {
+        for (let y = 0; y < (canvas.height) / backgroundPointSize; y++) {
+            let px = x * backgroundPointSize + posx;
             px = util.normalize(px, 0, canvas.width)
-            let py = y * backgroundPointSize + posy + 10;
+            let py = y * backgroundPointSize + posy;
             py = util.normalize(py, 0, canvas.height)
             draw.rect(px - 5, py - 5, 2, 2, colors["backgroundPoints"], ctx);
         }
@@ -597,12 +642,21 @@ function drawScreen() {
     }
     ctx.globalAlpha = 1;
 
-    //rightClickMenu
-    if (false) {
-        let hei = 1;
-        let px = 0;
-        let py = 0;
-        draw.polygon(ctx, "#ff0000", [[px, py + 20], [px + 20, py + 20], [px + 30, py + 5], [px + 40, py + 20], [px + 250, py + 20], [px + 250, py + (hei * blockheight) + 10], [px, py + (hei * blockheight) + 10]]) //dropdownMenu
+    //EditMenu
+    if (mouseSelectionRight != -1) {
+        let hei = Elements[mouseDataRight[0]][mouseDataRight[1]][1].length;
+        let px = ElementPositions[mouseDataRight[0]][0] + posx;
+        let py = ElementPositions[mouseDataRight[0]][1] + mouseDataRight[1] * blockheight + posy;
+        draw.polygon(ctx, colors["EditMenu"], [[px, py + 20], [px + 20, py + 20], [px + 30, py + 5], [px + 40, py + 20], [px + 250, py + 20], [px + 250, py + (hei * blockheight) + 20], [px, py + (hei * blockheight) + 20]]) //dropdownMenu
+        draw.polygonOutline(ctx, colors["EditMenuAccent"], [[px, py + 20], [px + 20, py + 20], [px + 30, py + 5], [px + 40, py + 20], [px + 250, py + 20], [px + 250, py + (hei * blockheight) + 20], [px, py + (hei * blockheight) + 20], [px, py + 20]], 1) //dropdownMenu
+        font = "35px msyi";
+        for (let x = 0; x < hei; x++) {
+            draw.text(px, py + x * blockheight + blockheight + 10, Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], "#000000", "left", ctx);
+            if (x != hei - 1) {
+                draw.rect(px, py + x * blockheight + blockheight + 20, 250, 1, colors["EditMenuAccent"], ctx);
+            }
+        }
+        font = "47px msyi";
     }
 
     //new Object
@@ -689,9 +743,7 @@ function cursorUpdate() {
     //other
     if (document.hidden) { pressedKeys["Alt"] = false; }
 }
-document.addEventListener("visibilitychange", function () {
-    pressedKeys["Alt"] = false;
-});
+document.addEventListener("visibilitychange", function () { pressedKeys["Alt"] = false; });
 
 setInterval(cursorUpdate, 100);
 setInterval(drawScreen, 5);
