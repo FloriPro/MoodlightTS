@@ -51,11 +51,23 @@ function createUserEvents() {
     }
     function keyEvent(e: KeyboardEvent) {
         if (e.key == "Alt" || e.key == "Tab") { e.preventDefault(); }
-        if (e.type == "keyup") {
-            pressedKeys[e.key] = false;
+        if (mouseSelectionRight == 1) {
+            if (e.type == "keydown") {
+                if (e.key == "Backspace") {
+                    Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting].slice(0, -1);
+                }
+                else if (e.key.length == 1) {
+                    Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] + e.key
+                }
+            }
         }
-        if (e.type == "keydown") {
-            pressedKeys[e.key] = true;
+        else {
+            if (e.type == "keyup") {
+                pressedKeys[e.key] = false;
+            }
+            if (e.type == "keydown") {
+                pressedKeys[e.key] = true;
+            }
         }
 
     }
@@ -294,9 +306,11 @@ let textLength = 0;
 
 let mouseSelectionLeft: number = -1;
 let mouseDataLeft: number = -1;
+let HoldingEnd = -1;
 
 let mouseSelectionRight: number = -1;
 let mouseDataRight = [-1, -1];
+let EditMenuEdeting = -1;
 
 mqttConstructor();
 
@@ -305,11 +319,12 @@ let util = new Utilitys();
 
 let available: [string, string[]][] = [["Wait", ["0"]], ["Laden", ["0"]], ["Text", ["Text", "10"]], ["Uhrzeit", ["10"]], ["Bild anzeigen", ["0", "0"]], ["Animationen", ["0", "0", "10"]], ["Füllen", ["0", "0", "0"]], ["Loop", ["2"]], ["Unendlich", []], ["Custom", [""]]];
 let description: [string, string[]][] = [["Wait", ["Sekunden"]], ["Laden", ["Nummer"]], ["Text", ["Text", "Geschwindigkeit"]], ["Uhrzeit", ["Geschwindigkeit"]], ["Bild anzeigen", ["[Bild]", "Übergangszeit"]], ["Animationen", ["[Animation]", "Übergangszeit", "Wartezeit"]], ["Füllen", ["R", "G", "B"]], ["Loop", ["Wiederholungen"]], ["Unendlich", []], ["Custom", ["Code"]]];
+let notDragable = ["Start", "End"];
+let dropdownMenuButtons = { "Bild anzeigen": { "Bearbeiten": function () { console.log("Bearbeiten"); }, "Anzeigen": function () { console.log("Anzeigen"); } }, "Animationen": { "Bearbeiten": function () { console.log("Bearbeiten"); } } }
+
 let colors = { "background": "#f7f7f7", "backgroundPoints": "#646464", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac" };
 let setYellow = ["Loop", "Unendlich", "Start", "End"];
 let setPurple = ["Bild anzeigen", "Animationen", "Laden"];
-let notDragable = ["Start", "End"];
-
 
 let pictures: string[] = ["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"]
 let Elements: [string, string[]][][] = [[["Start", ["0"]], ["Füllen1", ["0", "255", "255"]], ["Bild anzeigen", ["0"]]], [["Start", ["1"]]]];
@@ -319,8 +334,6 @@ let drawcolor = "";
 let drawcolorAccent = "";
 let drawcolorO = "";
 let drawcolorAccentO = "";
-
-console.log(Elements)
 
 let backgroundPointSize = 20;
 
@@ -380,7 +393,7 @@ function drawScreen() {
                 if (mouseX > px && mouseX < px + textLength && mouseY < py && mouseY > py - blockheight && notDragable.indexOf(Elements[ElementLoadPos][ElementList][0]) == -1) {
                     c = false;
                     mouseDataRight = [ElementLoadPos, ElementList];
-                    console.log(mouseDataRight);
+                    EditMenuEdeting = -1
 
                     //1=EditMenu Geöffnet; 2=EditMenu Text Bearbeiten
                     mouseSelectionRight = 10;
@@ -484,19 +497,37 @@ function drawScreen() {
 
         //if EditMenu open
         else {
+            //if Mouse in EditMenu
+            let hei = Elements[mouseDataRight[0]][mouseDataRight[1]][1].length;
+            let px = ElementPositions[mouseDataRight[0]][0] + posx;
+            let py = ElementPositions[mouseDataRight[0]][1] + mouseDataRight[1] * blockheight + posy;
+            let pxM = px + 250
+            let pyM = py + hei * blockheight + blockheight;
+            if (mouseX > px && mouseX < pxM && mouseY > py && mouseY < pyM) {
+                //console.log(mouseY-20-py);
+                EditMenuEdeting = Math.floor((mouseY - 20 - py) / blockheight);
+                mouseSelectionLeft = -2;
+                mouseSelectionRight = 1;
+            }
+
             //if not in menu decrease number:
-            mouseSelectionRight--;
-            mouseSelectionLeft = -2;
+            else {
+                EditMenuEdeting = -1
+                mouseSelectionRight--;
+                mouseSelectionLeft = -2;
+            }
         }
 
     }
 
     //left mouse let go
-    if (mouseSelectionLeft != -1 && !mouse[0]) {
+    if (mouseSelectionLeft != -1 && !mouse[0] && HoldingEnd==-1) {
+        //remove Element
         if (mouseX < sidebarSize && mouseSelectionLeft == 1) {
             FreeElements = removeItem(FreeElements, mouseDataLeft);
             mouseSelectionLeft = -1;
         }
+
         //dropFree Element
         if (mouseSelectionLeft == 1) {
             for (let ElementList = 0; ElementList < Elements.length; ElementList++) {
@@ -506,6 +537,10 @@ function drawScreen() {
                     if (FreeElements[mouseDataLeft][2][1] > ElementPositions[ElementList][1] + (blockheight - 20) && FreeElements[mouseDataLeft][2][1] < ElementPositions[ElementList][1] + blockheight * (Elements[ElementList].length + 1)) {
                         //Elements[ElementList].push()
                         let insertY = 0;
+                        if (["Loop", "Unendlich"].includes(FreeElements[mouseDataLeft][0])) {
+                            HoldingEnd = ElementList;
+                            console.log("END")
+                        }
                         insertY = Math.round((FreeElements[mouseDataLeft][2][1] - ElementPositions[ElementList][1]) / blockheight);
                         Elements[ElementList].splice(insertY, 0, [FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]]);
                         //Elements[ElementList]=insertArrayAt([FreeElements[mouseDataLeft][0], FreeElements[mouseSelectionLeft][1]],0,Elements[ElementList])
@@ -539,6 +574,9 @@ function drawScreen() {
     //////////
     // draw //
     //////////
+    if (mouseSelectionRight != -1) {
+        elementLenghtAndDraw(["-", ["-"]], -100, -100);
+    }
 
     //background
     draw.fill(colors["background"], ctx);
@@ -652,6 +690,7 @@ function drawScreen() {
         font = "35px msyi";
         for (let x = 0; x < hei; x++) {
             draw.text(px, py + x * blockheight + blockheight + 10, Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], "#000000", "left", ctx);
+            if (x == EditMenuEdeting) { draw.rect(px + ctx.measureText(Elements[mouseDataRight[0]][mouseDataRight[1]][1][x]).width, py + x * blockheight + blockheight + 15, 0.75, -30, "#000000", ctx); }
             if (x != hei - 1) {
                 draw.rect(px, py + x * blockheight + blockheight + 20, 250, 1, colors["EditMenuAccent"], ctx);
             }
