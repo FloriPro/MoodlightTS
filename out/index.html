@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="de">
 
 <head>
     <style>
@@ -21,10 +22,11 @@
 </head>
 
 <body style="margin:0px">
-    <canvas id="canvas" style="cursor:default;border: 0px  black;margin: 0px;height:100%;width:100%;"
-        oncontextmenu="return false"></canvas>
     <input type="file" id="avatar" name="avatar" accept=".moproj" style="display: none;">
-    <script src="main.js"></script>
+    <canvas id="canvas" style="cursor:default; border:0px black; margin:0px; height:100%; width:100%;"
+        oncontextmenu="return false" onselectstart="return false" ondragstart="return false" id="body"></canvas>
 </body>
+
+<script src="main.js"></script>
 
 </html>
