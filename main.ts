@@ -296,14 +296,14 @@ function elementLenght(Element: [string, string[]]) {
 }
 //Game Variables
 let editType = "standartEdit";//StandartEdit, PictureEdit, AnimationEdit, Question, QuestionAnswered
-let Question = ["Frage", ["Antworten"]]
+let Question: [string, { [name: string]: Function }] = ["Frage", { "Antworten": function () { console.warn("Question without defenition"); } }]
 let Übergang = -1;
 let ÜbergangZu = "Question";
 
 let menuOpen = 0;
 var menuImg = new Image();
 menuImg.src = '/files/menu.png';
-let menuButtons: { [name: string]: Function } = { "Speichern": downloadProject, "Laden": function () { let i = document.getElementById("avatar") as HTMLElement; i.click(); }, "Hinzufügen": function () { Übergang = 1; ÜbergangZu = "Question"; menuOpen = -0.1; Question=["Was",["Start","Bild","Animation"]]}, "Einstellungen": function () { console.log("einstellungen"); } }
+let menuButtons: { [name: string]: Function } = { "Speichern": downloadProject, "Laden": function () { let i = document.getElementById("avatar") as HTMLElement; i.click(); }, "Hinzufügen": function () { Übergang = 1; ÜbergangZu = "Question"; menuOpen = -0.1; Question = ["Was willst du hinzufügen", { "Start": function () { console.log("Execute Start") }, "Bild": function () { console.log("Execute Bild") }, "Animation": function () { console.log("Execute Animation") }, "Projekt": function () { console.log("Execute Projekt") } }] }, "Einstellungen": function () { console.log("einstellungen"); } }
 
 let sidebarSize = 250;
 let sidebarFadeIn = 100;
@@ -794,16 +794,28 @@ function drawScreen() {
             sizeChange = false;
         }
 
+        let q1 = Object.keys(Question[1]);
+
+        //mouseDown
         if (mouse[0] && mouseSelectionLeft == -1) {
-            mouseSelectionLeft=-2
+            if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight) {
+                Question[1][q1[Math.ceil((mouseY / blockheight) - (150 / blockheight))]]();
+            }
+
+            mouseSelectionLeft = -2
+        }
+        
+        //mouseUp
+        if (!mouse[0] && mouseSelectionLeft != -1) {
+            mouseSelectionLeft = -1;
         }
 
         draw.fill(colors["background"], ctx);
         font = "60px msyi"
         draw.text(canvas.width / 2, 70, Question[0], "#000000", "center", ctx);
         font = "47px msyi"
-        for (let x = 0; x < Question.length; x++) {
-            draw.text(canvas.width / 2, 150 + x * blockheight, Question[1][x], "#000000", "center", ctx);
+        for (let x = 0; x < q1.length; x++) {
+            draw.text(canvas.width / 2, 150 + x * blockheight, q1[x], "#000000", "center", ctx);
         }
     }
 }
@@ -823,6 +835,11 @@ function cursorUpdate() {
             let pyM = py + hei * blockheight + blockheight;
             if (mouseX > px && mouseX < pxM && mouseY > py && mouseY < pyM) { c.style.cursor = "text"; normal = false; }
         }
+    }
+
+    if (editType == "Question") {
+        let q1 = Object.keys(Question[1]);
+        if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight) { c.style.cursor = "pointer"; normal = false; }
     }
 
 
