@@ -1,4 +1,13 @@
 "use strict";
+//gen color selection Table
+var tab = document.getElementById("colorSelTable");
+for (var x = 0; x < 6; x++) {
+    var i = '<tr>';
+    for (var y = 0; y < 6; y++) {
+        i += '<th class="ColorSelButton"></th>';
+    }
+    tab.innerHTML += i + "</tr>";
+}
 //utility variables
 let font = "47px msyi";
 let host = "hotti.info";
@@ -92,7 +101,8 @@ function onConnect() {
 function onFailure() { console.log("onFailure"); }
 function onConnectionLost(responseObject) {
     if (responseObject.errorCode !== 0) {
-        console.log("onConnectionLost:" + responseObject.errorMessage);
+        console.log("onConnectionLost:" + responseObject.errorMessage + "\nreconnecting...");
+        client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
     }
 }
 function onMessageArrived(message) {
@@ -115,7 +125,6 @@ function send(dat) {
     };
     $.ajax(settings);
 }
-//END
 class drawApp {
     rect(posx, posy, width, height, color, ctx) {
         ctx.fillStyle = color;
@@ -295,14 +304,14 @@ function elementLenght(Element) {
     return l;
 }
 //Game Variables
-let editType = "standartEdit"; //StandartEdit, PictureEdit, AnimationEdit, Question, QuestionAnswered
-let Question = ["Frage", { "Antworten": function () { console.warn("Question without defenition"); } }];
-let Übergang = -1;
-let ÜbergangZu = "Question";
+var editType = "PictureEdit"; //StandartEdit, PictureEdit, AnimationEdit, Question
+var Question = ["Frage", { "Antworten": function () { console.warn("Question without defenition"); } }];
+var Übergang = -1;
+var ÜbergangZu = "Question";
 let menuOpen = 0;
 var menuImg = new Image();
 menuImg.src = '/files/menu.png';
-let menuButtons = { "Speichern": downloadProject, "Laden": function () { let i = document.getElementById("avatar"); i.click(); }, "Hinzufügen": function () { Übergang = 1; ÜbergangZu = "Question"; menuOpen = -0.1; Question = ["Was willst du hinzufügen", { "Start": function () { console.log("Execute Start"); }, "Bild": function () { console.log("Execute Bild"); }, "Animation": function () { console.log("Execute Animation"); }, "Projekt": function () { console.log("Execute Projekt"); } }]; }, "Einstellungen": function () { console.log("einstellungen"); } };
+let menuButtons = { "Speichern": downloadProject, "Laden": function () { let i = document.getElementById("avatar"); i.click(); }, "Hinzufügen": function () { Übergang = 1; ÜbergangZu = "Question"; menuOpen = -0.1; Question = ["Was willst du hinzufügen", { "Start": function () { ElementPositions.push([Elements.length * 400, 0]); Elements.push([["Start", [String(Elements.length)]]]); }, "Bild": function () { editType = "PictureEdit"; console.log(editType); }, "Animation": function () { console.log("Execute Animation"); }, "Projekt": function () { console.log("Execute Projekt"); } }]; }, "Einstellungen": function () { console.log("einstellungen"); } };
 let sidebarSize = 250;
 let sidebarFadeIn = 100;
 let textLength = 0;
@@ -315,22 +324,25 @@ let EditMenuEdeting = -1;
 mqttConstructor();
 let draw = new drawApp();
 let util = new Utilitys();
-let available = [["Wait", ["0"]], ["Laden", ["0"]], ["Text", ["Text", "10"]], ["Uhrzeit", ["10"]], ["Bild anzeigen", ["0", "0"]], ["Animationen", ["0", "0", "10"]], ["Füllen", ["0", "0", "0"]], ["Loop", ["2"]], ["Unendlich", []], ["Custom", [""]]];
-let description = [["Wait", ["Sekunden"]], ["Laden", ["Nummer"]], ["Text", ["Text", "Geschwindigkeit"]], ["Uhrzeit", ["Geschwindigkeit"]], ["Bild anzeigen", ["[Bild]", "Übergangszeit"]], ["Animationen", ["[Animation]", "Übergangszeit", "Wartezeit"]], ["Füllen", ["R", "G", "B"]], ["Loop", ["Wiederholungen"]], ["Unendlich", []], ["Custom", ["Code"]]];
-let notDragable = ["Start", "End"];
+const available = [["Wait", ["0"]], ["Laden", ["0"]], ["Text", ["Text", "10"]], ["Uhrzeit", ["10"]], ["Bild anzeigen", ["0", "0"]], ["Animationen", ["0", "0", "10"]], ["Füllen", ["0", "0", "0"]], ["Loop", ["2"]], ["Unendlich", []], ["Custom", [""]]];
+const description = [["Wait", ["Sekunden"]], ["Laden", ["Nummer"]], ["Text", ["Text", "Geschwindigkeit"]], ["Uhrzeit", ["Geschwindigkeit"]], ["Bild anzeigen", ["[Bild]", "Übergangszeit"]], ["Animationen", ["[Animation]", "Übergangszeit", "Wartezeit"]], ["Füllen", ["R", "G", "B"]], ["Loop", ["Wiederholungen"]], ["Unendlich", []], ["Custom", ["Code"]]];
+let notDragable = ["Start"];
 let dropdownMenuButtons = { "Bild anzeigen": { "Bearbeiten": function () { console.log("Bearbeiten"); }, "Anzeigen": function () { console.log("Anzeigen"); } }, "Animationen": { "Bearbeiten": function () { console.log("Bearbeiten"); } } };
 let colors = { "background": "#f7f7f7", "backgroundPoints": "#646464", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac" };
 let setYellow = ["Loop", "Unendlich", "Start", "End"];
 let setPurple = ["Bild anzeigen", "Animationen", "Laden"];
+var colorpickerH = 0;
+var colorpickerS = 0;
+var colorpickerV = 0;
 let pictures = ["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"];
-let Elements = [[["Start", ["0"]], ["Füllen1", ["0", "255", "255"]], ["Bild anzeigen", ["0"]]], [["Start", ["1"]]]];
-let ElementPositions = [[0, 0], [370, -50]];
-let FreeElements = [["Füllen2", ["255", "255", "0"], [300, 300]], ["Füllen3", ["255", "255", "0"], [600, 300]]];
+let Elements = [[["Start", ["0"]], ["Füllen", ["0", "255", "255"]], ["Bild anzeigen", ["0"]]]];
+let ElementPositions = [[0, 0]];
+let FreeElements = [["Füllen", ["255", "255", "0"], [300, 300]], ["Füllen", ["255", "255", "0"], [600, 300]]];
 let drawcolor = "";
 let drawcolorAccent = "";
 let drawcolorO = "";
 let drawcolorAccentO = "";
-let backgroundPointSize = 20;
+let backgroundPointSize = 50;
 let offsetX = 0;
 let offsetY = 0;
 let posx = 100;
@@ -375,7 +387,7 @@ function drawScreen() {
         }
         // mouseSelectionLeft types: 0=move Screen; 1=move Elements; -2=none;
         //right mouse click
-        if (mouse[2] && (mouseSelectionRight == -1 || mouseSelectionRight == 0)) {
+        if (mouse[2] && (mouseSelectionRight == -1 || mouseSelectionRight == 0) && HoldingEnd == -1) {
             let c = true;
             for (let ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
                 for (let ElementList = 0; ElementList < Elements[ElementLoadPos].length; ElementList++) {
@@ -399,7 +411,7 @@ function drawScreen() {
             mouseSelectionRight = 0;
         }
         //left mouse click
-        if (mouse[0] && mouseSelectionLeft == -1) {
+        if (mouse[0] && mouseSelectionLeft == -1 && HoldingEnd == -1) {
             //if EditMenu closed
             if (mouseSelectionRight == -1) {
                 //open Menu
@@ -434,8 +446,7 @@ function drawScreen() {
                             offsetY = mouseY - (blockheight / 2);
                             mouseSelectionLeft = 1;
                             mouseDataLeft = FreeElements.length;
-                            let i = available[sel];
-                            FreeElements.push([i[0], i[1], [mouseX - posx, mouseY - posy]]);
+                            FreeElements.push([[...available[sel][0]].join(""), [...available[sel][1]], [mouseX - posx, mouseY - posy]]);
                         }
                     }
                 }
@@ -460,14 +471,43 @@ function drawScreen() {
                             let py = posy + ElementPositions[ElementLoadPos][1] + ElementList * blockheight;
                             textLength = elementLenght(Elements[ElementLoadPos][ElementList]);
                             if (mouseX > px && mouseX < px + textLength && mouseY < py && mouseY > py - blockheight && notDragable.indexOf(Elements[ElementLoadPos][ElementList][0]) == -1) {
-                                offsetX = mouseX + (mouseX - px);
-                                offsetY = mouseY + (mouseY - py);
-                                mouseSelectionLeft = 1;
-                                mouseDataLeft = FreeElements.length;
-                                let i = Elements[ElementLoadPos][ElementList];
-                                FreeElements.push([i[0], i[1], [mouseX - posx, mouseY - posy]]);
-                                if (!keyDown("Alt")) {
+                                if (Elements[ElementLoadPos][ElementList][0] == "End") {
                                     Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList);
+                                    HoldingEnd = ElementLoadPos;
+                                    offsetX = mouseX - 10 + mouseX;
+                                    offsetY = mouseY - (blockheight / 2);
+                                    mouseDataLeft = FreeElements.length;
+                                    FreeElements.push(["End", [], [mouseX - posx, mouseY - posy]]);
+                                    mouseSelectionLeft = 1;
+                                }
+                                else {
+                                    offsetX = mouseX + (mouseX - px);
+                                    offsetY = mouseY + (mouseY - py);
+                                    mouseSelectionLeft = 1;
+                                    mouseDataLeft = FreeElements.length;
+                                    let i = Elements[ElementLoadPos][ElementList];
+                                    FreeElements.push([[...Elements[ElementLoadPos][ElementList][0]].join(""), [...Elements[ElementLoadPos][ElementList][1]], [mouseX - posx, mouseY - posy]]);
+                                    if (!keyDown("Alt")) {
+                                        //search End
+                                        if (["Loop", "Unendlich"].includes(Elements[ElementLoadPos][ElementList][0])) {
+                                            let it = ElementList;
+                                            let indentation = 1;
+                                            while (indentation > 0) {
+                                                it++;
+                                                if (["Loop", "Unendlich"].includes(Elements[ElementLoadPos][it][0])) {
+                                                    indentation++;
+                                                }
+                                                if ("End" == Elements[ElementLoadPos][it][0]) {
+                                                    indentation--;
+                                                }
+                                            }
+                                            Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], it);
+                                            Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList);
+                                        }
+                                        else {
+                                            Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList);
+                                        }
+                                    }
                                 }
                                 break;
                             }
@@ -520,20 +560,76 @@ function drawScreen() {
                             //Elements[ElementList].push()
                             let insertY = 0;
                             if (["Loop", "Unendlich"].includes(FreeElements[mouseDataLeft][0])) {
+                                insertY = Math.round((FreeElements[mouseDataLeft][2][1] - ElementPositions[ElementList][1]) / blockheight);
+                                Elements[ElementList].splice(insertY, 0, [FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]]);
+                                //Elements[ElementList]=insertArrayAt([FreeElements[mouseDataLeft][0], FreeElements[mouseSelectionLeft][1]],0,Elements[ElementList])
+                                FreeElements = removeItem(FreeElements, mouseDataLeft);
                                 HoldingEnd = ElementList;
-                                console.log("END");
+                                offsetX = mouseX - 10 + mouseX;
+                                offsetY = mouseY - (blockheight / 2);
+                                mouseSelectionLeft = 500;
+                                mouse[0] = true;
+                                mouseDataLeft = FreeElements.length;
+                                FreeElements.push(["End", [], [mouseX - posx, mouseY - posy]]);
                             }
-                            insertY = Math.round((FreeElements[mouseDataLeft][2][1] - ElementPositions[ElementList][1]) / blockheight);
-                            Elements[ElementList].splice(insertY, 0, [FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]]);
-                            //Elements[ElementList]=insertArrayAt([FreeElements[mouseDataLeft][0], FreeElements[mouseSelectionLeft][1]],0,Elements[ElementList])
-                            FreeElements = removeItem(FreeElements, mouseDataLeft);
+                            else {
+                                insertY = Math.round((FreeElements[mouseDataLeft][2][1] - ElementPositions[ElementList][1]) / blockheight);
+                                Elements[ElementList].splice(insertY, 0, [FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]]);
+                                //Elements[ElementList]=insertArrayAt([FreeElements[mouseDataLeft][0], FreeElements[mouseSelectionLeft][1]],0,Elements[ElementList])
+                                FreeElements = removeItem(FreeElements, mouseDataLeft);
+                            }
+                            ;
                             break;
                         }
                     }
                 }
+            }
+            if (mouseSelectionLeft != 500) {
                 mouseSelectionLeft = -1;
             }
-            mouseSelectionLeft = -1;
+            else {
+                mouseSelectionLeft = 1;
+            }
+        }
+        //HoldingEnd let go
+        if (mouseSelectionLeft != -1 && !mouse[0] && HoldingEnd != -1) {
+            if (ElementPositions[HoldingEnd][0] - 50 < FreeElements[mouseDataLeft][2][0] && ElementPositions[HoldingEnd][0] + 200 > FreeElements[mouseDataLeft][2][0]) {
+                //if not over max len or below
+                if (FreeElements[mouseDataLeft][2][1] > ElementPositions[HoldingEnd][1] + (blockheight - 20) && FreeElements[mouseDataLeft][2][1] < ElementPositions[HoldingEnd][1] + blockheight * (Elements[HoldingEnd].length + 1)) {
+                    //test if Indentation bigger 0
+                    let i = 1;
+                    let indentation = 0;
+                    let insertY = Math.round((FreeElements[mouseDataLeft][2][1] - ElementPositions[HoldingEnd][1]) / blockheight);
+                    while (true) {
+                        if (i == insertY) {
+                            break;
+                        }
+                        if (Elements[HoldingEnd][i][0] == "End") {
+                            indentation--;
+                        }
+                        if (["Loop", "Unendlich"].includes(Elements[HoldingEnd][i][0])) {
+                            indentation++;
+                        }
+                        i++;
+                    }
+                    console.log(indentation);
+                    if (indentation >= 1) {
+                        Elements[HoldingEnd].splice(insertY, 0, [FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]]);
+                        FreeElements = removeItem(FreeElements, mouseDataLeft);
+                        mouseSelectionLeft = -1;
+                        HoldingEnd = -1;
+                    }
+                    else {
+                        mouse[0] = true;
+                    }
+                }
+                else {
+                    mouse[0] = true;
+                }
+            }
+            else {
+                mouse[0] = true;
+            }
         }
         //move cam
         if (mouse[1] || mouseSelectionLeft == 0) {
@@ -545,11 +641,16 @@ function drawScreen() {
             FreeElements[mouseDataLeft][2][0] += mouseX - offsetX;
             FreeElements[mouseDataLeft][2][1] += mouseY - offsetY;
         }
+        //move HoldingEnd
+        if (HoldingEnd != -1) {
+            FreeElements[FreeElements.length - 1][2][0] = ElementPositions[HoldingEnd][0];
+        }
         offsetX = mouseX;
         offsetY = mouseY;
         //////////
         // draw //
         //////////
+        //random error removal
         if (mouseSelectionRight != -1) {
             elementLenghtAndDraw(["-", ["-"]], -100, -100);
         }
@@ -567,6 +668,7 @@ function drawScreen() {
         //Elements
         for (let ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
             let i = 0;
+            let indentation = 0;
             for (let ElementList = 0; ElementList < Elements[ElementLoadPos].length; ElementList++) {
                 //if dragElement in middle
                 if (mouseSelectionLeft == 1) {
@@ -582,7 +684,10 @@ function drawScreen() {
                         }
                     }
                 }
-                px = posx + ElementPositions[ElementLoadPos][0];
+                if ("End" == Elements[ElementLoadPos][ElementList][0]) {
+                    indentation--;
+                }
+                px = posx + ElementPositions[ElementLoadPos][0] + (indentation * 10);
                 py = posy + ElementPositions[ElementLoadPos][1] + i * blockheight;
                 textLength = elementLenghtAndDraw(Elements[ElementLoadPos][ElementList], px, py);
                 let text = Elements[ElementLoadPos][ElementList][0];
@@ -601,11 +706,25 @@ function drawScreen() {
                 //connector
                 if (ElementList != 0) {
                     pyC = (py + 4) - blockheight;
+                    if ("End" == Elements[ElementLoadPos][ElementList][0]) {
+                        px += 10;
+                    }
                     draw.polygon(ctx, drawcolorO, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]]); //connector
                     draw.polygonOutline(ctx, drawcolorAccentO, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]], 1); //connector outline}
+                    if ("End" == Elements[ElementLoadPos][ElementList][0]) {
+                        px -= 10;
+                    }
                 }
                 drawcolorO = drawcolor;
                 drawcolorAccentO = drawcolorAccent;
+                //loop connector
+                for (let x = 1; x <= indentation; x++) {
+                    draw.rect(px - (x * 10) - 5, py + 10, 10, -blockheight - 9, colors["YellowBlockAccent"], ctx);
+                    draw.rect(px - (x * 10) - 4, py + 10, 8, -blockheight - 9, colors["YellowBlock"], ctx);
+                }
+                if (["Loop", "Unendlich"].includes(Elements[ElementLoadPos][ElementList][0])) {
+                    indentation++;
+                }
                 i++;
             }
             pyC = (py + 4);
@@ -628,7 +747,6 @@ function drawScreen() {
         //Free Elements
         ctx.globalAlpha = 0.5;
         for (let FreeElementPos = 0; FreeElementPos < FreeElements.length; FreeElementPos++) {
-            let text = FreeElements[FreeElementPos][0] + " |" + FreeElements[FreeElementPos][1].join("|") + "|";
             px = FreeElements[FreeElementPos][2][0] + posx;
             py = FreeElements[FreeElementPos][2][1] + posy;
             textLength = elementLenghtAndDraw([FreeElements[FreeElementPos][0], FreeElements[FreeElementPos][1]], px, py);
@@ -756,6 +874,10 @@ function drawScreen() {
         if (mouse[0] && mouseSelectionLeft == -1) {
             if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight) {
                 Question[1][q1[Math.ceil((mouseY / blockheight) - (150 / blockheight))]]();
+                if (editType == "Question") {
+                    editType = "standartEdit";
+                }
+                Übergang = -1;
             }
             mouseSelectionLeft = -2;
         }
@@ -770,6 +892,15 @@ function drawScreen() {
         for (let x = 0; x < q1.length; x++) {
             draw.text(canvas.width / 2, 150 + x * blockheight, q1[x], "#000000", "center", ctx);
         }
+    }
+    else if (editType == "PictureEdit") {
+        //size change
+        if (sizeChange) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            sizeChange = false;
+        }
+        draw.fill(colors["background"], ctx);
     }
 }
 function cursorUpdate() {
