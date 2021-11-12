@@ -1,11 +1,11 @@
 //gen color selection Table
-var tab=document.getElementById("colorSelTable") as unknown as HTMLElement;
-for (var x=0;x<6;x++){
-    var i='<tr>';
-    for (var y=0;y<6;y++){
-        i+='<th class="ColorSelButton"></th>';
+var tab = document.getElementById("colorSelTable") as unknown as HTMLElement;
+for (var x = 0; x < 6; x++) {
+    var i = '<tr>';
+    for (var y = 0; y < 6; y++) {
+        i += '<th class="ColorSelButton" id="y' + y + "x" + x + '"></th>';
     }
-    tab.innerHTML+=i+"</tr>";
+    tab.innerHTML += i + "</tr>";
 }
 
 
@@ -34,9 +34,9 @@ let sizeChange = true;
 createUserEvents();
 
 function createUserEvents() {
-    canvas.addEventListener("mousedown", mousedown);
-    canvas.addEventListener("mouseup", mouseup);
-    canvas.addEventListener("mousemove", mousemove);
+    document.addEventListener("mousedown", mousedown);
+    document.addEventListener("mouseup", mouseup);
+    document.addEventListener("mousemove", mousemove);
     document.addEventListener("keydown", keyEvent);
     document.addEventListener("keyup", keyEvent);
 
@@ -306,14 +306,12 @@ function elementLenght(Element: [string, string[]]) {
     return l;
 }
 //Game Variables
-var editType = "PictureEdit"; //StandartEdit, PictureEdit, AnimationEdit, Question
+var editType = "PictureEdit"; //standartEdit, PictureEdit, AnimationEdit, Question
 var Question: [string, { [name: string]: Function }] = ["Frage", { "Antworten": function () { console.warn("Question without defenition"); } }]
 var Übergang = -1;
 var ÜbergangZu = "Question";
 
 let menuOpen = 0;
-var menuImg = new Image();
-menuImg.src = '/files/menu.png';
 let menuButtons: { [name: string]: Function } = { "Speichern": downloadProject, "Laden": function () { let i = document.getElementById("avatar") as HTMLElement; i.click(); }, "Hinzufügen": function () { Übergang = 1; ÜbergangZu = "Question"; menuOpen = -0.1; Question = ["Was willst du hinzufügen", { "Start": function () { ElementPositions.push([Elements.length * 400, 0]); Elements.push([["Start", [String(Elements.length)]]]); }, "Bild": function () { editType = "PictureEdit"; console.log(editType); }, "Animation": function () { console.log("Execute Animation") }, "Projekt": function () { console.log("Execute Projekt") } }] }, "Einstellungen": function () { console.log("einstellungen"); } }
 
 let sidebarSize = 250;
@@ -343,9 +341,9 @@ let colors = { "background": "#f7f7f7", "backgroundPoints": "#646464", "blueBloc
 let setYellow = ["Loop", "Unendlich", "Start", "End"];
 let setPurple = ["Bild anzeigen", "Animationen", "Laden"];
 
-var colorpickerH=0;
-var colorpickerS=0;
-var colorpickerV=0;
+var colorpickerH = 0;
+var colorpickerS = 0;
+var colorpickerV = 0;
 
 let pictures: string[] = ["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"]
 let Elements: [string, string[]][][] = [[["Start", ["0"]], ["Füllen", ["0", "255", "255"]], ["Bild anzeigen", ["0"]]]];
@@ -935,6 +933,16 @@ function drawScreen() {
             sizeChange = false;
         }
         draw.fill(colors["background"], ctx);
+
+        if (mouse[0]) {
+            if (mouseX < 64 * 6 && mouseY < 64 * 6) {
+                let x = Math.floor(mouseX / 64);
+                let y = Math.floor(mouseY / 64);
+                let a = document.getElementById("y" + x + "x" + y) as unknown as HTMLElement;
+                let bb=$("#colorpicker") as any;
+                a.style.backgroundColor = bb.spectrum("get");
+            }
+        }
     }
 }
 

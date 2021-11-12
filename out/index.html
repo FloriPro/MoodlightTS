@@ -7,7 +7,8 @@
             font-family: 'msyi';
             src: url('msyi.ttf');
         }
-        .ColorSelButton{
+
+        .ColorSelButton {
             background-color: aqua;
             width: 60px;
             height: 60px;
@@ -30,20 +31,41 @@
 
 </head>
 
-<body style="margin:0px;overflow: auto;">
-    <div style="position: fixed;">
+<body style="margin:0px;overflow: hidden;">
+    <div id="pictureEdit">
         <table>
-            <tbody id="colorSelTable">
-
+            <tbody>
+                <tr>
+                    <th>
+                        <table>
+                            <tbody id="colorSelTable">
+                            </tbody>
+                        </table>
+                    </th>
+                    <th>
+                        <input id='colorpicker' />
+                    </th>
+                </tr>
             </tbody>
         </table>
+        <script>
+            $("#colorpicker").spectrum({
+                color: "#f00",
+                preferredFormat: "hex",
+                showInitial: true,
+                showAlpha:false
+            });
+        </script>
     </div>
+
     <canvas id="canvas" style="cursor:default; margin:0px; height:100%; width:100%;" oncontextmenu="return false"
         onselectstart="return false" ondragstart="return false" id="body"></canvas>
     </div>
+
     <input type="file" id="avatar" name="avatar" accept=".moproj" style="display: none;">
 </body>
 
+<!--main script-->
 <script src="main.js"></script>
 
 </html>
