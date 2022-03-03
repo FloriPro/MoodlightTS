@@ -1,12 +1,14 @@
 "use strict";
+let moodLightSizeX = 6;
+let moodLightSizeY = 6;
 //gen color selection Table
-var tab = document.getElementById("colorSelTable");
-for (var x = 0; x < 6; x++) {
+let colorSelTable = document.getElementById('colorSelTable');
+for (var x = 0; x < moodLightSizeY; x++) {
     var i = '<tr>';
-    for (var y = 0; y < 6; y++) {
-        i += '<th class="ColorSelButton" id="y' + y + "x" + x + '"></th>';
+    for (var y = 0; y < moodLightSizeX; y++) {
+        i += '<th style="background:white" class="ColorSelContainer"><div class="ColorSelButton" style="background:black" id="y' + y + "x" + x + '"></div></th>';
     }
-    tab.innerHTML += i + "</tr>";
+    colorSelTable.innerHTML += i + "</tr>";
 }
 //utility variables
 let font = "47px msyi";
@@ -20,7 +22,14 @@ let mouseY = 500;
 let mouse = {};
 let pressedKeys = {};
 let canvas = document.getElementById('canvas');
+let colorTextOut = document.getElementById("color");
+let colorPicker = $("#colorpicker");
+let hider = document.getElementById("hider");
 let ctx = canvas.getContext("2d");
+let ProjectLoader = document.querySelector("#projectLoader");
+let latestCanvasPicStr = canvas.toDataURL("image/png");
+var latestCanvasPic = new Image;
+latestCanvasPic.src = latestCanvasPicStr;
 let c = document.getElementById("canvas");
 let sizeChange = true;
 createUserEvents();
@@ -30,7 +39,30 @@ function createUserEvents() {
     document.addEventListener("mousemove", mousemove);
     document.addEventListener("keydown", keyEvent);
     document.addEventListener("keyup", keyEvent);
+    window.addEventListener("focus", windowfocus);
+    ProjectLoader.addEventListener('change', function (e) {
+        var fileList = ProjectLoader.files;
+        console.log(fileList);
+        console.log("selected");
+        const reader = new FileReader();
+        reader.readAsText(fileList[0]);
+        reader.addEventListener('load', (event) => {
+            console.log("parsing...");
+            var jsonLoad = JSON.parse(event.target.result);
+            console.log("saving...");
+            Elements = jsonLoad.Elements;
+            pictures = jsonLoad.pictures;
+            ElementPositions = jsonLoad.ElementPositions;
+            FreeElements = jsonLoad.FreeElements;
+            animations = jsonLoad.animations;
+            ProjectLoader.value = '';
+            console.log("FINISH!");
+        });
+    });
     window.onresize = resize;
+    function windowfocus() {
+        pressedKeys = {};
+    }
     function mousemove(e) {
         mouseX = e.changedTouches ?
             e.changedTouches[0].pageX :
@@ -40,15 +72,19 @@ function createUserEvents() {
             e.pageY;
     }
     function mousedown(e) {
-        e.preventDefault();
+        if (e.button == 1 || e.button == 2) {
+            e.preventDefault();
+        }
         mouse[e.button] = true;
         offsetX = mouseX;
         offsetY = mouseY;
+        return true;
     }
     function mouseup(e) {
         mouse[e.button] = false;
         if (e.button == 0) {
         }
+        return true;
     }
     function keyEvent(e) {
         if (e.key == "Alt" || e.key == "Tab") {
@@ -66,10 +102,10 @@ function createUserEvents() {
         }
         else {
             if (e.type == "keyup") {
-                pressedKeys[e.key] = false;
+                pressedKeys[e.key.toLowerCase()] = false;
             }
             if (e.type == "keydown") {
-                pressedKeys[e.key] = true;
+                pressedKeys[e.key.toLowerCase()] = true;
             }
         }
     }
@@ -109,23 +145,14 @@ function onMessageArrived(message) {
     console.log("onMessageArrived:" + message.payloadString);
 }
 function send(dat) {
-    var rawString = encodeURIComponent(dat);
-    var formData = { topic: myTopic, user: myUser, password: myPass };
-    var settings = {
-        url: "http://dyn.hotti.info/fabuser/ml6/setcolor.php?c=" + rawString,
-        method: "POST",
-        data: formData,
-        timeout: 1000,
-        crossDomain: true,
-        retries: 0,
-        success: function (result) {
-            console.log("Success!");
-            console.log(result);
-        }
-    };
-    $.ajax(settings);
+    var message = new Paho.MQTT.Message(dat);
+    message.destinationName = myTopic;
+    client.send(message);
 }
 class drawApp {
+    image(image, posx, posy) {
+        ctx.drawImage(image, posx, posy);
+    }
     rect(posx, posy, width, height, color, ctx) {
         ctx.fillStyle = color;
         ctx.beginPath();
@@ -183,9 +210,9 @@ class drawApp {
     polygon(ctx, color, pos) {
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.moveTo(pos[0][0], pos[0][1]);
+        ctx.moveTo(pos[0][0] + posx, pos[0][1] + posy);
         for (var i = 0; i < pos.length; i++) {
-            ctx.lineTo(pos[i][0], pos[i][1]);
+            ctx.lineTo(pos[i][0] + posx, pos[i][1] + posy);
         }
         ctx.fill();
         ctx.closePath();
@@ -194,13 +221,46 @@ class drawApp {
     polygonOutline(ctx, color, pos, width) {
         ctx.strokeStyle = color;
         ctx.beginPath();
-        ctx.moveTo(pos[0][0], pos[0][1]);
+        ctx.moveTo(pos[0][0] + posx, pos[0][1] + posy);
         for (var i = 0; i < pos.length; i++) {
-            ctx.lineTo(pos[i][0], pos[i][1]);
+            ctx.lineTo(pos[i][0] + posx, pos[i][1] + posy);
         }
         ctx.lineWidth = width;
         ctx.stroke();
         ctx.closePath();
+    }
+    ;
+}
+let ToDraw = [];
+class drawAdder {
+    image(image, posx, posy) {
+        ToDraw.push({ "image": [image, posx, posy, ctx.globalAlpha] });
+    }
+    rect(posx, posy, width, height, color, ctx) {
+        ToDraw.push({ "rect": [posx, posy, width, height, color, ctx, ctx.globalAlpha] });
+    }
+    ;
+    roundedRect(posx, posy, width, height, color, radius, ctx) {
+        ToDraw.push({ "roundedRect": [posx, posy, width, height, color, radius, ctx, ctx.globalAlpha] });
+    }
+    circle(posx, posy, radius, color, ctx) {
+        ToDraw.push({ "circle": [posx, posy, radius, color, ctx, ctx.globalAlpha] });
+    }
+    ;
+    fill(color, ctx) {
+        ToDraw.push({ "fill": [color, ctx, ctx.globalAlpha] });
+    }
+    ;
+    text(posx, posy, Text, color, align, ctx) {
+        ToDraw.push({ "text": [posx, posy, Text, color, align, ctx, ctx.globalAlpha] });
+    }
+    ;
+    polygon(ctx, color, pos) {
+        ToDraw.push({ "polygon": [ctx, color, pos, ctx.globalAlpha] });
+    }
+    ;
+    polygonOutline(ctx, color, pos, width) {
+        ToDraw.push({ "polygonOutline": [ctx, color, pos, width, ctx.globalAlpha] });
     }
     ;
 }
@@ -268,12 +328,17 @@ function elementLenghtAndDraw(Element, plx, ply) {
         if (t == "") {
             t = " ";
         }
-        l += ctx.measureText(t).width;
+        if (Element[0] in specialRender && x in specialRender[Element[0]]) {
+            l += specialRender[Element[0]][x][0];
+        }
+        else {
+            l += ctx.measureText(t).width;
+        }
         l += 5;
     }
     draw.roundedRect(plx, ply, l, -(blockheight - 10), drawcolorAccent, 10, ctx); //body outline
     draw.roundedRect(plx + 1, ply - 1, l - 2, -blockheight + 12, drawcolor, 10, ctx); //body
-    draw.text(plx, ply, text, "#000000", "left", ctx);
+    draw.text(plx, ply, text, colors["NormalText"], "left", ctx);
     l = ctx.measureText(text).width + 7;
     for (let x = 0; x < Element[1].length; x++) {
         let t = Element[1][x];
@@ -281,10 +346,16 @@ function elementLenghtAndDraw(Element, plx, ply) {
             t = " ";
         }
         l += 5;
-        draw.roundedRect(plx + l + 2, ply - 5, ctx.measureText(t).width - 4, -(blockheight - 10) + 10, "#ffffff", 10, ctx); //body outline
-        draw.text(plx + l, ply, t, "#000000", "left", ctx);
+        if (Element[0] in specialRender && x in specialRender[Element[0]]) {
+            specialRender[Element[0]][x][1](Element[1][x], plx + l - 5, ply - 22 - 5);
+            l += specialRender[Element[0]][x][0];
+        }
+        else {
+            draw.roundedRect(plx + l + 2, ply - 5, ctx.measureText(t).width - 4, -(blockheight - 10) + 10, "#ffffff", 10, ctx); //body outline
+            draw.text(plx + l, ply, t, colors["NormalText"], "left", ctx);
+            l += ctx.measureText(t).width;
+        }
         l += 5;
-        l += ctx.measureText(t).width;
     }
     return l;
 }
@@ -298,20 +369,60 @@ function elementLenght(Element) {
         if (t == "") {
             t = " ";
         }
-        l += ctx.measureText(t).width;
+        if (Element[0] in specialRender && x in specialRender[Element[0]]) {
+            l += specialRender[Element[0]][x][0];
+        }
+        else {
+            l += ctx.measureText(t).width;
+        }
         l += 5;
     }
     return l;
 }
 //Game Variables
-var editType = "PictureEdit"; //standartEdit, PictureEdit, AnimationEdit, Question
-var Question = ["Frage", { "Antworten": function () { console.warn("Question without defenition"); } }];
+var comesFrom = "";
+var editType = "standartEdit"; //standartEdit, PictureEdit, Question, Settings
+var Question = ["Frage ERROR", { "Antworten": function () { console.warn("Question without defenition"); } }];
 var Übergang = -1;
 var ÜbergangZu = "Question";
 let menuOpen = 0;
-let menuButtons = { "Speichern": downloadProject, "Laden": function () { let i = document.getElementById("avatar"); i.click(); }, "Hinzufügen": function () { Übergang = 1; ÜbergangZu = "Question"; menuOpen = -0.1; Question = ["Was willst du hinzufügen", { "Start": function () { ElementPositions.push([Elements.length * 400, 0]); Elements.push([["Start", [String(Elements.length)]]]); }, "Bild": function () { editType = "PictureEdit"; console.log(editType); }, "Animation": function () { console.log("Execute Animation"); }, "Projekt": function () { console.log("Execute Projekt"); } }]; }, "Einstellungen": function () { console.log("einstellungen"); } };
+let menuButtons = {
+    "Speichern": downloadProject,
+    "Laden": function () { console.log("clickedLoad"); ProjectLoader.click(); },
+    "Hinzufügen": function () {
+        goTo("Question", 1);
+        menuOpen = -0.1;
+        Question = ["Was willst du hinzufügen", {
+                "Start": function () { ElementPositions.push([Elements.length * 400, 0]); Elements.push([["Start", [String(Elements.length)]]]); },
+                "Bild": function () { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); pictureId = pictures.length; pictures.push("000000".repeat(32)); },
+                "Animation": function () { console.log("Execute Animation"); },
+                "Projekt": function () { console.log("Execute Projekt"); },
+            }];
+    },
+    "Bearbeiten": function () {
+        goTo("Question", 1);
+        menuOpen = -0.1;
+        Question = ["Was willst du bearbeiten", {
+                "_P0": function () { goTo("PictureEdit", 0); mouse[0] = false; pictureId = 0; loadPicture(0); },
+            }];
+    },
+    "Einstellungen": function () { goTo("Settings", 1); }
+};
+let menuWidth = 150;
+let pictureId = -1;
+/**
+123456
+789abc
+defghi
+jklmno
+pqrstu
+vwxyz.
+*/
+let pictureValues = [];
+resetPicEdit();
 let sidebarSize = 250;
 let sidebarFadeIn = 100;
+let sidebarFadeInTimer = 0;
 let textLength = 0;
 let mouseSelectionLeft = -1;
 let mouseDataLeft = -1;
@@ -320,35 +431,151 @@ let mouseSelectionRight = -1;
 let mouseDataRight = [-1, -1];
 let EditMenuEdeting = -1;
 mqttConstructor();
-let draw = new drawApp();
+let draw = new drawAdder();
+let drawReal = new drawApp();
 let util = new Utilitys();
-const available = [["Wait", ["0"]], ["Laden", ["0"]], ["Text", ["Text", "10"]], ["Uhrzeit", ["10"]], ["Bild anzeigen", ["0", "0"]], ["Animationen", ["0", "0", "10"]], ["Füllen", ["0", "0", "0"]], ["Loop", ["2"]], ["Unendlich", []], ["Custom", [""]]];
-const description = [["Wait", ["Sekunden"]], ["Laden", ["Nummer"]], ["Text", ["Text", "Geschwindigkeit"]], ["Uhrzeit", ["Geschwindigkeit"]], ["Bild anzeigen", ["[Bild]", "Übergangszeit"]], ["Animationen", ["[Animation]", "Übergangszeit", "Wartezeit"]], ["Füllen", ["R", "G", "B"]], ["Loop", ["Wiederholungen"]], ["Unendlich", []], ["Custom", ["Code"]]];
-let notDragable = ["Start"];
-let dropdownMenuButtons = { "Bild anzeigen": { "Bearbeiten": function () { console.log("Bearbeiten"); }, "Anzeigen": function () { console.log("Anzeigen"); } }, "Animationen": { "Bearbeiten": function () { console.log("Bearbeiten"); } } };
-let colors = { "background": "#f7f7f7", "backgroundPoints": "#646464", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac" };
+const errorImg = "000000ff0000ff00ff000000ff0000ff00ff000000000000ff00ffff0000000000ff00ffff0000ff00ff000000ff0000ff00ffff0000ff00ffff0000000000ff00ffff0000000000ff00ff000000ff0000ff00ff000000ff0000000000ff00ffff0000000000ff00ffff0000";
+const available = [["Wait", ["0.25"]], ["Laden", ["0"]], ["Text", ["Text", "10"]], ["Uhrzeit", ["10"]], ["Bild anzeigen", ["0", "0"]], ["Animationen", ["0", "0", "10"]], ["Füllen", ["0", "0", "0"]], ["Loop", ["2"]], ["Unendlich", []], ["Custom", [""]]];
+const description = { "Wait": ["Sekunden"], "Laden": ["Nummer"], "Text": ["Text", "Geschwindigkeit"], "Uhrzeit": ["Geschwindigkeit"], "Bild anzeigen": ["[Bild-id]", "Übergangszeit"], "Animationen": ["[Animation]", "Übergangszeit", "Wartezeit"], "Füllen": ["R", "G", "B"], "Loop": ["Wiederholungen"], "Custom": ["Code"] };
+const notDragable = ["Start"];
+const dropdownMenuButtons = { "Bild anzeigen": { "Bearbeiten": function () { console.log("Bearbeiten"); }, "Anzeigen": function () { console.log("Anzeigen"); } }, "Animationen": { "Bearbeiten": function () { console.log("Bearbeiten"); } } };
+const specialRender = {
+    "Bild anzeigen": {
+        0: [24, function (inputNum, posx, posy) { renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2, posy - 2, draw); }]
+    },
+};
+let colors = { "background": "#fcfcfc", "backgroundPoints": "#646464", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff" };
 let setYellow = ["Loop", "Unendlich", "Start", "End"];
 let setPurple = ["Bild anzeigen", "Animationen", "Laden"];
-var colorpickerH = 0;
-var colorpickerS = 0;
-var colorpickerV = 0;
 let pictures = ["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"];
-let Elements = [[["Start", ["0"]], ["Füllen", ["0", "255", "255"]], ["Bild anzeigen", ["0"]]]];
+let animations = [[]];
+let Elements = [[["Start", ["0"]]]];
 let ElementPositions = [[0, 0]];
-let FreeElements = [["Füllen", ["255", "255", "0"], [300, 300]], ["Füllen", ["255", "255", "0"], [600, 300]]];
+let FreeElements = [];
 let drawcolor = "";
 let drawcolorAccent = "";
 let drawcolorO = "";
 let drawcolorAccentO = "";
 let backgroundPointSize = 50;
+let cursorMessage = "";
 let offsetX = 0;
 let offsetY = 0;
-let posx = 100;
+let posx = 300;
 let posy = 100;
 let px = 0;
 let py = 0;
 let pyC = 0;
+let maxOutsideBounds = 500;
 let blockheight = 38;
+function renderPicture(picString, sizeX, sizeY, posx, posy, drawer) {
+    posx = Math.floor(posx);
+    posy = Math.floor(posy);
+    var dat = pictureString2Value(picString);
+    for (var i = 0; i < moodLightSizeY; i++) {
+        for (var ii = 0; ii < moodLightSizeX; ii++) {
+            drawer.rect(posx + i * (sizeX / moodLightSizeY), posy + ii * (sizeY / moodLightSizeX), sizeX / moodLightSizeY, sizeY / moodLightSizeX, "#" + dat[ii * moodLightSizeY + i], ctx);
+        }
+    }
+}
+function pictureString2Value(input) {
+    try {
+        var out = [];
+        for (var i = 0; i < moodLightSizeY; i++) {
+            if (i % 2 == 0) {
+                for (var ii = 0; ii < moodLightSizeX; ii++) {
+                    var s = i * moodLightSizeY + ii;
+                    out.push(input.substring(s * 6, s * 6 + 6));
+                }
+            }
+            else {
+                for (var ii = moodLightSizeX - 1; ii >= 0; ii--) {
+                    var s = i * moodLightSizeY + ii;
+                    out.push(input.substring(s * 6, s * 6 + 6));
+                }
+            }
+        }
+    }
+    catch (_a) {
+        out = pictureString2Value(errorImg);
+    }
+    return out;
+}
+function pictureValue2String(input) {
+    var out = "";
+    for (var i = 0; i < moodLightSizeY; i++) {
+        if (i % 2 == 0) {
+            for (var ii = 0; ii < moodLightSizeX; ii++) {
+                out = out + input[i * moodLightSizeY + ii];
+            }
+        }
+        else {
+            for (var ii = moodLightSizeX - 1; ii >= 0; ii--) {
+                out = out + input[i * moodLightSizeY + ii];
+            }
+        }
+    }
+    return out;
+}
+function finishPicture() {
+    if (pictureId != -1) {
+        var i = 0;
+        while (pictures.length <= pictureId && i < 100) {
+            pictures.push("000000".repeat(32));
+            i++;
+        }
+        pictures[pictureId] = pictureValue2String(pictureValues); //pictureValues.join("");
+        pictureId = -1;
+        //return to main edit
+        goTo("standartEdit", 0);
+    }
+    else {
+        alert("Something went wrong: No ID!");
+    }
+}
+/**
+* type: 0=fadein+fadeout; 1=cut
+*/
+function goTo(übergangTo, type) {
+    latestCanvasPicStr = canvas.toDataURL("image/png");
+    latestCanvasPic.src = latestCanvasPicStr;
+    comesFrom = editType;
+    if (type == 0) {
+        Übergang = 1;
+        ÜbergangZu = übergangTo;
+    }
+    else if (type == 1) {
+        editType = übergangTo;
+    }
+}
+function hexstr(number) {
+    var chars = new Array("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f");
+    var low = number & 0xf;
+    var high = (number >> 4) & 0xf;
+    return "" + chars[high] + chars[low];
+}
+function rgb2hex(r, g, b) {
+    return hexstr(Math.round(r)) + hexstr(Math.round(g)) + hexstr(Math.round(b));
+}
+function resetPicEdit() {
+    var elem = document.getElementsByClassName("ColorSelButton");
+    pictureValues = [];
+    for (var x = 0; x < elem.length; x++) {
+        pictureValues.push("000000");
+        var e = elem[x];
+        e.style.background = "black";
+    }
+}
+function loadPicture(id) {
+    var dat = pictureString2Value(pictures[id]);
+    pictureValues = dat;
+    for (var x = 0; x < moodLightSizeX; x++) {
+        for (var y = 0; y < moodLightSizeY; y++) {
+            console.log("y" + y + "x" + x);
+            var d = document.getElementById("y" + y + "x" + x);
+            d.style.background = "#" + dat[x * moodLightSizeY + y];
+        }
+    }
+}
 function download(content, mimeType, filename) {
     const a = document.createElement('a');
     const blob = new Blob([content], { type: mimeType });
@@ -363,29 +590,97 @@ function downloadProject() {
         filename = "Unnamed";
     }
     filename = filename + ".moproj";
-    let myJSON = JSON.stringify({ "Elements": Elements, "pictures": pictures, "ElementPositions": ElementPositions, "FreeElements": FreeElements });
+    let myJSON = JSON.stringify({ "Elements": Elements, "pictures": pictures, "ElementPositions": ElementPositions, "FreeElements": FreeElements, "animations": animations });
     download(myJSON, "text", filename);
 }
 function drawScreen() {
+    var px = 0;
+    if (editType == "standartEdit") {
+        px = posx;
+    }
+    var py = 0;
+    if (editType == "standartEdit") {
+        py = posy;
+    }
+    ToDraw.forEach(value => {
+        var key = Object.keys(value)[0];
+        if (key == "rect") {
+            var i = value[key];
+            ctx.globalAlpha = i[i.length - 1];
+            drawReal.rect(i[0] + px, i[1] + py, i[2], i[3], i[4], i[5]);
+        }
+        else if (key == "roundedRect") {
+            var i = value[key];
+            ctx.globalAlpha = i[i.length - 1];
+            drawReal.roundedRect(i[0] + px, i[1] + py, i[2], i[3], i[4], i[5], i[6]);
+        }
+        else if (key == "circle") {
+            var i = value[key];
+            ctx.globalAlpha = i[i.length - 1];
+            drawReal.circle(i[0] + px, i[1] + py, i[2], i[3], i[4]);
+        }
+        else if (key == "fill") {
+            var i = value[key];
+            ctx.globalAlpha = i[i.length - 1];
+            drawReal.fill(i[0], i[1]);
+        }
+        else if (key == "text") {
+            var i = value[key];
+            ctx.globalAlpha = i[i.length - 1];
+            drawReal.text(i[0] + px, i[1] + py, i[2], i[3], i[4], i[5]);
+        }
+        else if (key == "polygon") {
+            var i = value[key];
+            ctx.globalAlpha = i[i.length - 1];
+            drawReal.polygon(i[0], i[1], i[2]);
+        }
+        else if (key == "polygonOutline") {
+            var i = value[key];
+            ctx.globalAlpha = i[i.length - 1];
+            drawReal.polygonOutline(i[0], i[1], i[2], i[3]);
+        }
+        else if (key == "image") {
+            var i = value[key];
+            ctx.globalAlpha = i[i.length - 1];
+            drawReal.image(i[0], i[1], i[2]);
+        }
+    });
+    harddraw();
+    if (cursorMessage != "" && cursorMessage != undefined) {
+        drawReal.rect(mouseX, mouseY, ctx.measureText(cursorMessage).width, 35, "#bebebe", ctx);
+        drawReal.text(mouseX, mouseY + 30, cursorMessage, colors["NormalText"], "left", ctx);
+    }
+}
+function updateScreen() {
+    var update = updatefunction();
+    ctx.globalAlpha = 1;
+    if (update) {
+        updateRects();
+    }
+}
+function updatefunction() {
+    //size change
+    if (sizeChange) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        sizeChange = false;
+    }
+    if (Übergang >= 1) {
+        Übergang += 1;
+    }
+    if (Übergang >= 50) {
+        Übergang = -1;
+        hider.style.opacity = "0%";
+    }
+    var update = false;
     if (editType == "standartEdit") {
         ////////////
         // Update //
         ////////////
-        if (Übergang >= 1) {
-            Übergang += 1;
-        }
-        if (Übergang >= 70) {
-            editType = ÜbergangZu;
-        }
-        //size change
-        if (sizeChange) {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            sizeChange = false;
-        }
         // mouseSelectionLeft types: 0=move Screen; 1=move Elements; -2=none;
         //right mouse click
         if (mouse[2] && (mouseSelectionRight == -1 || mouseSelectionRight == 0) && HoldingEnd == -1) {
+            update = true;
             let c = true;
             for (let ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
                 for (let ElementList = 0; ElementList < Elements[ElementLoadPos].length; ElementList++) {
@@ -410,6 +705,7 @@ function drawScreen() {
         }
         //left mouse click
         if (mouse[0] && mouseSelectionLeft == -1 && HoldingEnd == -1) {
+            update = true;
             //if EditMenu closed
             if (mouseSelectionRight == -1) {
                 //open Menu
@@ -485,7 +781,7 @@ function drawScreen() {
                                     mouseDataLeft = FreeElements.length;
                                     let i = Elements[ElementLoadPos][ElementList];
                                     FreeElements.push([[...Elements[ElementLoadPos][ElementList][0]].join(""), [...Elements[ElementLoadPos][ElementList][1]], [mouseX - posx, mouseY - posy]]);
-                                    if (!keyDown("Alt")) {
+                                    if (!keyDown("alt")) {
                                         //search End
                                         if (["Loop", "Unendlich"].includes(Elements[ElementLoadPos][ElementList][0])) {
                                             let it = ElementList;
@@ -505,6 +801,9 @@ function drawScreen() {
                                         else {
                                             Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList);
                                         }
+                                    }
+                                    else {
+                                        console.log("ALT");
                                     }
                                 }
                                 break;
@@ -543,6 +842,7 @@ function drawScreen() {
         }
         //left mouse let go
         if (mouseSelectionLeft != -1 && !mouse[0] && HoldingEnd == -1) {
+            update = true;
             //remove Element
             if (mouseX < sidebarSize && mouseSelectionLeft == 1) {
                 FreeElements = removeItem(FreeElements, mouseDataLeft);
@@ -591,6 +891,7 @@ function drawScreen() {
         }
         //HoldingEnd let go
         if (mouseSelectionLeft != -1 && !mouse[0] && HoldingEnd != -1) {
+            update = true;
             if (ElementPositions[HoldingEnd][0] - 50 < FreeElements[mouseDataLeft][2][0] && ElementPositions[HoldingEnd][0] + 200 > FreeElements[mouseDataLeft][2][0]) {
                 //if not over max len or below
                 if (FreeElements[mouseDataLeft][2][1] > ElementPositions[HoldingEnd][1] + (blockheight - 20) && FreeElements[mouseDataLeft][2][1] < ElementPositions[HoldingEnd][1] + blockheight * (Elements[HoldingEnd].length + 1)) {
@@ -636,6 +937,7 @@ function drawScreen() {
         }
         //move Free Element
         if (mouseSelectionLeft == 1 && !mouse[1]) {
+            update = true;
             FreeElements[mouseDataLeft][2][0] += mouseX - offsetX;
             FreeElements[mouseDataLeft][2][1] += mouseY - offsetY;
         }
@@ -645,6 +947,134 @@ function drawScreen() {
         }
         offsetX = mouseX;
         offsetY = mouseY;
+        if (mouseSelectionRight == 1) {
+            update = true;
+        }
+    }
+    else {
+        update = true;
+    }
+    if (Übergang != -1) {
+        update = true;
+    }
+    return update;
+}
+function harddraw() {
+    if (editType == "standartEdit") {
+        //Object sidebar
+        if (mouseX < (sidebarSize + sidebarFadeIn) || sidebarFadeInTimer >= 0.05) {
+            let mul = ((sidebarFadeIn - (mouseX - sidebarSize)) / sidebarFadeIn);
+            if (mul > 1) {
+                mul = 1;
+            }
+            if (mul > sidebarFadeInTimer) {
+                sidebarFadeInTimer += 0.05;
+            }
+            if (mul < sidebarFadeInTimer) {
+                sidebarFadeInTimer -= 0.05;
+            }
+            ctx.globalAlpha = 0.5 * sidebarFadeInTimer;
+            drawReal.rect(0, 0, sidebarSize, canvas.height, "#c0c0c0", ctx);
+            ctx.globalAlpha = sidebarFadeInTimer;
+            for (let i = 0; i < available.length; i++) {
+                let text = available[i][0];
+                textLength = ctx.measureText(text).width;
+                px = 10;
+                py = i * (blockheight + 10) + blockheight;
+                if (setYellow.indexOf(text) != -1) {
+                    drawcolor = colors["YellowBlock"];
+                    drawcolorAccent = colors["YellowBlockAccent"];
+                }
+                else if (setPurple.indexOf(text) != -1) {
+                    drawcolor = colors["PurpleBlock"];
+                    drawcolorAccent = colors["PurpleBlockAccent"];
+                }
+                else {
+                    drawcolor = colors["blueBlock"];
+                    drawcolorAccent = colors["blueBlockAccent"];
+                }
+                drawReal.roundedRect(px, py, textLength, -(blockheight - 10), drawcolorAccent, 10, ctx); //body outline
+                drawReal.roundedRect(px + 1, py - 1, textLength - 2, -blockheight + 12, drawcolor, 10, ctx); //body
+                drawReal.text(px, py, text, colors["NormalText"], "left", ctx);
+                py += 4;
+                py -= posy;
+                px -= posx;
+                drawReal.polygon(ctx, drawcolor, [[px + 0, py + 0], [px + 5, py + 7], [px + 15, py + 7], [px + 20, py + 0]]); //connector
+                drawReal.polygonOutline(ctx, drawcolorAccent, [[px + 0, py + 0], [px + 5, py + 7], [px + 15, py + 7], [px + 20, py + 0]], 1); //connector outline
+            }
+            ctx.globalAlpha = 1;
+        }
+        else {
+            sidebarFadeInTimer = 0;
+        }
+        //Menu
+        ctx.globalAlpha = 1;
+        let mOpen = menuOpen;
+        if (mOpen < 0) {
+            mOpen = 1 + mOpen;
+        }
+        if (mOpen != 0) {
+            if (mOpen > 1) {
+                mOpen = 1;
+                menuOpen = 1;
+            }
+            ctx.globalAlpha = 0.7 * mOpen;
+            drawReal.rect(canvas.width - (menuWidth + (100 * mOpen)), 0, menuWidth + (100 * mOpen), canvas.height * mOpen, colors["MenuBackground"], ctx);
+            let k = Object.keys(menuButtons);
+            ctx.globalAlpha = mOpen;
+            for (let x = 0; x < k.length; x++) {
+                drawReal.text(canvas.width - 10, 90 + x * 35, k[x], colors["MenuText"], "right", ctx);
+            }
+            if (menuOpen > 0 && menuOpen < 1) {
+                menuOpen += 0.05;
+            }
+            if (menuOpen < 0) {
+                menuOpen -= 0.05;
+            }
+            if (menuOpen <= -1) {
+                menuOpen = 0;
+            }
+            ctx.globalAlpha = 1;
+        }
+        let r = 30;
+        let s = 30;
+        for (let x = 0; x < 3; x++) {
+            px = canvas.width - s - r / 2;
+            py = 0 + r / 2 + (x * (s / 2));
+            drawReal.roundedRect(px, py, s, 1, colors["MenuButtons"], 5, ctx);
+        }
+    }
+    //keysDown debug
+    let k = Object.keys(pressedKeys);
+    let i = 0;
+    for (let x = 0; x < k.length; x++) {
+        if (pressedKeys[k[x]]) {
+            drawReal.text(0, i * 35 + 35, k[x], colors["NormalText"], "left", ctx);
+            i++;
+        }
+    }
+}
+function checkDisplay() {
+    var _a, _c;
+    if (editType != "PictureEdit") {
+        if (((_a = document.getElementById("pictureEdit")) === null || _a === void 0 ? void 0 : _a.style.display) == "") {
+            $("#pictureEdit").css("display", "none");
+        }
+    }
+    else {
+        if (((_c = document.getElementById("pictureEdit")) === null || _c === void 0 ? void 0 : _c.style.display) == "none") {
+            $("#pictureEdit").css("display", "");
+        }
+    }
+}
+function updateRects() {
+    ToDraw = [];
+    //if (!document.hasFocus()) {
+    //    return;
+    //}
+    if (editType == "standartEdit") {
+        checkDisplay();
+        //updatefunction();
         //////////
         // draw //
         //////////
@@ -654,15 +1084,15 @@ function drawScreen() {
         }
         //background
         draw.fill(colors["background"], ctx);
-        for (let x = 0; x < (canvas.width) / backgroundPointSize; x++) {
+        /*for (let x = 0; x < (canvas.width) / backgroundPointSize; x++) {
             for (let y = 0; y < (canvas.height) / backgroundPointSize; y++) {
-                let px = x * backgroundPointSize + posx;
-                px = util.normalize(px, 0, canvas.width);
-                let py = y * backgroundPointSize + posy;
-                py = util.normalize(py, 0, canvas.height);
+                let px = x * backgroundPointSize;
+                px = util.normalize(px, 0, canvas.width)
+                let py = y * backgroundPointSize;
+                py = util.normalize(py, 0, canvas.height)
                 draw.rect(px - 5, py - 5, 2, 2, colors["backgroundPoints"], ctx);
             }
-        }
+        }*/
         //Elements
         for (let ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
             let i = 0;
@@ -685,8 +1115,8 @@ function drawScreen() {
                 if ("End" == Elements[ElementLoadPos][ElementList][0]) {
                     indentation--;
                 }
-                px = posx + ElementPositions[ElementLoadPos][0] + (indentation * 10);
-                py = posy + ElementPositions[ElementLoadPos][1] + i * blockheight;
+                px = ElementPositions[ElementLoadPos][0] + (indentation * 10);
+                py = ElementPositions[ElementLoadPos][1] + i * blockheight;
                 textLength = elementLenghtAndDraw(Elements[ElementLoadPos][ElementList], px, py);
                 let text = Elements[ElementLoadPos][ElementList][0];
                 if (setYellow.indexOf(text) != -1) {
@@ -745,29 +1175,29 @@ function drawScreen() {
         //Free Elements
         ctx.globalAlpha = 0.5;
         for (let FreeElementPos = 0; FreeElementPos < FreeElements.length; FreeElementPos++) {
-            px = FreeElements[FreeElementPos][2][0] + posx;
-            py = FreeElements[FreeElementPos][2][1] + posy;
+            px = FreeElements[FreeElementPos][2][0];
+            py = FreeElements[FreeElementPos][2][1];
             textLength = elementLenghtAndDraw([FreeElements[FreeElementPos][0], FreeElements[FreeElementPos][1]], px, py);
             //draw.roundedRect(px, py, textLength, -(blockheight - 10), drawcolorAccent, 10, ctx) //body outline
             //draw.roundedRect(px + 1, py - 1, textLength - 2, -blockheight + 12, drawcolor, 10, ctx) //body
             pyC = (py + 4);
             draw.polygon(ctx, drawcolor, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]]); //connector
             draw.polygonOutline(ctx, drawcolorAccent, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]], 1); //connector outline
-            //draw.text(px, py, text, "#000000", "left", ctx);
+            //draw.text(px, py, text, colors["NormalText"], "left", ctx);
         }
         ctx.globalAlpha = 1;
         //EditMenu
         if (mouseSelectionRight != -1) {
             let hei = Elements[mouseDataRight[0]][mouseDataRight[1]][1].length;
-            let px = ElementPositions[mouseDataRight[0]][0] + posx;
-            let py = ElementPositions[mouseDataRight[0]][1] + mouseDataRight[1] * blockheight + posy;
+            let px = ElementPositions[mouseDataRight[0]][0];
+            let py = ElementPositions[mouseDataRight[0]][1] + mouseDataRight[1] * blockheight;
             draw.polygon(ctx, colors["EditMenu"], [[px, py + 20], [px + 20, py + 20], [px + 30, py + 5], [px + 40, py + 20], [px + 250, py + 20], [px + 250, py + (hei * blockheight) + 20], [px, py + (hei * blockheight) + 20]]); //dropdownMenu
             draw.polygonOutline(ctx, colors["EditMenuAccent"], [[px, py + 20], [px + 20, py + 20], [px + 30, py + 5], [px + 40, py + 20], [px + 250, py + 20], [px + 250, py + (hei * blockheight) + 20], [px, py + (hei * blockheight) + 20], [px, py + 20]], 1); //dropdownMenu
             font = "35px msyi";
             for (let x = 0; x < hei; x++) {
-                draw.text(px, py + x * blockheight + blockheight + 10, Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], "#000000", "left", ctx);
+                draw.text(px, py + x * blockheight + blockheight + 10, Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], colors["NormalText"], "left", ctx);
                 if (x == EditMenuEdeting) {
-                    draw.rect(px + ctx.measureText(Elements[mouseDataRight[0]][mouseDataRight[1]][1][x]).width, py + x * blockheight + blockheight + 15, 0.75, -30, "#000000", ctx);
+                    draw.rect(px + ctx.measureText(Elements[mouseDataRight[0]][mouseDataRight[1]][1][x]).width, py + x * blockheight + blockheight + 15, 0.75, -30, colors["NormalText"], ctx);
                 }
                 if (x != hei - 1) {
                     draw.rect(px, py + x * blockheight + blockheight + 20, 250, 1, colors["EditMenuAccent"], ctx);
@@ -775,145 +1205,123 @@ function drawScreen() {
             }
             font = "47px msyi";
         }
-        //new Object
-        if (mouseX < (sidebarSize + sidebarFadeIn)) {
-            let mul = ((sidebarFadeIn - (mouseX - sidebarSize)) / sidebarFadeIn);
-            if (mul > 1) {
-                mul = 1;
-            }
-            ctx.globalAlpha = 0.5 * mul;
-            draw.rect(0, 0, sidebarSize, canvas.height, "#c0c0c0", ctx);
-            ctx.globalAlpha = mul;
-            for (let i = 0; i < available.length; i++) {
-                let text = available[i][0];
-                textLength = ctx.measureText(text).width;
-                px = 10;
-                py = i * (blockheight + 10) + blockheight;
-                if (setYellow.indexOf(text) != -1) {
-                    drawcolor = colors["YellowBlock"];
-                    drawcolorAccent = colors["YellowBlockAccent"];
-                }
-                else if (setPurple.indexOf(text) != -1) {
-                    drawcolor = colors["PurpleBlock"];
-                    drawcolorAccent = colors["PurpleBlockAccent"];
-                }
-                else {
-                    drawcolor = colors["blueBlock"];
-                    drawcolorAccent = colors["blueBlockAccent"];
-                }
-                draw.roundedRect(px, py, textLength, -(blockheight - 10), drawcolorAccent, 10, ctx); //body outline
-                draw.roundedRect(px + 1, py - 1, textLength - 2, -blockheight + 12, drawcolor, 10, ctx); //body
-                py += 4;
-                draw.polygon(ctx, drawcolor, [[px + 0, py + 0], [px + 5, py + 7], [px + 15, py + 7], [px + 20, py + 0]]); //connector
-                draw.polygonOutline(ctx, drawcolorAccent, [[px + 0, py + 0], [px + 5, py + 7], [px + 15, py + 7], [px + 20, py + 0]], 1); //connector outline
-                draw.text(px, py - 4, text, "#000000", "left", ctx);
-            }
-            ctx.globalAlpha = 1;
-        }
-        //Menu
-        let mOpen = menuOpen;
-        if (mOpen < 0) {
-            mOpen = 1 + mOpen;
-        }
-        if (mOpen != 0) {
-            if (mOpen > 1) {
-                mOpen = 1;
-                menuOpen = 1;
-            }
-            ctx.globalAlpha = 0.7 * mOpen;
-            draw.rect(canvas.width - (150 + (100 * mOpen)), 0, 150 + (100 * mOpen), canvas.height * mOpen, "#000000", ctx);
-            let k = Object.keys(menuButtons);
-            ctx.globalAlpha = mOpen;
-            for (let x = 0; x < k.length; x++) {
-                draw.text(canvas.width - 10, 90 + x * 35, k[x], "#ffffff", "right", ctx);
-            }
-            if (menuOpen > 0 && menuOpen < 1) {
-                menuOpen += 0.05;
-            }
-            if (menuOpen < 0) {
-                menuOpen -= 0.05;
-            }
-            if (menuOpen <= -1) {
-                menuOpen = 0;
-            }
-            ctx.globalAlpha = 1;
-        }
-        let r = 30;
-        let s = 30;
-        for (let x = 0; x < 3; x++) {
-            px = canvas.width - s - r / 2;
-            py = 0 + r / 2 + (x * (s / 2));
-            draw.roundedRect(px, py, s, 1, "#000000", 5, ctx);
-        }
-        //keysDown
-        let k = Object.keys(pressedKeys);
-        let i = 0;
-        for (let x = 0; x < k.length; x++) {
-            if (pressedKeys[k[x]]) {
-                draw.text(0, i * 35 + 35, k[x], "#000000", "left", ctx);
-                i++;
-            }
-        }
-        if (Übergang >= 1) {
-            ctx.globalAlpha = Übergang / 50;
-            draw.fill(colors["background"], ctx);
-            ctx.globalAlpha = 1;
-        }
     }
     else if (editType == "Question") {
-        //size change
-        if (sizeChange) {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            sizeChange = false;
-        }
+        checkDisplay();
         let q1 = Object.keys(Question[1]);
+        //get max width
+        var mW = 0;
+        for (let x = 0; x < q1.length; x++) {
+            if (q1[x].startsWith("_P")) {
+                if (42 > mW) {
+                    mW = 42;
+                }
+            }
+            else if (q1[x].startsWith("_p")) {
+                if (42 > mW) {
+                    mW = 42;
+                }
+            }
+            else {
+                if (ctx.measureText(q1[x]).width > mW) {
+                    mW = ctx.measureText(q1[x]).width;
+                }
+            }
+        }
         //mouseDown
         if (mouse[0] && mouseSelectionLeft == -1) {
-            if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight) {
+            if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight && mouseX > canvas.width / 2 - (mW / 2 + 5) - 15 && mouseX < canvas.width / 2 - (mW / 2 + 5) + mW + 10 + 15) {
                 Question[1][q1[Math.ceil((mouseY / blockheight) - (150 / blockheight))]]();
-                if (editType == "Question") {
-                    editType = "standartEdit";
+                if (editType == "Question" && Übergang == -1) {
+                    goTo(comesFrom, 1);
                 }
-                Übergang = -1;
+                //Übergang = -1
             }
-            mouseSelectionLeft = -2;
+            else {
+                goTo(comesFrom, 1);
+            }
+            mouseSelectionLeft = -1;
         }
         //mouseUp
         if (!mouse[0] && mouseSelectionLeft != -1) {
             mouseSelectionLeft = -1;
         }
-        draw.fill(colors["background"], ctx);
+        draw.image(latestCanvasPic, 0, 0);
+        ctx.globalAlpha = 0.3921;
+        if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight && mouseX > canvas.width / 2 - (mW / 2 + 5) - 15 && mouseX < canvas.width / 2 - (mW / 2 + 5) + mW + 10 + 15) {
+            draw.fill("#000000", ctx);
+        }
+        else {
+            draw.fill("#960000", ctx);
+        }
+        ctx.globalAlpha = 1;
+        //box
+        draw.roundedRect(canvas.width / 2 - (mW / 2 + 5), 150 - 47 + 3 + 15, mW + 10, q1.length * blockheight + 5, "#aaaaaa", 30, ctx);
         font = "60px msyi";
-        draw.text(canvas.width / 2, 70, Question[0], "#000000", "center", ctx);
+        draw.text(canvas.width / 2, 70, Question[0], colors["NormalText"], "center", ctx);
         font = "47px msyi";
         for (let x = 0; x < q1.length; x++) {
-            draw.text(canvas.width / 2, 150 + x * blockheight, q1[x], "#000000", "center", ctx);
-        }
-    }
-    else if (editType == "PictureEdit") {
-        //size change
-        if (sizeChange) {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            sizeChange = false;
-        }
-        draw.fill(colors["background"], ctx);
-        if (mouse[0]) {
-            if (mouseX < 64 * 6 && mouseY < 64 * 6) {
-                let x = Math.floor(mouseX / 64);
-                let y = Math.floor(mouseY / 64);
-                let a = document.getElementById("y" + x + "x" + y);
-                let bb = $("#colorpicker");
-                a.style.backgroundColor = bb.spectrum("get");
+            if (q1[x].startsWith("_P")) {
+                renderPicture(pictures[parseInt(q1[x].substring(2, 100))], 42, 42, canvas.width / 2 - 21, 150 + x * blockheight - 30, draw);
+            }
+            else if (q1[x].startsWith("_p")) {
+                renderPicture(q1[x].substring(3, 500), 42, 42, canvas.width / 2 - 21, 150 + x * blockheight - 30, draw);
+            }
+            else {
+                draw.text(canvas.width / 2, 150 + x * blockheight, q1[x], colors["NormalText"], "center", ctx);
             }
         }
     }
+    else if (editType == "PictureEdit") {
+        checkDisplay();
+        drawReal.fill(colors["background"], ctx);
+        if (mouse[0]) {
+            if (mouseX < 60 * moodLightSizeX && mouseY < 60 * moodLightSizeY && mouseY > 1) {
+                let x = Math.floor(mouseX / 60);
+                let y = Math.floor(mouseY / 60);
+                let a = document.getElementById("y" + x + "x" + y);
+                if (a != null) {
+                    if (!keyDown("alt")) {
+                        pictureValues[y * moodLightSizeY + x] = rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b);
+                        a.style.backgroundColor = colorPicker.spectrum("get");
+                    }
+                    else {
+                        colorPicker.spectrum("set", a.style.backgroundColor);
+                    }
+                }
+            }
+        }
+    }
+    else if (editType == "Settings") {
+        draw.image(latestCanvasPic, 0, 0);
+        ctx.globalAlpha = 0.3921;
+        draw.fill("#000000", ctx);
+    }
+    //übergang
+    if (Übergang >= 1) {
+        var alpha = 0;
+        if (Übergang <= 25) {
+            alpha = Übergang / 25;
+        }
+        else {
+            if (editType != ÜbergangZu) {
+                editType = ÜbergangZu;
+            }
+            alpha = 2 - (Übergang / 25);
+        }
+        hider.style.opacity = alpha * 100 + "%";
+        //console.log(Übergang + ": " + ctx.globalAlpha);
+        //draw.fill(colors["background"], ctx);
+        ctx.globalAlpha = 1;
+    }
 }
 function cursorUpdate() {
+    if (!document.hasFocus()) {
+        return;
+    }
     let normal = true;
     if (editType == "standartEdit") {
-        if (keyDown("Alt")) {
+        if (keyDown("alt")) {
             c.style.cursor = "copy";
             normal = false;
         }
@@ -927,19 +1335,49 @@ function cursorUpdate() {
         }
         if (mouseSelectionRight != -1) {
             let hei = Elements[mouseDataRight[0]][mouseDataRight[1]][1].length;
-            let px = ElementPositions[mouseDataRight[0]][0] + posx;
-            let py = ElementPositions[mouseDataRight[0]][1] + mouseDataRight[1] * blockheight + posy;
+            let px = posx + ElementPositions[mouseDataRight[0]][0];
+            let py = posy + ElementPositions[mouseDataRight[0]][1] + mouseDataRight[1] * blockheight;
             let pxM = px + 250;
             let pyM = py + hei * blockheight + blockheight;
             if (mouseX > px && mouseX < pxM && mouseY > py && mouseY < pyM) {
-                c.style.cursor = "text";
+                var selectedElement = Elements[mouseDataRight[0]][mouseDataRight[1]][0];
+                var curPos = Math.ceil(((mouseY - 20) - (posy + ElementPositions[mouseDataRight[0]][1] + mouseDataRight[1] * blockheight + blockheight)) / blockheight);
+                if (curPos >= 0) {
+                    c.style.cursor = "text";
+                    cursorMessage = description[selectedElement][curPos];
+                }
+                else {
+                    cursorMessage = "";
+                }
                 normal = false;
+            }
+            else {
+                cursorMessage = "";
             }
         }
     }
     if (editType == "Question") {
         let q1 = Object.keys(Question[1]);
-        if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight) {
+        //get max width
+        var mW = 0;
+        for (let x = 0; x < q1.length; x++) {
+            if (q1[x].startsWith("_P")) {
+                if (42 > mW) {
+                    mW = 42;
+                }
+            }
+            else if (q1[x].startsWith("_p")) {
+                if (42 > mW) {
+                    mW = 42;
+                }
+            }
+            else {
+                if (ctx.measureText(q1[x]).width > mW) {
+                    mW = ctx.measureText(q1[x]).width;
+                }
+            }
+        }
+        if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight && mouseX > canvas.width / 2 - (mW / 2 + 5) - 15 && mouseX < canvas.width / 2 - (mW / 2 + 5) + mW + 10 + 15) {
             c.style.cursor = "pointer";
             normal = false;
         }
@@ -948,12 +1386,12 @@ function cursorUpdate() {
     if (normal) {
         c.style.cursor = "default";
     }
-    //other
-    if (document.hidden) {
-        pressedKeys["Alt"] = false;
-    }
 }
-document.addEventListener("visibilitychange", function () { pressedKeys["Alt"] = false; });
 setInterval(cursorUpdate, 100);
-setInterval(drawScreen, 5);
+setInterval(drawScreen, 10);
+setInterval(updateScreen, 16);
+setTimeout(updateRects, 50);
+setTimeout(updateRects, 100);
+setTimeout(updateRects, 150);
+setTimeout(updateRects, 200);
 //# sourceMappingURL=main.js.map

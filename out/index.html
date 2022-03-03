@@ -8,10 +8,13 @@
             src: url('msyi.ttf');
         }
 
+        .ColorSelContainer {
+            padding: 1px;
+        }
+
         .ColorSelButton {
-            background-color: aqua;
-            width: 60px;
-            height: 60px;
+            width: 58px;
+            height: 58px;
         }
     </style>
     <meta charset="utf-8" />
@@ -21,48 +24,64 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"
         type="text/javascript"></script>
 
-    <!--jquery-->
+    <!--jqu ery-->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 
     <!--spectrunm-->
     <script src="/spectrum.js" type="text/javascript"></script>
     <link rel="stylesheet" type="text/css" href="spectrum.css">
 
-
 </head>
 
-<body style="margin:0px;overflow: hidden;">
+<body style="margin:0px;overflow: hidden;" oncontextmenu="return false;" onselectstart="return false;"
+    ondragstart="return false;">
     <div id="pictureEdit">
-        <table>
-            <tbody>
-                <tr>
-                    <th>
-                        <table>
-                            <tbody id="colorSelTable">
-                            </tbody>
-                        </table>
-                    </th>
-                    <th>
-                        <input id='colorpicker' />
-                    </th>
-                </tr>
-            </tbody>
-        </table>
-        <script>
-            $("#colorpicker").spectrum({
-                color: "#f00",
-                preferredFormat: "hex",
-                showInitial: true,
-                showAlpha:false
-            });
-        </script>
+        <div style="background: transparent; position: fixed; display: flex;flex-wrap: wrap;">
+            <table style="border-collapse: collapse;">
+                <tbody id="colorSelTable">
+                </tbody>
+            </table>
+
+            <div>
+                <!--Colorpicker-->
+                <div>
+                    <input onclick="return true;" type="text" value="" id="color" placeholder="HEX Farbe"
+                        onchange='colorPicker.spectrum("set", this.value);'><br>
+
+                    <input id='colorpicker' />
+                    <script>
+                        $("#colorpicker").spectrum({
+                            color: "#f00",
+                            preferredFormat: "hex",
+                            showInitial: true,
+                            showAlpha: false,
+                            flat: true,
+                            showButtons: false,
+                            change: function (color) { document.getElementById("color").value = color; },
+                            move: function (color) { document.getElementById("color").value = color; },
+                            //showInput: true,
+                        });
+                    </script>
+                </div>
+
+                <!--Buttons-->
+                <div>
+                    <button>Farbe Ausprobieren</button><br>
+                    <button>Bild Anzeigen</button><br>
+                    <label name="autoSend">Automatisch Bild senden</label>
+                    <input type="checkbox" name="autoSend"><br><br>
+                    <button onclick="finishPicture();">Fertig</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <canvas id="canvas" style="cursor:default; margin:0px; height:100%; width:100%;" oncontextmenu="return false"
-        onselectstart="return false" ondragstart="return false" id="body"></canvas>
+    <canvas id="canvas" style="cursor:default; margin:0px; height:100%; width:100%;">Jo, dein Browser is echt schei*e</canvas>
+    <div id="hider"
+        style="position:absolute;z-index:100;left:0%;top:0;background: white;width: 100%;height: 100%; opacity: 0%;pointer-events: none">
     </div>
 
-    <input type="file" id="avatar" name="avatar" accept=".moproj" style="display: none;">
+    <input type="file" id="projectLoader" name="projectLoader" accept=".moproj" style="display: none;">
 </body>
 
 <!--main script-->
