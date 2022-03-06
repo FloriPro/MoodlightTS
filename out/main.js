@@ -27,6 +27,7 @@ let colorPicker = $("#colorpicker");
 let hider = document.getElementById("hider");
 let ctx = canvas.getContext("2d");
 let ProjectLoader = document.querySelector("#projectLoader");
+let pageTeller = document.getElementById("pageTeller");
 let latestCanvasPicStr = canvas.toDataURL("image/png");
 var latestCanvasPic = new Image;
 latestCanvasPic.src = latestCanvasPicStr;
@@ -106,6 +107,11 @@ function createUserEvents() {
             }
             if (e.type == "keydown") {
                 pressedKeys[e.key.toLowerCase()] = true;
+                if (editType == "PictureEdit") {
+                    if (e.key.toLowerCase() in pictureEditKeyEvents) {
+                        pictureEditKeyEvents[e.key.toLowerCase()]();
+                    }
+                }
             }
         }
     }
@@ -123,7 +129,7 @@ function keyDown(key) {
     return true;
 }
 //MQTT
-var client = new Paho.MQTT.Client('hotti.info', 10833, "clientId123" + ((new Date).getTime().toString(16) + Math.floor(1E7 * Math.random()).toString(16)));
+var client = new Paho.MQTT.Client('hotti.info', 10833, "client" + ((new Date).getTime().toString(16) + Math.floor(1E7 * Math.random()).toString(16)));
 function mqttConstructor() {
     client.onConnectionLost = onConnectionLost;
     client.onMessageArrived = onMessageArrived;
@@ -142,6 +148,12 @@ function onConnectionLost(responseObject) {
     }
 }
 function onMessageArrived(message) {
+    if (message.payloadString.substring(1, 0) == ";" && waitingForMQTTPic) {
+        console.log("load");
+        pictureValues[page] = pictureString2Value(message.payloadString.substring(1));
+        loadPictureVal(pictureValues[page]);
+        waitingForMQTTPic = false;
+    }
     console.log("onMessageArrived:" + message.payloadString);
 }
 function send(dat) {
@@ -379,9 +391,22 @@ function elementLenght(Element) {
     }
     return l;
 }
+let waitingForMQTTPic = false;
 //Game Variables
 var comesFrom = "";
 var editType = "standartEdit"; //standartEdit, PictureEdit, Question, Settings
+let pictureEditKeyEvents = { "c": function () { navigator.clipboard.writeText(pictureValue2String(pictureValues[page])); }, "v": function () { navigator.clipboard.readText().then(clipText => { if (clipText.includes("\n")) {
+        var d = clipText.split("\n");
+        for (var i = 0; i < d.length; i++) {
+            if (pictureValues.length == page + i) {
+                pictureValues.push();
+            }
+            pictureValues[page + i] = pictureString2Value(d[i]);
+        }
+    }
+    else {
+        pictureValues[page] = pictureString2Value(clipText);
+    } loadPictureVal(pictureValues[page]); }); } };
 var Question = ["Frage ERROR", { "Antworten": function () { console.warn("Question without defenition"); } }];
 var Übergang = -1;
 var ÜbergangZu = "Question";
@@ -391,25 +416,44 @@ let menuButtons = {
     "Laden": function () { console.log("clickedLoad"); ProjectLoader.click(); },
     "Hinzufügen": function () {
         goTo("Question", 1);
-        menuOpen = -0.1;
         Question = ["Was willst du hinzufügen", {
-                "Start": function () { ElementPositions.push([Elements.length * 400, 0]); Elements.push([["Start", [String(Elements.length)]]]); },
-                "Bild": function () { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); pictureId = pictures.length; pictures.push("000000".repeat(32)); },
-                "Animation": function () { console.log("Execute Animation"); },
-                "Projekt": function () { console.log("Execute Projekt"); },
+                "Start": function (seId) { ElementPositions.push([Elements.length * 400, 0]); Elements.push([["Start", [String(Elements.length)]]]); goTo(comesFrom, 1); },
+                "Bild": function (seId) { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); pictureId = pictures.length; pictures.push("000000".repeat(32)); pictureEditType = 0; },
+                "Animation": function (seId) { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); animationId = animations.length; animations.push(["000000".repeat(32)]); pictureEditType = 1; },
+                "Projekt": function (seId) { console.log("Execute Projekt"); goTo(comesFrom, 1); },
             }];
     },
     "Bearbeiten": function () {
         goTo("Question", 1);
-        menuOpen = -0.1;
-        Question = ["Was willst du bearbeiten", {
-                "_P0": function () { goTo("PictureEdit", 0); mouse[0] = false; pictureId = 0; loadPicture(0); },
+        Question = ["", {
+                "Bild": function () {
+                    mouse[0] = false;
+                    goTo("Question", 1);
+                    var qAnsw = {};
+                    for (var i = 0; i < pictures.length; i++) {
+                        qAnsw["_P" + i] = function (selId) { goTo("PictureEdit", 0); mouse[0] = false; pictureId = selId; loadPicture(selId); pictureEditType = 0; };
+                    }
+                    Question = ["Was willst du bearbeiten", qAnsw];
+                },
+                "Animation": function () {
+                    mouse[0] = false;
+                    goTo("Question", 1);
+                    var qAnsw = {};
+                    for (var i = 0; i < animations.length; i++) {
+                        qAnsw["_A" + i] = function (selId) { goTo("PictureEdit", 0); mouse[0] = false; animationId = selId; pictureEditType = 1; pictureValues = []; for (var i = 0; i < animations[selId].length; i++) {
+                            pictureValues[i] = pictureString2Value(animations[selId][i]);
+                        } loadPictureVal(pictureValues[0]); };
+                    }
+                    Question = ["Was willst du bearbeiten", qAnsw];
+                }
             }];
     },
-    "Einstellungen": function () { goTo("Settings", 1); }
+    "Einstellungen": function () { goTo("Settings", 1); },
+    "Senden": function () { compileProject(); },
 };
 let menuWidth = 150;
 let pictureId = -1;
+let animationId = -1;
 /**
 123456
 789abc
@@ -419,6 +463,9 @@ pqrstu
 vwxyz.
 */
 let pictureValues = [];
+/**0=Bild,1=Animation */
+let pictureEditType = 0;
+let page = 0;
 resetPicEdit();
 let sidebarSize = 250;
 let sidebarFadeIn = 100;
@@ -436,7 +483,7 @@ let drawReal = new drawApp();
 let util = new Utilitys();
 const errorImg = "000000ff0000ff00ff000000ff0000ff00ff000000000000ff00ffff0000000000ff00ffff0000ff00ff000000ff0000ff00ffff0000ff00ffff0000000000ff00ffff0000000000ff00ff000000ff0000ff00ff000000ff0000000000ff00ffff0000000000ff00ffff0000";
 const available = [["Wait", ["0.25"]], ["Laden", ["0"]], ["Text", ["Text", "10"]], ["Uhrzeit", ["10"]], ["Bild anzeigen", ["0", "0"]], ["Animationen", ["0", "0", "10"]], ["Füllen", ["0", "0", "0"]], ["Loop", ["2"]], ["Unendlich", []], ["Custom", [""]]];
-const description = { "Wait": ["Sekunden"], "Laden": ["Nummer"], "Text": ["Text", "Geschwindigkeit"], "Uhrzeit": ["Geschwindigkeit"], "Bild anzeigen": ["[Bild-id]", "Übergangszeit"], "Animationen": ["[Animation]", "Übergangszeit", "Wartezeit"], "Füllen": ["R", "G", "B"], "Loop": ["Wiederholungen"], "Custom": ["Code"] };
+const description = { "Wait": ["Sekunden"], "Laden": ["Nummer"], "Text": ["Text", "Geschwindigkeit"], "Uhrzeit": ["Geschwindigkeit"], "Bild anzeigen": ["[Bild-id]", "Übergangszeit"], "Animationen": ["[Animation]", "Übergangszeit", "Wartezeit (Sekunden X 100)"], "Füllen": ["R", "G", "B"], "Loop": ["Wiederholungen"], "Custom": ["Code"] };
 const notDragable = ["Start"];
 const dropdownMenuButtons = { "Bild anzeigen": { "Bearbeiten": function () { console.log("Bearbeiten"); }, "Anzeigen": function () { console.log("Anzeigen"); } }, "Animationen": { "Bearbeiten": function () { console.log("Bearbeiten"); } } };
 const specialRender = {
@@ -448,7 +495,7 @@ let colors = { "background": "#fcfcfc", "backgroundPoints": "#646464", "blueBloc
 let setYellow = ["Loop", "Unendlich", "Start", "End"];
 let setPurple = ["Bild anzeigen", "Animationen", "Laden"];
 let pictures = ["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"];
-let animations = [[]];
+let animations = [];
 let Elements = [[["Start", ["0"]]]];
 let ElementPositions = [[0, 0]];
 let FreeElements = [];
@@ -467,6 +514,13 @@ let py = 0;
 let pyC = 0;
 let maxOutsideBounds = 500;
 let blockheight = 38;
+function loadAnim() {
+    var imgDat = "3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4e3d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4e3d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3fffd4ecfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3fffd4efffd4ecfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e8fffd4e3d85c6#3d85c6fffd4e9fc5e8fffd4e3d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e8fffd4e3d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4ecfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4ea72828ff0000ff0000a72828cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3fffd4ecfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3fffd4efffd4ecfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000fffd4ecfe2f3ff0000a72828a72828ff0000fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c6fffd4e9fc5e83d85c63d85c6#3d85c63d85c6fffd4e9fc5e8fffd4e3d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3fffd4ea72828ff0000ff0000a72828cfe2f3fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c6fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4e3d85c63d85c69fc5e89fc5e83d85c6fffd4e#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3fffd4efffd4ecfe2f3cfe2f3fffd4e3d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3fffd4ecfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c6fffd4e9fc5e8fffd4e3d85c6#3d85c6fffd4e9fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#fffd4e3d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4ecfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3fffd4ecfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3fffd4ecfe2f3cfe2f3cfe2f3fffd4eff0000a72828a72828ff0000cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4ecfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3a72828ff0000ff0000a72828fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4e3d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828fffd4ecfe2f3a72828ff0000ff0000a72828cfe2f3fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3fffd4eff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c6fffd4e#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4e3d85c63d85c69fc5e89fc5e83d85c63d85c6".split("#");
+    pictureValues = [];
+    for (var i = 0; i < imgDat.length; i++) {
+        pictureValues.push(pictureString2Value(imgDat[i]));
+    }
+}
 function renderPicture(picString, sizeX, sizeY, posx, posy, drawer) {
     posx = Math.floor(posx);
     posy = Math.floor(posy);
@@ -517,13 +571,18 @@ function pictureValue2String(input) {
     return out;
 }
 function finishPicture() {
-    if (pictureId != -1) {
-        var i = 0;
-        while (pictures.length <= pictureId && i < 100) {
-            pictures.push("000000".repeat(32));
-            i++;
+    if (pictureId != -1 || animationId != -1) {
+        if (pictureEditType == 0) {
+            pictures[pictureId] = pictureValue2String(pictureValues[0]); //pictureValues.join("");
         }
-        pictures[pictureId] = pictureValue2String(pictureValues); //pictureValues.join("");
+        else {
+            var anim = [];
+            for (var i = 0; i < pictureValues.length; i++) {
+                anim.push(pictureValue2String(pictureValues[i]));
+            }
+            animations[animationId] = anim;
+        }
+        animationId = -1;
         pictureId = -1;
         //return to main edit
         goTo("standartEdit", 0);
@@ -546,6 +605,9 @@ function goTo(übergangTo, type) {
     else if (type == 1) {
         editType = übergangTo;
     }
+    if (übergangTo == "PictureEdit") {
+        page = 0;
+    }
 }
 function hexstr(number) {
     var chars = new Array("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f");
@@ -557,20 +619,30 @@ function rgb2hex(r, g, b) {
     return hexstr(Math.round(r)) + hexstr(Math.round(g)) + hexstr(Math.round(b));
 }
 function resetPicEdit() {
+    page = 0;
     var elem = document.getElementsByClassName("ColorSelButton");
-    pictureValues = [];
+    pictureValues = [[]];
     for (var x = 0; x < elem.length; x++) {
-        pictureValues.push("000000");
+        pictureValues[0].push("000000");
         var e = elem[x];
         e.style.background = "black";
     }
 }
 function loadPicture(id) {
+    page = 0;
     var dat = pictureString2Value(pictures[id]);
-    pictureValues = dat;
+    pictureValues[0] = dat;
     for (var x = 0; x < moodLightSizeX; x++) {
         for (var y = 0; y < moodLightSizeY; y++) {
-            console.log("y" + y + "x" + x);
+            var d = document.getElementById("y" + y + "x" + x);
+            d.style.background = "#" + dat[x * moodLightSizeY + y];
+        }
+    }
+}
+function loadPictureVal(dat) {
+    pictureValues[page] = dat;
+    for (var x = 0; x < moodLightSizeX; x++) {
+        for (var y = 0; y < moodLightSizeY; y++) {
             var d = document.getElementById("y" + y + "x" + x);
             d.style.background = "#" + dat[x * moodLightSizeY + y];
         }
@@ -698,6 +770,7 @@ function updatefunction() {
             }
             if (c) {
                 mouseSelectionRight = -1;
+                //TODO:open context-menu?
             }
         }
         if (mouseSelectionRight == 10 && !mouse[2]) {
@@ -1055,15 +1128,26 @@ function harddraw() {
     }
 }
 function checkDisplay() {
-    var _a, _c;
+    var _a, _c, _d, _e;
     if (editType != "PictureEdit") {
+        //whole pictureEdit
         if (((_a = document.getElementById("pictureEdit")) === null || _a === void 0 ? void 0 : _a.style.display) == "") {
             $("#pictureEdit").css("display", "none");
         }
     }
     else {
+        //whole pictureEdit
         if (((_c = document.getElementById("pictureEdit")) === null || _c === void 0 ? void 0 : _c.style.display) == "none") {
             $("#pictureEdit").css("display", "");
+        }
+        //arrows
+        if (pictureEditType == 0) {
+            if (((_d = document.getElementById("multiPage")) === null || _d === void 0 ? void 0 : _d.style.display) != "none") {
+                $("#multiPage").css("display", "none");
+            }
+        }
+        else if (((_e = document.getElementById("multiPage")) === null || _e === void 0 ? void 0 : _e.style.display) != "") {
+            $("#multiPage").css("display", "");
         }
     }
 }
@@ -1231,14 +1315,16 @@ function updateRects() {
         //mouseDown
         if (mouse[0] && mouseSelectionLeft == -1) {
             if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight && mouseX > canvas.width / 2 - (mW / 2 + 5) - 15 && mouseX < canvas.width / 2 - (mW / 2 + 5) + mW + 10 + 15) {
-                Question[1][q1[Math.ceil((mouseY / blockheight) - (150 / blockheight))]]();
-                if (editType == "Question" && Übergang == -1) {
-                    goTo(comesFrom, 1);
-                }
+                Question[1][q1[Math.ceil((mouseY / blockheight) - (150 / blockheight))]](Math.ceil((mouseY / blockheight) - (150 / blockheight)));
                 //Übergang = -1
             }
             else {
-                goTo(comesFrom, 1);
+                if (comesFrom != "Question") {
+                    goTo(comesFrom, 1);
+                }
+                else {
+                    goTo("standartEdit", 0);
+                }
             }
             mouseSelectionLeft = -1;
         }
@@ -1262,10 +1348,10 @@ function updateRects() {
         font = "47px msyi";
         for (let x = 0; x < q1.length; x++) {
             if (q1[x].startsWith("_P")) {
-                renderPicture(pictures[parseInt(q1[x].substring(2, 100))], 42, 42, canvas.width / 2 - 21, 150 + x * blockheight - 30, draw);
+                renderPicture(pictures[parseInt(q1[x].substring(2, 100))], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw);
             }
             else if (q1[x].startsWith("_p")) {
-                renderPicture(q1[x].substring(3, 500), 42, 42, canvas.width / 2 - 21, 150 + x * blockheight - 30, draw);
+                renderPicture(q1[x].substring(3, 500), 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw);
             }
             else {
                 draw.text(canvas.width / 2, 150 + x * blockheight, q1[x], colors["NormalText"], "center", ctx);
@@ -1274,6 +1360,7 @@ function updateRects() {
     }
     else if (editType == "PictureEdit") {
         checkDisplay();
+        pageTeller.innerHTML = "Seite " + (page + 1) + "/" + pictureValues.length;
         drawReal.fill(colors["background"], ctx);
         if (mouse[0]) {
             if (mouseX < 60 * moodLightSizeX && mouseY < 60 * moodLightSizeY && mouseY > 1) {
@@ -1282,7 +1369,7 @@ function updateRects() {
                 let a = document.getElementById("y" + x + "x" + y);
                 if (a != null) {
                     if (!keyDown("alt")) {
-                        pictureValues[y * moodLightSizeY + x] = rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b);
+                        pictureValues[page][y * moodLightSizeY + x] = rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b);
                         a.style.backgroundColor = colorPicker.spectrum("get");
                     }
                     else {
@@ -1296,6 +1383,27 @@ function updateRects() {
         draw.image(latestCanvasPic, 0, 0);
         ctx.globalAlpha = 0.3921;
         draw.fill("#000000", ctx);
+        ctx.globalAlpha = 0.9;
+        draw.rect(20, 20, canvas.width - 40, canvas.height - 40, "#ffffff", ctx);
+        //exit
+        let r = 30;
+        let s = 30;
+        for (let x = 0; x < 3; x++) {
+            px = canvas.width - s - r / 2;
+            py = 0 + r / 2 + (x * (s / 2));
+            draw.roundedRect(px, py, s, 1, colors["MenuButtons"], 5, ctx);
+        }
+        //left mouse Click
+        if (mouse[0] && mouseSelectionLeft == -1 && HoldingEnd == -1) {
+            mouseSelectionLeft = 0;
+            if (mouseX > canvas.width - 50 - 15 && mouseY < 50 + 15) {
+                goTo("standartEdit", 0);
+            }
+        }
+        //left mouse letgo
+        if (mouseSelectionLeft != -1 && !mouse[0]) {
+            mouseSelectionLeft = -1;
+        }
     }
     //übergang
     if (Übergang >= 1) {
@@ -1378,6 +1486,12 @@ function cursorUpdate() {
             }
         }
         if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight && mouseX > canvas.width / 2 - (mW / 2 + 5) - 15 && mouseX < canvas.width / 2 - (mW / 2 + 5) + mW + 10 + 15) {
+            c.style.cursor = "pointer";
+            normal = false;
+        }
+    }
+    if (editType == "Settings") {
+        if (mouseX > canvas.width - 50 - 15 && mouseY < 50 + 15) {
             c.style.cursor = "pointer";
             normal = false;
         }
