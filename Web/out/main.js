@@ -1,4 +1,10 @@
 "use strict";
+/*
+ * TODO:
+ *  -Output
+ *  -Einstellungen
+ */
+const empty = '{"Elements":[[["Start",["0"]]]],"pictures":["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"],"ElementPositions":[[0,0]],"FreeElements":[],"animations":[],"projectName":"unset"}';
 let moodLightSizeX = 6;
 let moodLightSizeY = 6;
 //gen color selection Table
@@ -13,10 +19,9 @@ for (var x = 0; x < moodLightSizeY; x++) {
 //utility variables
 let font = "47px msyi";
 let host = "hotti.info";
-let port = 10833;
-let myTopic = "fablab114/ML";
-let myUser = "fablab114";
-let myPass = "fab!FG1Dw9";
+let myTopic = ""; //"fablab114/ML";
+let myUser = ""; //"fablab114";
+let myPass = ""; //"fab!FG1Dw9";
 let mouseX = 500;
 let mouseY = 500;
 let mouse = {};
@@ -34,6 +39,37 @@ latestCanvasPic.src = latestCanvasPicStr;
 let c = document.getElementById("canvas");
 let sizeChange = true;
 createUserEvents();
+function loadProject(jsonLoad) {
+    //get save
+    var ElementsSave = Elements;
+    var picturesSave = pictures;
+    var ElementPositionsSave = ElementPositions;
+    var FreeElementsSave = FreeElements;
+    var animationsSave = animations;
+    var projectNameSave = projectName;
+    try {
+        Elements = jsonLoad.Elements;
+        pictures = jsonLoad.pictures;
+        ElementPositions = jsonLoad.ElementPositions;
+        FreeElements = jsonLoad.FreeElements;
+        animations = jsonLoad.animations;
+        if (jsonLoad.projectName != undefined) {
+            projectName = jsonLoad.projectName;
+        }
+        else {
+            projectName = sprompt("projekt name: ");
+        }
+    }
+    catch (_a) {
+        Elements = ElementsSave;
+        pictures = picturesSave;
+        ElementPositions = ElementPositionsSave;
+        FreeElements = FreeElementsSave;
+        animations = animationsSave;
+        projectName = projectNameSave;
+        aalert("load failed");
+    }
+}
 function createUserEvents() {
     document.addEventListener("mousedown", mousedown);
     document.addEventListener("mouseup", mouseup);
@@ -44,20 +80,13 @@ function createUserEvents() {
     ProjectLoader.addEventListener('change', function (e) {
         var fileList = ProjectLoader.files;
         console.log(fileList);
-        console.log("selected");
         const reader = new FileReader();
         reader.readAsText(fileList[0]);
         reader.addEventListener('load', (event) => {
-            console.log("parsing...");
-            var jsonLoad = JSON.parse(event.target.result);
-            console.log("saving...");
-            Elements = jsonLoad.Elements;
-            pictures = jsonLoad.pictures;
-            ElementPositions = jsonLoad.ElementPositions;
-            FreeElements = jsonLoad.FreeElements;
-            animations = jsonLoad.animations;
+            loadProject(JSON.parse(event.target.result));
             ProjectLoader.value = '';
-            console.log("FINISH!");
+            setCookie("lastUsed", projectName, 0.5);
+            localStorage.setItem(projectName, genProjectJson());
         });
     });
     window.onresize = resize;
@@ -133,19 +162,30 @@ var client = new Paho.MQTT.Client('hotti.info', 10833, "client" + ((new Date).ge
 function mqttConstructor() {
     client.onConnectionLost = onConnectionLost;
     client.onMessageArrived = onMessageArrived;
-    client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
+    if (myUser != "" && myPass != "" && myTopic != "") {
+        client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
+    }
+    else {
+        //TODO
+    }
 }
 function onConnect() {
     // Once a connection has been made, make a subscription and send a message.
     console.log("onConnect");
     client.subscribe(myTopic);
 }
-function onFailure() { console.log("onFailure"); }
+function onFailure() { console.log("on Failure"); reconnect(); }
 function onConnectionLost(responseObject) {
-    if (responseObject.errorCode !== 0) {
+    if (responseObject.errorCode != 0) {
         console.log("onConnectionLost:" + responseObject.errorMessage + "\nreconnecting...");
         client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
     }
+}
+function reconnect() {
+    if (client.isConnected()) {
+        client.disconnect();
+    }
+    client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
 }
 function onMessageArrived(message) {
     if (message.payloadString.substring(1, 0) == ";" && waitingForMQTTPic) {
@@ -210,7 +250,7 @@ class drawApp {
         ctx.closePath();
     }
     ;
-    text(pox, posy, Text, color, align, ctx) {
+    text(pox, posy, Text, color, align, font, ctx) {
         if (ctx.font != font) {
             ctx.font = font;
         }
@@ -263,8 +303,8 @@ class drawAdder {
         ToDraw.push({ "fill": [color, ctx, ctx.globalAlpha] });
     }
     ;
-    text(posx, posy, Text, color, align, ctx) {
-        ToDraw.push({ "text": [posx, posy, Text, color, align, ctx, ctx.globalAlpha] });
+    text(posx, posy, Text, color, align, font, ctx) {
+        ToDraw.push({ "text": [posx, posy, Text, color, align, font, ctx, ctx.globalAlpha] });
     }
     ;
     polygon(ctx, color, pos) {
@@ -275,6 +315,59 @@ class drawAdder {
         ToDraw.push({ "polygonOutline": [ctx, color, pos, width, ctx.globalAlpha] });
     }
     ;
+}
+function setCookie(name, value, days) {
+    var expires = "";
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+function getCookie(name) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ')
+            c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) == 0)
+            return c.substring(nameEQ.length, c.length);
+    }
+    return "";
+}
+function setStorage() {
+    setCookie("setSettings", JSON.stringify(setSettings), 10);
+    setCookie("myTopic", myTopic, 10);
+    setCookie("myPass", myPass, 10);
+    setCookie("myUser", myUser, 10);
+}
+function getStorage() {
+    try {
+        setSettings = JSON.parse(getCookie("setSettings"));
+    }
+    catch (_a) {
+        setCookie("setSettings", JSON.stringify(setSettings), 10);
+    }
+    try {
+        myTopic = getCookie("myTopic");
+    }
+    catch (_c) {
+        setCookie("myTopic", myTopic, 10);
+    }
+    try {
+        myPass = getCookie("myPass");
+    }
+    catch (_d) {
+        setCookie("myPass", myPass, 10);
+    }
+    try {
+        myUser = getCookie("myUser");
+    }
+    catch (_e) {
+        setCookie("myUser", myUser, 10);
+    }
 }
 class Utilitys {
     normalize(degrees, min, max) {
@@ -319,18 +412,19 @@ function removeItem(data, index) {
     return data;
 }
 function elementLenghtAndDraw(Element, plx, ply) {
+    setFont(font);
     let text = Element[0];
     if (setYellow.indexOf(text) != -1) {
-        drawcolor = colors["YellowBlock"];
-        drawcolorAccent = colors["YellowBlockAccent"];
+        drawcolor = currentColor["YellowBlock"];
+        drawcolorAccent = currentColor["YellowBlockAccent"];
     }
     else if (setPurple.indexOf(text) != -1) {
-        drawcolor = colors["PurpleBlock"];
-        drawcolorAccent = colors["PurpleBlockAccent"];
+        drawcolor = currentColor["PurpleBlock"];
+        drawcolorAccent = currentColor["PurpleBlockAccent"];
     }
     else {
-        drawcolor = colors["blueBlock"];
-        drawcolorAccent = colors["blueBlockAccent"];
+        drawcolor = currentColor["blueBlock"];
+        drawcolorAccent = currentColor["blueBlockAccent"];
     }
     let l = ctx.measureText(Element[0]).width + 10;
     //space between options: 5;
@@ -350,7 +444,7 @@ function elementLenghtAndDraw(Element, plx, ply) {
     }
     draw.roundedRect(plx, ply, l, -(blockheight - 10), drawcolorAccent, 10, ctx); //body outline
     draw.roundedRect(plx + 1, ply - 1, l - 2, -blockheight + 12, drawcolor, 10, ctx); //body
-    draw.text(plx, ply, text, colors["NormalText"], "left", ctx);
+    draw.text(plx, ply, text, currentColor["NormalText"], "left", font, ctx);
     l = ctx.measureText(text).width + 7;
     for (let x = 0; x < Element[1].length; x++) {
         let t = Element[1][x];
@@ -363,8 +457,8 @@ function elementLenghtAndDraw(Element, plx, ply) {
             l += specialRender[Element[0]][x][0];
         }
         else {
-            draw.roundedRect(plx + l + 2, ply - 5, ctx.measureText(t).width - 4, -(blockheight - 10) + 10, "#ffffff", 10, ctx); //body outline
-            draw.text(plx + l, ply, t, colors["NormalText"], "left", ctx);
+            draw.roundedRect(plx + l + 2, ply - 5, ctx.measureText(t).width - 4, -(blockheight - 10) + 10, currentColor["blockArgBackground"], 10, ctx); //body outline
+            draw.text(plx + l, ply, t, currentColor["NormalText"], "left", font, ctx);
             l += ctx.measureText(t).width;
         }
         l += 5;
@@ -372,6 +466,7 @@ function elementLenghtAndDraw(Element, plx, ply) {
     return l;
 }
 function elementLenght(Element) {
+    setFont(font);
     let text = Element[0];
     let l = ctx.measureText(Element[0]).width + 10;
     //space between options: 5;
@@ -410,17 +505,39 @@ let pictureEditKeyEvents = { "c": function () { navigator.clipboard.writeText(pi
 var Question = ["Frage ERROR", { "Antworten": function () { console.warn("Question without defenition"); } }];
 var Übergang = -1;
 var ÜbergangZu = "Question";
+let projectName = "unset";
 let menuOpen = 0;
 let menuButtons = {
-    "Speichern": downloadProject,
-    "Laden": function () { console.log("clickedLoad"); ProjectLoader.click(); },
+    "Speichern": saveProject,
+    "Laden": function () {
+        goTo("Question", 1);
+        var a = {};
+        var lK = Object.keys(localStorage);
+        for (var x = 0; x < lK.length; x++) {
+            if (lK[x][0] != "!")
+                a[lK[x]] = function (seId) {
+                    var i = 0;
+                    for (var x = 0; x < Object.keys(localStorage).length; x++) {
+                        if (Object.keys(localStorage)[x][0] != "!") {
+                            if (i == seId) {
+                                break;
+                            }
+                            i++;
+                        }
+                    }
+                    loadProject(JSON.parse(localStorage[Object.keys(localStorage)[i]]));
+                    goTo("standartEdit", 0);
+                    setCookie("lastUsed", Object.keys(localStorage)[seId], 0.5);
+                };
+        }
+        Question = ["Welches Projekt willst du laden?", a];
+    },
     "Hinzufügen": function () {
         goTo("Question", 1);
         Question = ["Was willst du hinzufügen", {
                 "Start": function (seId) { ElementPositions.push([Elements.length * 400, 0]); Elements.push([["Start", [String(Elements.length)]]]); goTo(comesFrom, 1); },
                 "Bild": function (seId) { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); pictureId = pictures.length; pictures.push("000000".repeat(32)); pictureEditType = 0; },
                 "Animation": function (seId) { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); animationId = animations.length; animations.push(["000000".repeat(32)]); pictureEditType = 1; },
-                "Projekt": function (seId) { console.log("Execute Projekt"); goTo(comesFrom, 1); },
             }];
     },
     "Bearbeiten": function () {
@@ -450,8 +567,252 @@ let menuButtons = {
     },
     "Einstellungen": function () { goTo("Settings", 1); },
     "Senden": function () { compileProject(); },
+    "Neues Projekt": function () { loadProject(JSON.parse(empty)); },
+    "Zu Datei Speichern": downloadProject,
+    "Von Datei Laden": function () { console.log("clickedLoad"); ProjectLoader.click(); },
 };
-let menuWidth = 150;
+let menuWidth = 350;
+/**
+ * only use this/pprompt for prompts
+ */
+function sprompt(question, setShit) {
+    var a = prompt(question, setShit);
+    if (a == undefined) {
+        a = "";
+    }
+    mouse[0] = false;
+    return a;
+}
+/**
+ * only use this/sprompt for prompts
+ */
+function pprompt(question, setShit) {
+    var a = prompt(question, setShit);
+    if (a == null) {
+        a = undefined;
+    }
+    mouse[0] = false;
+    return a;
+}
+/**
+ * only use this for alerts
+ */
+function aalert(message) {
+    alert(message);
+    mouse[0] = false;
+}
+/**type: bool, str, num, button */
+let settings = {
+    "Allgemein": {
+        "Automatisch speichert": function (callType) { if (!callType) {
+            return "bool";
+        }
+        else {
+            return "";
+        } },
+        "Bestimmtes Projekt löschen": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                goTo("Question", 1);
+                var a = {};
+                var lK = Object.keys(localStorage);
+                for (var x = 0; x < lK.length; x++) {
+                    if (lK[x][0] != "!") {
+                        a[lK[x]] = function (seId) {
+                            var i = 0;
+                            for (var x = 0; x < Object.keys(localStorage).length; x++) {
+                                if (Object.keys(localStorage)[x][0] != "!") {
+                                    if (i == seId) {
+                                        break;
+                                    }
+                                    i++;
+                                }
+                            }
+                            console.log("rem: " + Object.keys(localStorage)[i]);
+                            goTo("Settings", 1);
+                            localStorage.removeItem(Object.keys(localStorage)[i]);
+                        };
+                    }
+                }
+                Question = ["Welches Projekt willst du löschen?", a];
+                return "";
+            }
+        },
+        "Promt als eingabe": function (callType) { if (!callType) {
+            return "bool";
+        }
+        else {
+            return "";
+        } },
+    },
+    "MQTT": {
+        "Daten ändern": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                myTopic = sprompt("Topic");
+                myUser = sprompt("User");
+                myPass = sprompt("Pass");
+                reconnect();
+                return "";
+            }
+        },
+        "Daten löschen": function (callType) { if (!callType) {
+            return "button";
+        }
+        else {
+            myTopic = "";
+            myUser = "";
+            myPass = "";
+            if (client.isConnected()) {
+                client.disconnect();
+            }
+            ;
+            return "";
+        } },
+        "Daten einsehen": function (callType) { if (!callType) {
+            return "button";
+        }
+        else {
+            aalert("Topic: " + myTopic + " | User: " + myUser + " | Password: " + myPass);
+            return "";
+        } },
+        "Neu Verbinden": function (callType) { if (!callType) {
+            return "button";
+        }
+        else {
+            reconnect();
+            return "";
+        } },
+        "Projekt namen anzeigen bei senden": function (callType) { if (!callType) {
+            return "bool";
+        }
+        else {
+            return "";
+        } },
+    },
+    "Aussehen": {
+        "Darkmode": function (callType) { if (!callType) {
+            return "bool";
+        }
+        else {
+            settingsInfo["Eigenens design"] = "BETA!";
+            if (setSettings["Darkmode"] == "true") {
+                currentColor = colors["dark"];
+            }
+            else {
+                currentColor = colors["light"];
+            }
+            return "";
+        } },
+        "Eigenens design": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                var l = localStorage.getItem("!designs");
+                if (l != undefined) {
+                    var d = JSON.parse(l);
+                }
+                else {
+                    aalert("no custom design");
+                    return "";
+                } //set JSON parsed var d
+                goTo("Question", 1);
+                var a = {};
+                var dK = Object.keys(d);
+                for (var x = 0; x < dK.length; x++) {
+                    a[dK[x]] = function (seId) {
+                        var l = localStorage.getItem("!designs");
+                        if (l != undefined) {
+                            var d = JSON.parse(l);
+                            var dK = Object.keys(d);
+                            for (var x = 0; x < dK.length; x++) {
+                                settingsInfo["Eigenens design"] = dK[seId];
+                                currentColor = JSON.parse(d[dK[seId]]);
+                            }
+                        }
+                        goTo("Settings", 1);
+                    };
+                }
+                Question = ["", a];
+                return "";
+            }
+        },
+        "Eigenens design hochladen": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                var n = sprompt("name");
+                var j = sprompt("json");
+                var l = localStorage.getItem("!designs");
+                if (l != undefined) {
+                    var d = JSON.parse(l);
+                }
+                else {
+                    var d = {};
+                } //set JSON parsed var d
+                //ask override
+                if (d[n] != undefined) {
+                    if (window.confirm("override") == undefined) {
+                        aalert("canceled");
+                        return "";
+                    }
+                }
+                d[n] = j;
+                localStorage.setItem("!designs", JSON.stringify(d));
+                settingsInfo["Eigenens design"] = n;
+                currentColor = JSON.parse(j);
+                return "";
+            }
+        },
+        "Eigenens design löschen": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                goTo("Question", 1);
+                var a = {};
+                var l = localStorage.getItem("!designs");
+                if (l == undefined) {
+                    return "";
+                }
+                var d = JSON.parse(l);
+                var lK = Object.keys(d);
+                for (var x = 0; x < lK.length; x++) {
+                    a[lK[x]] = function (seId) {
+                        var l = localStorage.getItem("!designs");
+                        if (l == undefined) {
+                            return;
+                        }
+                        var d = JSON.parse(l);
+                        delete d[Object.keys(d)[seId]];
+                        localStorage.setItem("!designs", JSON.stringify(d));
+                        console.log("rem: " + Object.keys(localStorage)[seId]);
+                        goTo("Settings", 1, false);
+                    };
+                }
+                Question = ["Welches design willst du löschen?", a];
+                return "";
+            }
+        },
+        "Eigenens design erstellen": function (callType) { if (!callType) {
+            return "button";
+        }
+        else {
+            window.open("/colorMaker/");
+            return "";
+        } },
+        //"test": function (callType) { if (!callType) { return "str"; } else { return ""; } },
+    }
+};
+let settingsInfo = { "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Eigenens design hochladen": "BETA! Designs können dieses Programm zerstören!", "Eigenens design löschen": "BETA!" };
+let setSettings = { "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false" };
+let settingsSelLeft = 0;
 let pictureId = -1;
 let animationId = -1;
 /**
@@ -477,7 +838,6 @@ let HoldingEnd = -1;
 let mouseSelectionRight = -1;
 let mouseDataRight = [-1, -1];
 let EditMenuEdeting = -1;
-mqttConstructor();
 let draw = new drawAdder();
 let drawReal = new drawApp();
 let util = new Utilitys();
@@ -491,7 +851,8 @@ const specialRender = {
         0: [24, function (inputNum, posx, posy) { renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2, posy - 2, draw); }]
     },
 };
-let colors = { "background": "#fcfcfc", "backgroundPoints": "#646464", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff" };
+let colors = { "light": { "background": "#fcfcfc", "backgroundPoints": "#646464", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" }, "dark": { "background": "#030303", "backgroundPoints": "#9b9b9b", "blockArgBackground": "#000000", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#4f4f4f", "EditMenu": "#2f0816", "EditMenuAccent": "#843653", "NormalText": "#ffffff", "MenuButtons": "#ffffff", "MenuBackground": "#ffffff", "MenuText": "#000000", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#2d2d2d", "settingsSelStandard": "#232323", "settingsSelSelected": "#373737", "backgroundBlur": "#ffffff", "settingsBackground": "#000000", "settingsBackgroundHighlight": "#0f0f0f", "questionRedBackgroundBlur": "#69ffff", "questionBackground": "#555555", "objectSidebarBlur": "#3f3f3f", "ProjectName": "#4287f5" } };
+let currentColor = { "background": "", "backgroundPoints": "", "blueBlock": "", "blockArgBackground": "", "blueBlockAccent": "", "YellowBlock": "", "YellowBlockAccent": "", "PurpleBlock": "", "PurpleBlockAccent": "", "MoveBlockShaddow": "", "EditMenu": "", "EditMenuAccent": "", "NormalText": "", "MenuButtons": "", "MenuBackground": "", "MenuText": "", "settingsBoolTrue": "", "settingsBoolFalse": "", "settingsSelMouseOver": "", "settingsSelStandard": "", "settingsSelSelected": "", "backgroundBlur": "", "settingsBackground": "", "settingsBackgroundHighlight": "", "questionRedBackgroundBlur": "", "questionBackground": "", "objectSidebarBlur": "", "ProjectName": "", };
 let setYellow = ["Loop", "Unendlich", "Start", "End"];
 let setPurple = ["Bild anzeigen", "Animationen", "Laden"];
 let pictures = ["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"];
@@ -514,6 +875,25 @@ let py = 0;
 let pyC = 0;
 let maxOutsideBounds = 500;
 let blockheight = 38;
+//end of variables
+getStorage();
+setStorage();
+mqttConstructor();
+var la = getCookie("lastUsed");
+if (la != "") {
+    loadProject(JSON.parse(localStorage[la]));
+}
+if (setSettings["Darkmode"] == "true") {
+    currentColor = colors["dark"];
+}
+else {
+    currentColor = colors["light"];
+}
+function setFont(font) {
+    if (ctx.font != font) {
+        ctx.font = font;
+    }
+}
 function loadAnim() {
     var imgDat = "3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4e3d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4e3d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3fffd4ecfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3fffd4efffd4ecfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e8fffd4e3d85c6#3d85c6fffd4e9fc5e8fffd4e3d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e8fffd4e3d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4ecfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4ea72828ff0000ff0000a72828cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3fffd4ecfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3fffd4efffd4ecfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000fffd4ecfe2f3ff0000a72828a72828ff0000fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c6fffd4e9fc5e83d85c63d85c6#3d85c63d85c6fffd4e9fc5e8fffd4e3d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3fffd4ea72828ff0000ff0000a72828cfe2f3fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c6fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4e3d85c63d85c69fc5e89fc5e83d85c6fffd4e#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3fffd4efffd4ecfe2f3cfe2f3fffd4e3d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3fffd4ecfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c6fffd4e9fc5e8fffd4e3d85c6#3d85c6fffd4e9fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#fffd4e3d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4ecfe2f3a72828ff0000ff0000a72828cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3fffd4ecfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3fffd4ecfe2f3cfe2f3cfe2f3fffd4eff0000a72828a72828ff0000cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4ecfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3a72828ff0000ff0000a72828fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4e3d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828fffd4ecfe2f3a72828ff0000ff0000a72828cfe2f3fffd4ecfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c63d85c6#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3a72828ff0000ff0000a72828cfe2f3fffd4eff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f33d85c63d85c69fc5e89fc5e83d85c6fffd4e#3d85c63d85c69fc5e89fc5e83d85c63d85c6cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3ff0000a72828a72828ff0000cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3cfe2f3fffd4e3d85c63d85c69fc5e89fc5e83d85c63d85c6".split("#");
     pictureValues = [];
@@ -588,13 +968,33 @@ function finishPicture() {
         goTo("standartEdit", 0);
     }
     else {
-        alert("Something went wrong: No ID!");
+        aalert("Something went wrong: No ID!");
+    }
+    autoSave;
+}
+function genProjectJson() {
+    return JSON.stringify({ "Elements": Elements, "pictures": pictures, "ElementPositions": ElementPositions, "FreeElements": FreeElements, "animations": animations, "projectName": projectName });
+}
+function downloadProject() {
+    var filename = projectName;
+    if (filename == "") {
+        filename = "Unnamed";
+    }
+    filename = filename + ".moproj";
+    download(genProjectJson(), "text", filename);
+}
+function saveProject() {
+    localStorage.setItem(projectName, genProjectJson());
+}
+function autoSave() {
+    if (setSettings["Automatisch speichert"] == "true") {
+        saveProject();
     }
 }
 /**
 * type: 0=fadein+fadeout; 1=cut
 */
-function goTo(übergangTo, type) {
+function goTo(übergangTo, type, settingsSelLef) {
     latestCanvasPicStr = canvas.toDataURL("image/png");
     latestCanvasPic.src = latestCanvasPicStr;
     comesFrom = editType;
@@ -607,6 +1007,11 @@ function goTo(übergangTo, type) {
     }
     if (übergangTo == "PictureEdit") {
         page = 0;
+    }
+    if (übergangTo == "Settings") {
+        if (settingsSelLef) {
+            settingsSelLeft = 0;
+        }
     }
 }
 function hexstr(number) {
@@ -656,15 +1061,6 @@ function download(content, mimeType, filename) {
     a.setAttribute('download', filename);
     a.click();
 }
-function downloadProject() {
-    var filename = prompt("Dateiname:", "Projekt");
-    if (filename == "") {
-        filename = "Unnamed";
-    }
-    filename = filename + ".moproj";
-    let myJSON = JSON.stringify({ "Elements": Elements, "pictures": pictures, "ElementPositions": ElementPositions, "FreeElements": FreeElements, "animations": animations });
-    download(myJSON, "text", filename);
-}
 function drawScreen() {
     var px = 0;
     if (editType == "standartEdit") {
@@ -699,7 +1095,7 @@ function drawScreen() {
         else if (key == "text") {
             var i = value[key];
             ctx.globalAlpha = i[i.length - 1];
-            drawReal.text(i[0] + px, i[1] + py, i[2], i[3], i[4], i[5]);
+            drawReal.text(i[0] + px, i[1] + py, i[2], i[3], i[4], i[5], i[6]);
         }
         else if (key == "polygon") {
             var i = value[key];
@@ -719,8 +1115,9 @@ function drawScreen() {
     });
     harddraw();
     if (cursorMessage != "" && cursorMessage != undefined) {
+        setFont(font);
         drawReal.rect(mouseX, mouseY, ctx.measureText(cursorMessage).width, 35, "#bebebe", ctx);
-        drawReal.text(mouseX, mouseY + 30, cursorMessage, colors["NormalText"], "left", ctx);
+        drawReal.text(mouseX, mouseY + 30, cursorMessage, currentColor["NormalText"], "left", font, ctx);
     }
 }
 function updateScreen() {
@@ -794,9 +1191,20 @@ function updatefunction() {
                         }
                     }
                 }
+                //change name
+                if (mouseSelectionLeft == -1) {
+                    if (menuOpen == 1 && mouseY < 40 && mouseX < canvas.width - 60 && mouseX > canvas.width - 60 - ctx.measureText(projectName).width) {
+                        var r = pprompt("", projectName);
+                        if (r != undefined) {
+                            localStorage.removeItem(projectName);
+                            projectName = r;
+                            localStorage.setItem(projectName, genProjectJson());
+                        }
+                    }
+                }
                 //use Menu
                 if (mouseSelectionLeft == -1) {
-                    if (menuOpen == 1 && mouseX > canvas.width - 250) {
+                    if (menuOpen == 1 && mouseX > canvas.width - menuWidth) {
                         mouseSelectionLeft = -2;
                         try {
                             menuButtons[Object.keys(menuButtons)[Math.round((mouseY - (90 - (35 / 2))) / 35)]]();
@@ -900,13 +1308,24 @@ function updatefunction() {
                 let pxM = px + 250;
                 let pyM = py + hei * blockheight + blockheight;
                 if (mouseX > px && mouseX < pxM && mouseY > py && mouseY < pyM) {
-                    //console.log(mouseY-20-py);
                     EditMenuEdeting = Math.floor((mouseY - 20 - py) / blockheight);
-                    mouseSelectionLeft = -2;
-                    mouseSelectionRight = 1;
+                    if (setSettings["Promt als eingabe"] == "false") {
+                        mouseSelectionRight = 1;
+                        //console.log(mouseY-20-py);
+                        mouseSelectionLeft = -2;
+                    }
+                    else {
+                        mouse[0] = false;
+                        //mouseSelectionLeft = -1;
+                        var r = pprompt("", Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting]);
+                        if (r != undefined) {
+                            Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = r;
+                        }
+                    }
                 }
                 //if not in menu decrease number:
                 else {
+                    autoSave();
                     EditMenuEdeting = -1;
                     mouseSelectionRight--;
                     mouseSelectionLeft = -2;
@@ -920,6 +1339,7 @@ function updatefunction() {
             if (mouseX < sidebarSize && mouseSelectionLeft == 1) {
                 FreeElements = removeItem(FreeElements, mouseDataLeft);
                 mouseSelectionLeft = -1;
+                autoSave();
             }
             //dropFree Element
             if (mouseSelectionLeft == 1) {
@@ -954,6 +1374,7 @@ function updatefunction() {
                         }
                     }
                 }
+                autoSave();
             }
             if (mouseSelectionLeft != 500) {
                 mouseSelectionLeft = -1;
@@ -990,6 +1411,7 @@ function updatefunction() {
                         FreeElements = removeItem(FreeElements, mouseDataLeft);
                         mouseSelectionLeft = -1;
                         HoldingEnd = -1;
+                        autoSave();
                     }
                     else {
                         mouse[0] = true;
@@ -1034,6 +1456,7 @@ function updatefunction() {
 }
 function harddraw() {
     if (editType == "standartEdit") {
+        font = "47px msyi";
         //Object sidebar
         if (mouseX < (sidebarSize + sidebarFadeIn) || sidebarFadeInTimer >= 0.05) {
             let mul = ((sidebarFadeIn - (mouseX - sidebarSize)) / sidebarFadeIn);
@@ -1047,7 +1470,7 @@ function harddraw() {
                 sidebarFadeInTimer -= 0.05;
             }
             ctx.globalAlpha = 0.5 * sidebarFadeInTimer;
-            drawReal.rect(0, 0, sidebarSize, canvas.height, "#c0c0c0", ctx);
+            drawReal.rect(0, 0, sidebarSize, canvas.height, currentColor["objectSidebarBlur"], ctx);
             ctx.globalAlpha = sidebarFadeInTimer;
             for (let i = 0; i < available.length; i++) {
                 let text = available[i][0];
@@ -1055,20 +1478,20 @@ function harddraw() {
                 px = 10;
                 py = i * (blockheight + 10) + blockheight;
                 if (setYellow.indexOf(text) != -1) {
-                    drawcolor = colors["YellowBlock"];
-                    drawcolorAccent = colors["YellowBlockAccent"];
+                    drawcolor = currentColor["YellowBlock"];
+                    drawcolorAccent = currentColor["YellowBlockAccent"];
                 }
                 else if (setPurple.indexOf(text) != -1) {
-                    drawcolor = colors["PurpleBlock"];
-                    drawcolorAccent = colors["PurpleBlockAccent"];
+                    drawcolor = currentColor["PurpleBlock"];
+                    drawcolorAccent = currentColor["PurpleBlockAccent"];
                 }
                 else {
-                    drawcolor = colors["blueBlock"];
-                    drawcolorAccent = colors["blueBlockAccent"];
+                    drawcolor = currentColor["blueBlock"];
+                    drawcolorAccent = currentColor["blueBlockAccent"];
                 }
                 drawReal.roundedRect(px, py, textLength, -(blockheight - 10), drawcolorAccent, 10, ctx); //body outline
                 drawReal.roundedRect(px + 1, py - 1, textLength - 2, -blockheight + 12, drawcolor, 10, ctx); //body
-                drawReal.text(px, py, text, colors["NormalText"], "left", ctx);
+                drawReal.text(px, py, text, currentColor["NormalText"], "left", font, ctx);
                 py += 4;
                 py -= posy;
                 px -= posx;
@@ -1092,12 +1515,14 @@ function harddraw() {
                 menuOpen = 1;
             }
             ctx.globalAlpha = 0.7 * mOpen;
-            drawReal.rect(canvas.width - (menuWidth + (100 * mOpen)), 0, menuWidth + (100 * mOpen), canvas.height * mOpen, colors["MenuBackground"], ctx);
+            drawReal.rect(canvas.width - (menuWidth - 100 + (100 * mOpen)), 0, menuWidth + (100 * mOpen), canvas.height * mOpen, currentColor["MenuBackground"], ctx);
             let k = Object.keys(menuButtons);
             ctx.globalAlpha = mOpen;
             for (let x = 0; x < k.length; x++) {
-                drawReal.text(canvas.width - 10, 90 + x * 35, k[x], colors["MenuText"], "right", ctx);
+                drawReal.text(canvas.width - 10, 90 + x * 35, k[x], currentColor["MenuText"], "right", font, ctx);
             }
+            ctx.globalAlpha = 0.7 * mOpen;
+            drawReal.text(canvas.width - 60, 40, projectName, currentColor["ProjectName"], "right", font, ctx);
             if (menuOpen > 0 && menuOpen < 1) {
                 menuOpen += 0.05;
             }
@@ -1114,7 +1539,7 @@ function harddraw() {
         for (let x = 0; x < 3; x++) {
             px = canvas.width - s - r / 2;
             py = 0 + r / 2 + (x * (s / 2));
-            drawReal.roundedRect(px, py, s, 1, colors["MenuButtons"], 5, ctx);
+            drawReal.roundedRect(px, py, s, 1, currentColor["MenuButtons"], 5, ctx);
         }
     }
     //keysDown debug
@@ -1122,7 +1547,7 @@ function harddraw() {
     let i = 0;
     for (let x = 0; x < k.length; x++) {
         if (pressedKeys[k[x]]) {
-            drawReal.text(0, i * 35 + 35, k[x], colors["NormalText"], "left", ctx);
+            drawReal.text(0, i * 35 + 35, k[x], currentColor["NormalText"], "left", font, ctx);
             i++;
         }
     }
@@ -1157,6 +1582,7 @@ function updateRects() {
     //    return;
     //}
     if (editType == "standartEdit") {
+        font = "47px msyi";
         checkDisplay();
         //updatefunction();
         //////////
@@ -1167,7 +1593,7 @@ function updateRects() {
             elementLenghtAndDraw(["-", ["-"]], -100, -100);
         }
         //background
-        draw.fill(colors["background"], ctx);
+        draw.fill(currentColor["background"], ctx);
         /*for (let x = 0; x < (canvas.width) / backgroundPointSize; x++) {
             for (let y = 0; y < (canvas.height) / backgroundPointSize; y++) {
                 let px = x * backgroundPointSize;
@@ -1189,7 +1615,7 @@ function updateRects() {
                             if (ElementList != 0) {
                                 textLength = elementLenght([FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]]);
                                 ctx.globalAlpha = 0.6;
-                                draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), colors["MoveBlockShaddow"], 10, ctx); //body
+                                draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), currentColor["MoveBlockShaddow"], 10, ctx); //body
                                 ctx.globalAlpha = 1;
                                 i++;
                             }
@@ -1204,16 +1630,16 @@ function updateRects() {
                 textLength = elementLenghtAndDraw(Elements[ElementLoadPos][ElementList], px, py);
                 let text = Elements[ElementLoadPos][ElementList][0];
                 if (setYellow.indexOf(text) != -1) {
-                    drawcolor = colors["YellowBlock"];
-                    drawcolorAccent = colors["YellowBlockAccent"];
+                    drawcolor = currentColor["YellowBlock"];
+                    drawcolorAccent = currentColor["YellowBlockAccent"];
                 }
                 else if (setPurple.indexOf(text) != -1) {
-                    drawcolor = colors["PurpleBlock"];
-                    drawcolorAccent = colors["PurpleBlockAccent"];
+                    drawcolor = currentColor["PurpleBlock"];
+                    drawcolorAccent = currentColor["PurpleBlockAccent"];
                 }
                 else {
-                    drawcolor = colors["blueBlock"];
-                    drawcolorAccent = colors["blueBlockAccent"];
+                    drawcolor = currentColor["blueBlock"];
+                    drawcolorAccent = currentColor["blueBlockAccent"];
                 }
                 //connector
                 if (ElementList != 0) {
@@ -1231,8 +1657,8 @@ function updateRects() {
                 drawcolorAccentO = drawcolorAccent;
                 //loop connector
                 for (let x = 1; x <= indentation; x++) {
-                    draw.rect(px - (x * 10) - 5, py + 10, 10, -blockheight - 9, colors["YellowBlockAccent"], ctx);
-                    draw.rect(px - (x * 10) - 4, py + 10, 8, -blockheight - 9, colors["YellowBlock"], ctx);
+                    draw.rect(px - (x * 10) - 5, py + 10, 10, -blockheight - 9, currentColor["YellowBlockAccent"], ctx);
+                    draw.rect(px - (x * 10) - 4, py + 10, 8, -blockheight - 9, currentColor["YellowBlock"], ctx);
                 }
                 if (["Loop", "Unendlich"].includes(Elements[ElementLoadPos][ElementList][0])) {
                     indentation++;
@@ -1249,7 +1675,7 @@ function updateRects() {
                         if ((Elements[ElementLoadPos].length) != 0) {
                             textLength = elementLenght([FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]]);
                             ctx.globalAlpha = 0.6;
-                            draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), colors["MoveBlockShaddow"], 10, ctx); //body
+                            draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), currentColor["MoveBlockShaddow"], 10, ctx); //body
                             ctx.globalAlpha = 1;
                         }
                     }
@@ -1275,16 +1701,17 @@ function updateRects() {
             let hei = Elements[mouseDataRight[0]][mouseDataRight[1]][1].length;
             let px = ElementPositions[mouseDataRight[0]][0];
             let py = ElementPositions[mouseDataRight[0]][1] + mouseDataRight[1] * blockheight;
-            draw.polygon(ctx, colors["EditMenu"], [[px, py + 20], [px + 20, py + 20], [px + 30, py + 5], [px + 40, py + 20], [px + 250, py + 20], [px + 250, py + (hei * blockheight) + 20], [px, py + (hei * blockheight) + 20]]); //dropdownMenu
-            draw.polygonOutline(ctx, colors["EditMenuAccent"], [[px, py + 20], [px + 20, py + 20], [px + 30, py + 5], [px + 40, py + 20], [px + 250, py + 20], [px + 250, py + (hei * blockheight) + 20], [px, py + (hei * blockheight) + 20], [px, py + 20]], 1); //dropdownMenu
+            draw.polygon(ctx, currentColor["EditMenu"], [[px, py + 20], [px + 20, py + 20], [px + 30, py + 5], [px + 40, py + 20], [px + 250, py + 20], [px + 250, py + (hei * blockheight) + 20], [px, py + (hei * blockheight) + 20]]); //dropdownMenu
+            draw.polygonOutline(ctx, currentColor["EditMenuAccent"], [[px, py + 20], [px + 20, py + 20], [px + 30, py + 5], [px + 40, py + 20], [px + 250, py + 20], [px + 250, py + (hei * blockheight) + 20], [px, py + (hei * blockheight) + 20], [px, py + 20]], 1); //dropdownMenu
             font = "35px msyi";
+            setFont(font);
             for (let x = 0; x < hei; x++) {
-                draw.text(px, py + x * blockheight + blockheight + 10, Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], colors["NormalText"], "left", ctx);
+                draw.text(px, py + x * blockheight + blockheight + 10, Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], currentColor["NormalText"], "left", font, ctx);
                 if (x == EditMenuEdeting) {
-                    draw.rect(px + ctx.measureText(Elements[mouseDataRight[0]][mouseDataRight[1]][1][x]).width, py + x * blockheight + blockheight + 15, 0.75, -30, colors["NormalText"], ctx);
+                    draw.rect(px + ctx.measureText(Elements[mouseDataRight[0]][mouseDataRight[1]][1][x]).width, py + x * blockheight + blockheight + 15, 0.75, -30, currentColor["NormalText"], ctx);
                 }
                 if (x != hei - 1) {
-                    draw.rect(px, py + x * blockheight + blockheight + 20, 250, 1, colors["EditMenuAccent"], ctx);
+                    draw.rect(px, py + x * blockheight + blockheight + 20, 250, 1, currentColor["EditMenuAccent"], ctx);
                 }
             }
             font = "47px msyi";
@@ -1321,12 +1748,16 @@ function updateRects() {
             else {
                 if (comesFrom != "Question") {
                     goTo(comesFrom, 1);
+                    setTimeout(updateRects, 15);
+                    mouse[0] = false;
                 }
                 else {
                     goTo("standartEdit", 0);
+                    setTimeout(updateRects, 15);
+                    mouse[0] = false;
                 }
             }
-            mouseSelectionLeft = -1;
+            mouseSelectionLeft = 0;
         }
         //mouseUp
         if (!mouse[0] && mouseSelectionLeft != -1) {
@@ -1335,16 +1766,16 @@ function updateRects() {
         draw.image(latestCanvasPic, 0, 0);
         ctx.globalAlpha = 0.3921;
         if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight && mouseX > canvas.width / 2 - (mW / 2 + 5) - 15 && mouseX < canvas.width / 2 - (mW / 2 + 5) + mW + 10 + 15) {
-            draw.fill("#000000", ctx);
+            draw.fill(currentColor["backgroundBlur"], ctx);
         }
         else {
-            draw.fill("#960000", ctx);
+            draw.fill(currentColor["questionRedBackgroundBlur"], ctx);
         }
         ctx.globalAlpha = 1;
         //box
-        draw.roundedRect(canvas.width / 2 - (mW / 2 + 5), 150 - 47 + 3 + 15, mW + 10, q1.length * blockheight + 5, "#aaaaaa", 30, ctx);
+        draw.roundedRect(canvas.width / 2 - (mW / 2 + 5), 150 - 47 + 3 + 15, mW + 10, q1.length * blockheight + 5, currentColor["questionBackground"], 30, ctx);
         font = "60px msyi";
-        draw.text(canvas.width / 2, 70, Question[0], colors["NormalText"], "center", ctx);
+        draw.text(canvas.width / 2, 70, Question[0], currentColor["NormalText"], "center", font, ctx);
         font = "47px msyi";
         for (let x = 0; x < q1.length; x++) {
             if (q1[x].startsWith("_P")) {
@@ -1354,14 +1785,14 @@ function updateRects() {
                 renderPicture(q1[x].substring(3, 500), 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw);
             }
             else {
-                draw.text(canvas.width / 2, 150 + x * blockheight, q1[x], colors["NormalText"], "center", ctx);
+                draw.text(canvas.width / 2, 150 + x * blockheight, q1[x], currentColor["NormalText"], "center", font, ctx);
             }
         }
     }
     else if (editType == "PictureEdit") {
         checkDisplay();
         pageTeller.innerHTML = "Seite " + (page + 1) + "/" + pictureValues.length;
-        drawReal.fill(colors["background"], ctx);
+        drawReal.fill(currentColor["background"], ctx);
         if (mouse[0]) {
             if (mouseX < 60 * moodLightSizeX && mouseY < 60 * moodLightSizeY && mouseY > 1) {
                 let x = Math.floor(mouseX / 60);
@@ -1382,27 +1813,100 @@ function updateRects() {
     else if (editType == "Settings") {
         draw.image(latestCanvasPic, 0, 0);
         ctx.globalAlpha = 0.3921;
-        draw.fill("#000000", ctx);
+        draw.fill(currentColor["backgroundBlur"], ctx);
         ctx.globalAlpha = 0.9;
-        draw.rect(20, 20, canvas.width - 40, canvas.height - 40, "#ffffff", ctx);
+        draw.rect(20, 20, canvas.width - 40, canvas.height - 40, currentColor["settingsBackgroundHighlight"], ctx);
         //exit
-        let r = 30;
-        let s = 30;
-        for (let x = 0; x < 3; x++) {
+        var r = 30;
+        var s = 30;
+        for (var x = 0; x < 3; x++) {
             px = canvas.width - s - r / 2;
             py = 0 + r / 2 + (x * (s / 2));
-            draw.roundedRect(px, py, s, 1, colors["MenuButtons"], 5, ctx);
+            draw.roundedRect(px, py, s, 1, currentColor["MenuButtons"], 5, ctx);
         }
         //left mouse Click
         if (mouse[0] && mouseSelectionLeft == -1 && HoldingEnd == -1) {
             mouseSelectionLeft = 0;
             if (mouseX > canvas.width - 50 - 15 && mouseY < 50 + 15) {
-                goTo("standartEdit", 0);
+                goTo("standartEdit", 1);
+            }
+            if (mouseX > 25 && mouseX < 200 + 25) {
+                settingsSelLeft = Math.floor((mouseY - 70) / 30);
+            }
+            if (mouseX > 25 + 200 + 10 && mouseX < canvas.width - 45) {
+                var hauptgruppe = Object.keys(settings);
+                if (settings[hauptgruppe[settingsSelLeft]] != undefined) {
+                    var settinggruppe = Object.keys(settings[hauptgruppe[settingsSelLeft]]);
+                    var sel = settinggruppe[Math.floor((mouseY - 70) / 30)];
+                    if (sel != undefined) {
+                        if (settings[hauptgruppe[settingsSelLeft]][sel](false) == "button") {
+                            settings[hauptgruppe[settingsSelLeft]][sel](true);
+                        }
+                        else if (settings[hauptgruppe[settingsSelLeft]][sel](false) == "bool") {
+                            if (setSettings[sel] == "false") {
+                                setSettings[sel] = "true";
+                            }
+                            else {
+                                setSettings[sel] = "false";
+                            }
+                            settings[hauptgruppe[settingsSelLeft]][sel](true);
+                        }
+                        else if (settings[hauptgruppe[settingsSelLeft]][sel](false) == "str") {
+                            setSettings[sel] = sprompt(setSettings[sel] + " verändern zu");
+                            settings[hauptgruppe[settingsSelLeft]][sel](true);
+                        }
+                        else if (settings[hauptgruppe[settingsSelLeft]][sel](false) == "num") {
+                            setSettings[sel] = sprompt(setSettings[sel] + " verändern zu");
+                            settings[hauptgruppe[settingsSelLeft]][sel](true);
+                        }
+                        setStorage();
+                    }
+                }
             }
         }
         //left mouse letgo
         if (mouseSelectionLeft != -1 && !mouse[0]) {
             mouseSelectionLeft = -1;
+        }
+        font = '47px msyi';
+        draw.text(canvas.width / 2, 60, "EINSTELLUNGEN", currentColor["NormalText"], "center", font, ctx);
+        //draw left
+        font = '35px msyi';
+        var hauptgruppe = Object.keys(settings);
+        draw.rect(23, 65, 205, canvas.height - 70 - 30 + 5, currentColor["settingsBackground"], ctx);
+        for (var h = 0; h < hauptgruppe.length; h++) {
+            if (h == settingsSelLeft) {
+                draw.rect(25, 70 + h * 30, 200, 27, currentColor["settingsSelSelected"], ctx); //selected: c8c8c8; mouse over: d2d2d2
+            }
+            else if (mouseX > 25 && mouseX < 200 + 25 && mouseY > 70 + h * 30 && mouseY < 70 + h * 30 + 31) {
+                draw.rect(25, 70 + h * 30, 200, 27, currentColor["settingsSelMouseOver"], ctx); //selected: c8c8c8; mouse over: d2d2d2
+            }
+            else {
+                draw.rect(25, 70 + h * 30, 200, 27, currentColor["settingsSelStandard"], ctx); //selected: c8c8c8; mouse over: d2d2d2
+            }
+            draw.text(27, 93 + h * 30, hauptgruppe[h], currentColor["NormalText"], "left", font, ctx);
+        }
+        //draw right
+        draw.rect(25 + 200 + 5, 65, canvas.width - 260, canvas.height - 70 - 30 + 5, currentColor["settingsBackground"], ctx);
+        if (settings[hauptgruppe[settingsSelLeft]] != undefined) {
+            var settinggruppe = Object.keys(settings[hauptgruppe[settingsSelLeft]]);
+            for (s = 0; s < settinggruppe.length; s++) {
+                if (mouseX > 25 + 200 + 10 && mouseX < canvas.width - 45 && mouseY > 70 + s * 30 && mouseY < 70 + s * 30 + 31) {
+                    draw.rect(25 + 200 + 10, 70 + s * 30, canvas.width - 280, 27, currentColor["settingsSelMouseOver"], ctx); //mouse over: d2d2d2}
+                }
+                else {
+                    draw.rect(25 + 200 + 10, 70 + s * 30, canvas.width - 280, 27, currentColor["settingsSelStandard"], ctx); //mouse over: d2d2d2}
+                }
+                draw.text(25 + 200 + 10, 93 + s * 30, settinggruppe[s], currentColor["NormalText"], "left", font, ctx);
+                if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]](false) == "bool") {
+                    if (setSettings[settinggruppe[s]] == "false") {
+                        draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolFalse"], ctx);
+                    }
+                    else {
+                        draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolTrue"], ctx);
+                    }
+                }
+            }
         }
     }
     //übergang
@@ -1437,8 +1941,12 @@ function cursorUpdate() {
             c.style.cursor = "pointer";
             normal = false;
         }
-        if (menuOpen == 1 && mouseX > canvas.width - 250 && mouseY > 90 - 35 && mouseY < 90 + (Object.keys(menuButtons).length - 1) * 35) {
+        if (menuOpen == 1 && mouseX > canvas.width - menuWidth && mouseY > 90 - 35 && mouseY < 90 + (Object.keys(menuButtons).length - 1) * 35) {
             c.style.cursor = "pointer";
+            normal = false;
+        }
+        if (menuOpen == 1 && mouseY < 40 && mouseX < canvas.width - 60 && mouseX > canvas.width - 60 - ctx.measureText(projectName).width) {
+            c.style.cursor = "text";
             normal = false;
         }
         if (mouseSelectionRight != -1) {
@@ -1494,6 +2002,16 @@ function cursorUpdate() {
         if (mouseX > canvas.width - 50 - 15 && mouseY < 50 + 15) {
             c.style.cursor = "pointer";
             normal = false;
+        }
+        //messages
+        if (settings[Object.keys(settings)[settingsSelLeft]] != undefined) {
+            var v = Object.keys(settings[Object.keys(settings)[settingsSelLeft]])[Math.floor((mouseY - 70) / 30)];
+            if (mouseX > 25 + 200 + 10 && mouseX < canvas.width - 45 && v in settingsInfo) {
+                cursorMessage = settingsInfo[v];
+            }
+            else {
+                cursorMessage = "";
+            }
         }
     }
     //else
