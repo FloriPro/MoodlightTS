@@ -880,7 +880,7 @@ getStorage();
 setStorage();
 mqttConstructor();
 var la = getCookie("lastUsed");
-if (la != "") {
+if (la != "" && localStorage[la] != undefined) {
     loadProject(JSON.parse(localStorage[la]));
 }
 if (setSettings["Darkmode"] == "true") {

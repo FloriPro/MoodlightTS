@@ -22,20 +22,18 @@
     <link rel="stylesheet" type="text/css" href="/spectrum.css">
 </head>
 
-<body>
-    <font face="msyi">
-        <h1>Color Maker</h1>
-        <button onclick="load(JSON.parse(prompt('colorJson')));">import</button>
-        <div style="display: flex;">
-            <table>
-                <tbody id="colors">
-                </tbody>
-            </table>
-            <div>
-                <textarea id="out" rows="30" cols="100">loading... I hope :)</textarea>
-            </div>
+<body style="font-family: msyi;">
+    <h1>Color Maker</h1>
+    <button onclick="load(JSON.parse(prompt('colorJson')));">import</button>
+    <div style="display: flex;">
+        <table>
+            <tbody id="colors">
+            </tbody>
+        </table>
+        <div>
+            <textarea id="out" rows="30" cols="100">loading... I hope :)</textarea>
         </div>
-    </font>
+    </div>
 </body>
 
 
@@ -51,8 +49,8 @@
 
         var colorsK = Object.keys(colors);
         for (var x = 0; x < colorsK.length; x++) {
-            var d="";
-            if (!unused.indexOf(colorsK[x])){d="grayed"}
+            var d = "";
+            if (!unused.indexOf(colorsK[x])) { d = "grayed" }
             document.querySelector("#colors").innerHTML += `
             <tr class="color `+ d + `">
                 <td>
