@@ -184,7 +184,7 @@ function onConnect() {
     console.log("onConnect");
     client.subscribe(myTopic);
 }
-function onFailure() { console.log("on Failure"); reconnect(); }
+function onFailure() { console.log("on Failure");}
 
 function onConnectionLost(responseObject: { errorCode: number; errorMessage: string; }) {
     if (responseObject.errorCode != 0) {
@@ -471,7 +471,7 @@ let waitingForMQTTPic = false;
 
 //Game Variables
 var comesFrom = "";
-var editType = "standartEdit"; //standartEdit, PictureEdit, Question, Settings
+var editType = "standartEdit"; //standartEdit, PictureEdit, Question, Settings, Action
 
 let pictureEditKeyEvents: { [key: string]: () => void } = { "c": function () { navigator.clipboard.writeText(pictureValue2String(pictureValues[page])) }, "v": function () { navigator.clipboard.readText().then(clipText => { if (clipText.includes("\n")) { var d = clipText.split("\n"); for (var i = 0; i < d.length; i++) { if (pictureValues.length == page + i) { pictureValues.push(); } pictureValues[page + i] = pictureString2Value(d[i]); } } else { pictureValues[page] = pictureString2Value(clipText); } loadPictureVal(pictureValues[page]); }) } };
 
@@ -480,6 +480,30 @@ var Übergang = -1;
 var ÜbergangZu = "Question";
 
 let projectName = "unset"
+
+/*let actionAvailable: any = ["sel",
+    ["jede", ["sel", [
+        ["sekunden", ["num", "zeit"]],
+        ["minuten", ["num", "zeit"]],
+        ["stunden", ["num", "zeit"]],
+        ["tage", ["num", "zeit"]]]
+    ]],
+    ["um", ["string", "sek:min:stunde"]],
+    ["server eingang", ["sel", [
+        ["GET", ["string", "send to path"]],
+        ["POST", ["string", "send to path"]]]
+    ]],
+    ["Websiten veränderung", ["string", "website url with path"]]
+];*/
+let actionAvailable: any = {}
+
+let actionElements = [
+    ["jede", "minuten", "5"],
+    ["server eingang", "GET", "specificPathForMyInput"]
+]
+/**-1:not 0..:yes */
+let actionsEdeting = -1
+let actionsEdetingPosition = -1;
 
 let menuOpen = 0;
 let menuButtons: { [name: string]: () => void } = {
@@ -528,7 +552,10 @@ let menuButtons: { [name: string]: () => void } = {
                     qAnsw["_A" + i] = function (selId) { goTo("PictureEdit", 0); mouse[0] = false; animationId = selId; pictureEditType = 1; pictureValues = []; for (var i = 0; i < animations[selId].length; i++) { pictureValues[i] = pictureString2Value(animations[selId][i]); } loadPictureVal(pictureValues[0]); }
                 }
                 Question = ["Was willst du bearbeiten", qAnsw];
-            }
+            },
+            //"Aktionen": function () {
+            //    goTo("Action", 0);
+            //}
         }]
 
     },
@@ -537,6 +564,7 @@ let menuButtons: { [name: string]: () => void } = {
     "Neues Projekt": function () { loadProject(JSON.parse(empty)) },
     "Zu Datei Speichern": downloadProject,
     "Von Datei Laden": function () { console.log("clickedLoad"); ProjectLoader.click(); },
+    "laden zu code": function () { aalert("wip") },
 }
 let menuWidth = 350
 
@@ -1463,6 +1491,7 @@ function checkDisplay() {
 
 function updateRects() {
     ToDraw = [];
+    checkDisplay();
 
     //if (!document.hasFocus()) {
     //    return;
@@ -1470,7 +1499,6 @@ function updateRects() {
 
     if (editType == "standartEdit") {
         font = "47px msyi";
-        checkDisplay();
 
         //updatefunction();
         //////////
@@ -1615,7 +1643,6 @@ function updateRects() {
         }
     }
     else if (editType == "Question") {
-        checkDisplay();
 
         let q1 = Object.keys(Question[1]);
 
@@ -1681,7 +1708,6 @@ function updateRects() {
         }
     }
     else if (editType == "PictureEdit") {
-        checkDisplay();
         pageTeller.innerHTML = "Seite " + (page + 1) + "/" + pictureValues.length;
 
         drawReal.fill(currentColor["background"], ctx);
@@ -1796,6 +1822,59 @@ function updateRects() {
                     }
                 }
             }
+        }
+    }
+    else if (editType == "Action") {
+        //actionsEdeting
+        //actionsEdetingPosition
+        draw.fill("#ffffff", ctx);
+        //mouse left click
+        if (mouseSelectionLeft == -1 && mouse[0]) {
+            if (mouseX > canvas.width - 50 && mouseY < 50 && actionsEdeting == -1) {
+                actionsEdeting = actionElements.length
+                actionsEdetingPosition = 0;
+                actionElements.push([actionAvailable[1][0]])
+            }
+            mouseSelectionLeft = 0
+        }
+
+        //mouse left let go
+        if (mouseSelectionLeft != -1 && !mouse[0]) {
+            mouseSelectionLeft = -1;
+        }
+
+        //draw elements
+        var it = 0
+        for (var itC = 0; itC < actionElements.length; itC++) {
+            draw.roundedRect(5, it * 35 + 20, ctx.measureText(actionElements[itC].join("")).width + (actionElements[itC].length * 15), 25, "#ff0000", 5, ctx);
+
+            var l = 0;
+            for (var e = 0; e < actionElements[itC].length; e++) {
+                if (actionsEdeting == itC && e == actionsEdetingPosition) {
+                    draw.roundedRect(10 + l, it * 35 + 21, ctx.measureText(actionElements[itC][e]).width, 23, "#00ffff", 5, ctx);
+                } else {
+                    draw.roundedRect(10 + l, it * 35 + 21, ctx.measureText(actionElements[itC][e]).width, 23, "#ffff00", 5, ctx);
+                }
+                draw.text(10 + l, it * 35 + 45, actionElements[itC][e], "#000000", "left", font, ctx);
+                l += ctx.measureText(actionElements[itC][e]).width + 15;
+            }
+            if (actionsEdeting == itC) {
+                it += 3;
+            }
+            it++;
+        }
+        
+        //get avail sel
+        
+
+        //if change show options
+        if (actionsEdeting != -1) {
+            draw.rect(5, actionsEdeting * 35 + 55, ctx.measureText("HELP ME! THIS IS SO COMPLICATED").width, 35, "#ff0000", ctx);
+        }
+
+        //add
+        if (actionsEdeting == -1) {
+            draw.rect(canvas.width - 50, 0, 50, 50, "#00ffff", ctx);
         }
     }
 

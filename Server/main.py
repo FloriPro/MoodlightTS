@@ -14,14 +14,6 @@ def colorMaker():
 def send_report(path):
     return send_from_directory('../Web/out/', path)
 
-#serve actions
-@app.route("/actions/<path:path>")
-def actionsPath(path):
-    return send_from_directory('actions/', path)
-@app.route("/actions/")
-def actionsMain():
-    return send_from_directory('actions/', "index.html")
-
 #api
 @app.route("/api/v0/")
 def apiHelloWorld():

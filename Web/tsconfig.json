@@ -12,6 +12,7 @@
     "strict": true,
     "skipLibCheck": true,
     "watch": true,
+    
   },
   "exclude": ["out/"]
 }
