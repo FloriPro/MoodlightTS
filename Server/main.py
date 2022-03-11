@@ -13,6 +13,12 @@ def colorMaker():
 @app.route('/<path:path>')
 def send_report(path):
     return send_from_directory('../Web/out/', path)
+@app.route('/action/<path:path>')
+def actionPath(path):
+    return send_from_directory('action/', path)
+@app.route('/action/')
+def action():
+    return send_from_directory('action/', "index.html")
 
 #api
 @app.route("/api/v0/")

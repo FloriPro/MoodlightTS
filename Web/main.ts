@@ -467,9 +467,36 @@ function elementLenght(Element: [string, string[]]) {
     }
     return l;
 }
-let waitingForMQTTPic = false;
+/**
+ * only use this/pprompt for prompts
+ */
+function sprompt(question: string, setShit?: string): string {
+    var a = prompt(question, setShit);
+    if (a == undefined) { a = "" }
+    mouse[0] = false;
+    return a;
+}
+/**
+ * only use this/sprompt for prompts
+ */
+function pprompt(question: string, setShit?: string): string | undefined {
+    var a: string | null | undefined = prompt(question, setShit);
+    if (a == null) { a = undefined }
+    mouse[0] = false;
+    return a;
+}
+/**
+ * only use this for alerts
+ */
+function aalert(message: string) {
+    alert(message);
+    mouse[0] = false;
+}
+
 
 //Game Variables
+let waitingForMQTTPic = false;
+
 var comesFrom = "";
 var editType = "standartEdit"; //standartEdit, PictureEdit, Question, Settings, Action
 
@@ -495,7 +522,6 @@ let projectName = "unset"
     ]],
     ["Websiten veränderung", ["string", "website url with path"]]
 ];*/
-let actionAvailable: any = {}
 
 let actionElements = [
     ["jede", "minuten", "5"],
@@ -568,31 +594,6 @@ let menuButtons: { [name: string]: () => void } = {
 }
 let menuWidth = 350
 
-/**
- * only use this/pprompt for prompts
- */
-function sprompt(question: string, setShit?: string): string {
-    var a = prompt(question, setShit);
-    if (a == undefined) { a = "" }
-    mouse[0] = false;
-    return a;
-}
-/**
- * only use this/sprompt for prompts
- */
-function pprompt(question: string, setShit?: string): string | undefined {
-    var a: string | null | undefined = prompt(question, setShit);
-    if (a == null) { a = undefined }
-    mouse[0] = false;
-    return a;
-}
-/**
- * only use this for alerts
- */
-function aalert(message: string) {
-    alert(message);
-    mouse[0] = false;
-}
 
 /**type: bool, str, num, button */
 let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* false: lookup, true: click*/: boolean) => string /*<- type*/ } } = {
@@ -1824,7 +1825,7 @@ function updateRects() {
             }
         }
     }
-    else if (editType == "Action") {
+    /*else if (editType == "Action") {
         //actionsEdeting
         //actionsEdetingPosition
         draw.fill("#ffffff", ctx);
@@ -1876,7 +1877,7 @@ function updateRects() {
         if (actionsEdeting == -1) {
             draw.rect(canvas.width - 50, 0, 50, 50, "#00ffff", ctx);
         }
-    }
+    }*/
 
     //übergang
     if (Übergang >= 1) {

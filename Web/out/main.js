@@ -486,8 +486,37 @@ function elementLenght(Element) {
     }
     return l;
 }
-let waitingForMQTTPic = false;
+/**
+ * only use this/pprompt for prompts
+ */
+function sprompt(question, setShit) {
+    var a = prompt(question, setShit);
+    if (a == undefined) {
+        a = "";
+    }
+    mouse[0] = false;
+    return a;
+}
+/**
+ * only use this/sprompt for prompts
+ */
+function pprompt(question, setShit) {
+    var a = prompt(question, setShit);
+    if (a == null) {
+        a = undefined;
+    }
+    mouse[0] = false;
+    return a;
+}
+/**
+ * only use this for alerts
+ */
+function aalert(message) {
+    alert(message);
+    mouse[0] = false;
+}
 //Game Variables
+let waitingForMQTTPic = false;
 var comesFrom = "";
 var editType = "standartEdit"; //standartEdit, PictureEdit, Question, Settings, Action
 let pictureEditKeyEvents = { "c": function () { navigator.clipboard.writeText(pictureValue2String(pictureValues[page])); }, "v": function () { navigator.clipboard.readText().then(clipText => { if (clipText.includes("\n")) {
@@ -520,7 +549,6 @@ let projectName = "unset";
     ]],
     ["Websiten veränderung", ["string", "website url with path"]]
 ];*/
-let actionAvailable = {};
 let actionElements = [
     ["jede", "minuten", "5"],
     ["server eingang", "GET", "specificPathForMyInput"]
@@ -598,35 +626,6 @@ let menuButtons = {
     "laden zu code": function () { aalert("wip"); },
 };
 let menuWidth = 350;
-/**
- * only use this/pprompt for prompts
- */
-function sprompt(question, setShit) {
-    var a = prompt(question, setShit);
-    if (a == undefined) {
-        a = "";
-    }
-    mouse[0] = false;
-    return a;
-}
-/**
- * only use this/sprompt for prompts
- */
-function pprompt(question, setShit) {
-    var a = prompt(question, setShit);
-    if (a == null) {
-        a = undefined;
-    }
-    mouse[0] = false;
-    return a;
-}
-/**
- * only use this for alerts
- */
-function aalert(message) {
-    alert(message);
-    mouse[0] = false;
-}
 /**type: bool, str, num, button */
 let settings = {
     "Allgemein": {
@@ -1933,33 +1932,35 @@ function updateRects() {
             }
         }
     }
-    else if (editType == "Action") {
+    /*else if (editType == "Action") {
         //actionsEdeting
         //actionsEdetingPosition
         draw.fill("#ffffff", ctx);
         //mouse left click
         if (mouseSelectionLeft == -1 && mouse[0]) {
             if (mouseX > canvas.width - 50 && mouseY < 50 && actionsEdeting == -1) {
-                actionsEdeting = actionElements.length;
+                actionsEdeting = actionElements.length
                 actionsEdetingPosition = 0;
-                actionElements.push([actionAvailable[1][0]]);
+                actionElements.push([actionAvailable[1][0]])
             }
-            mouseSelectionLeft = 0;
+            mouseSelectionLeft = 0
         }
+
         //mouse left let go
         if (mouseSelectionLeft != -1 && !mouse[0]) {
             mouseSelectionLeft = -1;
         }
+
         //draw elements
-        var it = 0;
+        var it = 0
         for (var itC = 0; itC < actionElements.length; itC++) {
             draw.roundedRect(5, it * 35 + 20, ctx.measureText(actionElements[itC].join("")).width + (actionElements[itC].length * 15), 25, "#ff0000", 5, ctx);
+
             var l = 0;
             for (var e = 0; e < actionElements[itC].length; e++) {
                 if (actionsEdeting == itC && e == actionsEdetingPosition) {
                     draw.roundedRect(10 + l, it * 35 + 21, ctx.measureText(actionElements[itC][e]).width, 23, "#00ffff", 5, ctx);
-                }
-                else {
+                } else {
                     draw.roundedRect(10 + l, it * 35 + 21, ctx.measureText(actionElements[itC][e]).width, 23, "#ffff00", 5, ctx);
                 }
                 draw.text(10 + l, it * 35 + 45, actionElements[itC][e], "#000000", "left", font, ctx);
@@ -1970,16 +1971,20 @@ function updateRects() {
             }
             it++;
         }
+        
         //get avail sel
+        
+
         //if change show options
         if (actionsEdeting != -1) {
             draw.rect(5, actionsEdeting * 35 + 55, ctx.measureText("HELP ME! THIS IS SO COMPLICATED").width, 35, "#ff0000", ctx);
         }
+
         //add
         if (actionsEdeting == -1) {
             draw.rect(canvas.width - 50, 0, 50, 50, "#00ffff", ctx);
         }
-    }
+    }*/
     //übergang
     if (Übergang >= 1) {
         var alpha = 0;

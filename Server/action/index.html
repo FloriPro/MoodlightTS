@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="main.js"></script>
+    <link rel="stylesheet" href="main.css">
+    <style>
+        @font-face {
+            font-family: 'msyi';
+            src: url('/msyi.ttf');
+        }
+    </style>
+</head>
+
+<body style="font-family: msyi;">
+    <div id="change" style="display: none;">
+        <h1>Verändern</h1>
+        <select name="subject" id="subject">
+        </select>
+        <select name="topic" id="topic">
+        </select>
+        <select name="chapter" id="chapter" style="display: none;">
+        </select>
+        <input type="text" id="input0">
+        <input type="text" id="input1">
+        <input type="text" id="input2">
+
+        <button>FERTIG</button>
+    </div>
+
+    <button onclick="add();">hinzufügen</button>
+    <div id="list" style="display: flex; flex-direction: row; flex-wrap: wrap;">
+    </div>
+</body>
+
+</html>
