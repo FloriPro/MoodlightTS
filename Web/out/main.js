@@ -17,6 +17,7 @@ for (var x = 0; x < moodLightSizeY; x++) {
     colorSelTable.innerHTML += i + "</tr>";
 }
 //utility variables
+let isFocused = false;
 let font = "47px msyi";
 let host = "hotti.info";
 let myTopic = ""; //"fablab114/ML";
@@ -623,10 +624,10 @@ let menuButtons = {
     "Neues Projekt": function () { loadProject(JSON.parse(empty)); },
     "Zu Datei Speichern": downloadProject,
     "Von Datei Laden": function () { console.log("clickedLoad"); ProjectLoader.click(); },
-    "laden zu code": function () { aalert("wip"); },
+    "actions": function () { window.open("/action"); },
 };
 let menuWidth = 350;
-/**type: bool, str, num, button */
+/**type: bool, staticBool, str, num, button */
 let settings = {
     "Allgemein": {
         "Automatisch speichert": function (callType) { if (!callType) {
@@ -833,8 +834,57 @@ let settings = {
             return "";
         } },
         //"test": function (callType) { if (!callType) { return "str"; } else { return ""; } },
+    },
+    "Konto": {
+        "Anmelde Status": function (callType) {
+            if (!callType) {
+                return "staticBool";
+            }
+            else {
+                return "";
+            }
+        },
+        "abmelden": function (callType) { if (!callType) {
+            return "button";
+        }
+        else {
+            window.open("/google/logout");
+            return "";
+        } },
+        "anmelden": function (callType) { if (!callType) {
+            return "button";
+        }
+        else {
+            window.open("/auth");
+            return "";
+        } },
     }
 };
+let settingsOnLoad = {
+    "Anmelde Status": function () {
+        settingsInfo["Anmelde Status"] = "Lädt..";
+        staticElementsData["Anmelde Status"] = undefined;
+        $.ajax({
+            type: "POST",
+            url: "/api/v0/checkLogin",
+            success: function (e) {
+                if (e[0] == "t") {
+                    settingsInfo["Anmelde Status"] = e.substring(1);
+                    staticElementsData["Anmelde Status"] = true;
+                }
+                else {
+                    settingsInfo["Anmelde Status"] = "";
+                    staticElementsData["Anmelde Status"] = false;
+                }
+            }
+        }).fail(function (e) {
+            settingsInfo["Anmelde Status"] = "FEHLER";
+            alert("keine verbindung!");
+            staticElementsData["Anmelde Status"] = undefined;
+        });
+    }
+};
+let staticElementsData = { "Anmelde Status": undefined };
 let settingsInfo = { "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Eigenens design hochladen": "BETA! Designs können dieses Programm zerstören!", "Eigenens design löschen": "BETA!" };
 let setSettings = { "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false" };
 let settingsSelLeft = 0;
@@ -1036,6 +1086,10 @@ function goTo(übergangTo, type, settingsSelLef) {
     if (übergangTo == "Settings") {
         if (settingsSelLef) {
             settingsSelLeft = 0;
+        }
+        var sK = Object.keys(settingsOnLoad);
+        for (var i = 0; i < sK.length; i++) {
+            settingsOnLoad[sK[i]]();
         }
     }
 }
@@ -1604,9 +1658,6 @@ function checkDisplay() {
 function updateRects() {
     ToDraw = [];
     checkDisplay();
-    //if (!document.hasFocus()) {
-    //    return;
-    //}
     if (editType == "standartEdit") {
         font = "47px msyi";
         //updatefunction();
@@ -1834,6 +1885,12 @@ function updateRects() {
         }
     }
     else if (editType == "Settings") {
+        if (document.hasFocus() && isFocused == false) {
+            var sK = Object.keys(settingsOnLoad);
+            for (var i = 0; i < sK.length; i++) {
+                settingsOnLoad[sK[i]]();
+            }
+        }
         draw.image(latestCanvasPic, 0, 0);
         ctx.globalAlpha = 0.3921;
         draw.fill(currentColor["backgroundBlur"], ctx);
@@ -1929,62 +1986,26 @@ function updateRects() {
                         draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolTrue"], ctx);
                     }
                 }
+                if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]](false) == "staticBool") {
+                    if (staticElementsData[settinggruppe[s]] == false) {
+                        draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolFalse"], ctx);
+                    }
+                    else if (staticElementsData[settinggruppe[s]] == true) {
+                        draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolTrue"], ctx);
+                    }
+                    else if (staticElementsData[settinggruppe[s]] == undefined) {
+                        draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, "#5e5e5e", ctx);
+                    }
+                }
             }
         }
     }
-    /*else if (editType == "Action") {
-        //actionsEdeting
-        //actionsEdetingPosition
-        draw.fill("#ffffff", ctx);
-        //mouse left click
-        if (mouseSelectionLeft == -1 && mouse[0]) {
-            if (mouseX > canvas.width - 50 && mouseY < 50 && actionsEdeting == -1) {
-                actionsEdeting = actionElements.length
-                actionsEdetingPosition = 0;
-                actionElements.push([actionAvailable[1][0]])
-            }
-            mouseSelectionLeft = 0
-        }
-
-        //mouse left let go
-        if (mouseSelectionLeft != -1 && !mouse[0]) {
-            mouseSelectionLeft = -1;
-        }
-
-        //draw elements
-        var it = 0
-        for (var itC = 0; itC < actionElements.length; itC++) {
-            draw.roundedRect(5, it * 35 + 20, ctx.measureText(actionElements[itC].join("")).width + (actionElements[itC].length * 15), 25, "#ff0000", 5, ctx);
-
-            var l = 0;
-            for (var e = 0; e < actionElements[itC].length; e++) {
-                if (actionsEdeting == itC && e == actionsEdetingPosition) {
-                    draw.roundedRect(10 + l, it * 35 + 21, ctx.measureText(actionElements[itC][e]).width, 23, "#00ffff", 5, ctx);
-                } else {
-                    draw.roundedRect(10 + l, it * 35 + 21, ctx.measureText(actionElements[itC][e]).width, 23, "#ffff00", 5, ctx);
-                }
-                draw.text(10 + l, it * 35 + 45, actionElements[itC][e], "#000000", "left", font, ctx);
-                l += ctx.measureText(actionElements[itC][e]).width + 15;
-            }
-            if (actionsEdeting == itC) {
-                it += 3;
-            }
-            it++;
-        }
-        
-        //get avail sel
-        
-
-        //if change show options
-        if (actionsEdeting != -1) {
-            draw.rect(5, actionsEdeting * 35 + 55, ctx.measureText("HELP ME! THIS IS SO COMPLICATED").width, 35, "#ff0000", ctx);
-        }
-
-        //add
-        if (actionsEdeting == -1) {
-            draw.rect(canvas.width - 50, 0, 50, 50, "#00ffff", ctx);
-        }
-    }*/
+    if (!document.hasFocus()) {
+        isFocused = false;
+    }
+    else {
+        isFocused = true;
+    }
     //übergang
     if (Übergang >= 1) {
         var alpha = 0;

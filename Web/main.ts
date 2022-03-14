@@ -19,6 +19,8 @@ for (var x = 0; x < moodLightSizeY; x++) {
 }
 
 //utility variables
+let isFocused = false
+
 let font = "47px msyi";
 
 let host = "hotti.info";
@@ -184,7 +186,7 @@ function onConnect() {
     console.log("onConnect");
     client.subscribe(myTopic);
 }
-function onFailure() { console.log("on Failure");}
+function onFailure() { console.log("on Failure"); }
 
 function onConnectionLost(responseObject: { errorCode: number; errorMessage: string; }) {
     if (responseObject.errorCode != 0) {
@@ -492,6 +494,10 @@ function aalert(message: string) {
     alert(message);
     mouse[0] = false;
 }
+function openWindow(url: string) {
+    window.open(url);
+    mouse[0]=false;
+}
 
 
 //Game Variables
@@ -507,21 +513,6 @@ var Übergang = -1;
 var ÜbergangZu = "Question";
 
 let projectName = "unset"
-
-/*let actionAvailable: any = ["sel",
-    ["jede", ["sel", [
-        ["sekunden", ["num", "zeit"]],
-        ["minuten", ["num", "zeit"]],
-        ["stunden", ["num", "zeit"]],
-        ["tage", ["num", "zeit"]]]
-    ]],
-    ["um", ["string", "sek:min:stunde"]],
-    ["server eingang", ["sel", [
-        ["GET", ["string", "send to path"]],
-        ["POST", ["string", "send to path"]]]
-    ]],
-    ["Websiten veränderung", ["string", "website url with path"]]
-];*/
 
 let actionElements = [
     ["jede", "minuten", "5"],
@@ -590,12 +581,12 @@ let menuButtons: { [name: string]: () => void } = {
     "Neues Projekt": function () { loadProject(JSON.parse(empty)) },
     "Zu Datei Speichern": downloadProject,
     "Von Datei Laden": function () { console.log("clickedLoad"); ProjectLoader.click(); },
-    "laden zu code": function () { aalert("wip") },
+    "actions": function () { openWindow("/action"); },
 }
 let menuWidth = 350
 
 
-/**type: bool, str, num, button */
+/**type: bool, staticBool, str, num, button */
 let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* false: lookup, true: click*/: boolean) => string /*<- type*/ } } = {
     "Allgemein": {
         "Automatisch speichert": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
@@ -711,11 +702,47 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                 return "";
             }
         },
-        "Eigenens design erstellen": function (callType) { if (!callType) { return "button"; } else { window.open("/colorMaker/"); return ""; } },
+        "Eigenens design erstellen": function (callType) { if (!callType) { return "button"; } else { openWindow("/colorMaker/"); return ""; } },
 
         //"test": function (callType) { if (!callType) { return "str"; } else { return ""; } },
+    },
+    "Konto": {
+        "Anmelde Status": function (callType) {
+            if (!callType) {
+                return "staticBool";
+            } else {
+
+                return "";
+            }
+        },
+        "abmelden": function (callType) { if (!callType) { return "button"; } else { openWindow("/google/logout"); return ""; } },
+        "anmelden": function (callType) { if (!callType) { return "button"; } else { openWindow("/auth"); return ""; } },
     }
 }
+let settingsOnLoad: any = {
+    "Anmelde Status": function () {
+        settingsInfo["Anmelde Status"] = "Lädt..";
+        staticElementsData["Anmelde Status"] = undefined;
+        $.ajax({
+            type: "POST",
+            url: "/api/v0/checkLogin",
+            success: function (e) {
+                if (e[0] == "t") {
+                    settingsInfo["Anmelde Status"] = e.substring(1);
+                    staticElementsData["Anmelde Status"] = true;
+                } else {
+                    settingsInfo["Anmelde Status"] = "";
+                    staticElementsData["Anmelde Status"] = false;
+                }
+            }
+        }).fail(function (e) {
+            settingsInfo["Anmelde Status"] = "FEHLER";
+            alert("keine verbindung!")
+            staticElementsData["Anmelde Status"] = undefined;
+        });
+    }
+}
+let staticElementsData: any = { "Anmelde Status": undefined };
 let settingsInfo: { [einstellung: string]: string } = { "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Eigenens design hochladen": "BETA! Designs können dieses Programm zerstören!", "Eigenens design löschen": "BETA!" }
 let setSettings: { [einstellung: string]: string } = { "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false" };
 let settingsSelLeft = 0;
@@ -935,6 +962,10 @@ function goTo(übergangTo: string, type: number, settingsSelLef?: boolean) {
     }
     if (übergangTo == "Settings") {
         if (settingsSelLef) { settingsSelLeft = 0; }
+        var sK = Object.keys(settingsOnLoad);
+        for (var i = 0; i < sK.length; i++) {
+            settingsOnLoad[sK[i]]();
+        }
     }
 }
 
@@ -1494,10 +1525,6 @@ function updateRects() {
     ToDraw = [];
     checkDisplay();
 
-    //if (!document.hasFocus()) {
-    //    return;
-    //}
-
     if (editType == "standartEdit") {
         font = "47px msyi";
 
@@ -1730,6 +1757,13 @@ function updateRects() {
         }
     }
     else if (editType == "Settings") {
+        if (document.hasFocus() && isFocused == false) {
+            var sK = Object.keys(settingsOnLoad);
+            for (var i = 0; i < sK.length; i++) {
+                settingsOnLoad[sK[i]]();
+            }
+        }
+
         draw.image(latestCanvasPic, 0, 0);
         ctx.globalAlpha = 0.3921;
         draw.fill(currentColor["backgroundBlur"], ctx);
@@ -1807,7 +1841,7 @@ function updateRects() {
         //draw right
         draw.rect(25 + 200 + 5, 65, canvas.width - 260, canvas.height - 70 - 30 + 5, currentColor["settingsBackground"], ctx);
         if (settings[hauptgruppe[settingsSelLeft]] != undefined) {
-            var settinggruppe = Object.keys(settings[hauptgruppe[settingsSelLeft]]);
+            var settinggruppe: string[] = Object.keys(settings[hauptgruppe[settingsSelLeft]]);
             for (s = 0; s < settinggruppe.length; s++) {
                 if (mouseX > 25 + 200 + 10 && mouseX < canvas.width - 45 && mouseY > 70 + s * 30 && mouseY < 70 + s * 30 + 31) {
                     draw.rect(25 + 200 + 10, 70 + s * 30, canvas.width - 280, 27, currentColor["settingsSelMouseOver"], ctx); //mouse over: d2d2d2}
@@ -1822,62 +1856,24 @@ function updateRects() {
                         draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolTrue"], ctx);
                     }
                 }
+                if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]](false) == "staticBool") {
+                    if (staticElementsData[settinggruppe[s]] == false) {
+                        draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolFalse"], ctx);
+                    } else if (staticElementsData[settinggruppe[s]] == true) {
+                        draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolTrue"], ctx);
+                    } else if (staticElementsData[settinggruppe[s]] == undefined) {
+                        draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, "#5e5e5e", ctx);
+                    }
+                }
             }
         }
     }
-    /*else if (editType == "Action") {
-        //actionsEdeting
-        //actionsEdetingPosition
-        draw.fill("#ffffff", ctx);
-        //mouse left click
-        if (mouseSelectionLeft == -1 && mouse[0]) {
-            if (mouseX > canvas.width - 50 && mouseY < 50 && actionsEdeting == -1) {
-                actionsEdeting = actionElements.length
-                actionsEdetingPosition = 0;
-                actionElements.push([actionAvailable[1][0]])
-            }
-            mouseSelectionLeft = 0
-        }
 
-        //mouse left let go
-        if (mouseSelectionLeft != -1 && !mouse[0]) {
-            mouseSelectionLeft = -1;
-        }
-
-        //draw elements
-        var it = 0
-        for (var itC = 0; itC < actionElements.length; itC++) {
-            draw.roundedRect(5, it * 35 + 20, ctx.measureText(actionElements[itC].join("")).width + (actionElements[itC].length * 15), 25, "#ff0000", 5, ctx);
-
-            var l = 0;
-            for (var e = 0; e < actionElements[itC].length; e++) {
-                if (actionsEdeting == itC && e == actionsEdetingPosition) {
-                    draw.roundedRect(10 + l, it * 35 + 21, ctx.measureText(actionElements[itC][e]).width, 23, "#00ffff", 5, ctx);
-                } else {
-                    draw.roundedRect(10 + l, it * 35 + 21, ctx.measureText(actionElements[itC][e]).width, 23, "#ffff00", 5, ctx);
-                }
-                draw.text(10 + l, it * 35 + 45, actionElements[itC][e], "#000000", "left", font, ctx);
-                l += ctx.measureText(actionElements[itC][e]).width + 15;
-            }
-            if (actionsEdeting == itC) {
-                it += 3;
-            }
-            it++;
-        }
-        
-        //get avail sel
-        
-
-        //if change show options
-        if (actionsEdeting != -1) {
-            draw.rect(5, actionsEdeting * 35 + 55, ctx.measureText("HELP ME! THIS IS SO COMPLICATED").width, 35, "#ff0000", ctx);
-        }
-
-        //add
-        if (actionsEdeting == -1) {
-            draw.rect(canvas.width - 50, 0, 50, 50, "#00ffff", ctx);
-        }
-    }*/
+    if (!document.hasFocus()) {
+        isFocused = false;
+    } else {
+        isFocused = true;
+    }
 
     //übergang
     if (Übergang >= 1) {
