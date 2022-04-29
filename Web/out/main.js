@@ -72,6 +72,11 @@ function loadProject(jsonLoad) {
     }
 }
 function createUserEvents() {
+    //Phone
+    document.addEventListener("touchstart", toutchStart);
+    document.addEventListener("touchend", toutchEnd);
+    document.addEventListener("touchmove", mousemove);
+    //PC
     document.addEventListener("mousedown", mousedown);
     document.addEventListener("mouseup", mouseup);
     document.addEventListener("mousemove", mousemove);
@@ -94,6 +99,16 @@ function createUserEvents() {
     function windowfocus() {
         pressedKeys = {};
     }
+    function toutchStart(e) {
+        mouseX = e.touches[0].clientX;
+        mouseY = e.touches[0].clientY;
+        mouse[0] = true;
+        offsetX = mouseX;
+        offsetY = mouseY;
+    }
+    function toutchEnd(e) {
+        mouse[0] = false;
+    }
     function mousemove(e) {
         mouseX = e.changedTouches ?
             e.changedTouches[0].pageX :
@@ -113,8 +128,6 @@ function createUserEvents() {
     }
     function mouseup(e) {
         mouse[e.button] = false;
-        if (e.button == 0) {
-        }
         return true;
     }
     function keyEvent(e) {
@@ -171,6 +184,7 @@ function mqttConstructor() {
     }
 }
 function onConnect() {
+    UpdateStaticSettingsIfInSettings();
     // Once a connection has been made, make a subscription and send a message.
     console.log("onConnect");
     client.subscribe(myTopic);
@@ -179,28 +193,31 @@ function onFailure() { console.log("on Failure"); }
 function onConnectionLost(responseObject) {
     if (responseObject.errorCode != 0) {
         console.log("onConnectionLost:" + responseObject.errorMessage + "\nreconnecting...");
-        client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
+        connect();
     }
 }
 function reconnect() {
     if (client.isConnected()) {
         client.disconnect();
     }
-    client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
+    connect();
 }
 function onMessageArrived(message) {
+    console.log("onMessageArrived:" + message.payloadString);
     if (message.payloadString.substring(1, 0) == ";" && waitingForMQTTPic) {
         console.log("load");
         pictureValues[page] = pictureString2Value(message.payloadString.substring(1));
         loadPictureVal(pictureValues[page]);
         waitingForMQTTPic = false;
     }
-    console.log("onMessageArrived:" + message.payloadString);
 }
 function send(dat) {
     var message = new Paho.MQTT.Message(dat);
     message.destinationName = myTopic;
     client.send(message);
+}
+function connect() {
+    client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
 }
 class drawApp {
     image(image, posx, posy) {
@@ -222,6 +239,7 @@ class drawApp {
         ctx.beginPath();
         ctx.strokeRect(posx, posy, width, height);
         ctx.stroke();
+        ctx.closePath();
         if (ctx.globalAlpha != 1) {
             ctx.fillRect(posx + (radius / 2), posy - (radius / 2), width - radius, height + radius);
         }
@@ -454,7 +472,10 @@ function elementLenghtAndDraw(Element, plx, ply) {
         }
         l += 5;
         if (Element[0] in specialRender && x in specialRender[Element[0]]) {
-            specialRender[Element[0]][x][1](Element[1][x], plx + l - 5, ply - 22 - 5);
+            try {
+                specialRender[Element[0]][x][1](Element[1][x], plx + l - 5, ply - 22 - 5);
+            }
+            catch (_a) { }
             l += specialRender[Element[0]][x][0];
         }
         else {
@@ -516,10 +537,16 @@ function aalert(message) {
     alert(message);
     mouse[0] = false;
 }
+function openWindow(url) {
+    window.open(url);
+    mouse[0] = false;
+}
 //Game Variables
 let waitingForMQTTPic = false;
 var comesFrom = "";
-var editType = "standartEdit"; //standartEdit, PictureEdit, Question, Settings, Action
+/**standartEdit, PictureEdit, Question, Settings, Action*/
+var editType = "standartEdit";
+let projectName = "unset";
 let pictureEditKeyEvents = { "c": function () { navigator.clipboard.writeText(pictureValue2String(pictureValues[page])); }, "v": function () { navigator.clipboard.readText().then(clipText => { if (clipText.includes("\n")) {
         var d = clipText.split("\n");
         for (var i = 0; i < d.length; i++) {
@@ -532,24 +559,9 @@ let pictureEditKeyEvents = { "c": function () { navigator.clipboard.writeText(pi
     else {
         pictureValues[page] = pictureString2Value(clipText);
     } loadPictureVal(pictureValues[page]); }); } };
-var Question = ["Frage ERROR", { "Antworten": function () { console.warn("Question without defenition"); } }];
+var Question = ["ERROR", { "ERROR": function () { console.warn("Question without defenition"); } }];
 var Übergang = -1;
 var ÜbergangZu = "Question";
-let projectName = "unset";
-/*let actionAvailable: any = ["sel",
-    ["jede", ["sel", [
-        ["sekunden", ["num", "zeit"]],
-        ["minuten", ["num", "zeit"]],
-        ["stunden", ["num", "zeit"]],
-        ["tage", ["num", "zeit"]]]
-    ]],
-    ["um", ["string", "sek:min:stunde"]],
-    ["server eingang", ["sel", [
-        ["GET", ["string", "send to path"]],
-        ["POST", ["string", "send to path"]]]
-    ]],
-    ["Websiten veränderung", ["string", "website url with path"]]
-];*/
 let actionElements = [
     ["jede", "minuten", "5"],
     ["server eingang", "GET", "specificPathForMyInput"]
@@ -624,10 +636,10 @@ let menuButtons = {
     "Neues Projekt": function () { loadProject(JSON.parse(empty)); },
     "Zu Datei Speichern": downloadProject,
     "Von Datei Laden": function () { console.log("clickedLoad"); ProjectLoader.click(); },
-    "actions": function () { window.open("/action"); },
+    "actions": function () { openWindow("/action"); },
 };
 let menuWidth = 350;
-/**type: bool, staticBool, str, num, button */
+/**type: bool, staticBool, showingBool, str, num, button, info */
 let settings = {
     "Allgemein": {
         "Automatisch speichert": function (callType) { if (!callType) {
@@ -674,6 +686,23 @@ let settings = {
         } },
     },
     "MQTT": {
+        "Verbindung": function (callType) {
+            if (!callType) {
+                return "showingBool";
+            }
+            else {
+                if (client.isConnected()) {
+                    client.disconnect();
+                    UpdateStaticSettingsIfInSettings();
+                }
+                else {
+                    settingsInfo["Verbindung"] = "Verbinden...";
+                    staticElementsData["Verbindung"] = undefined;
+                    connect();
+                }
+                return "";
+            }
+        },
         "Daten ändern": function (callType) {
             if (!callType) {
                 return "button";
@@ -706,13 +735,29 @@ let settings = {
             aalert("Topic: " + myTopic + " | User: " + myUser + " | Password: " + myPass);
             return "";
         } },
-        "Neu Verbinden": function (callType) { if (!callType) {
-            return "button";
-        }
-        else {
-            reconnect();
-            return "";
-        } },
+        "Daten Von Server Einsetzen": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                settingsInfo["Daten Von Server Anzeigen"] = "Laden...";
+                $.ajax({
+                    type: "POST",
+                    url: "/api/v0/getDat",
+                    success: function (e) {
+                        settingsInfo["Daten Von Server Anzeigen"] = "";
+                        myTopic = e.split(" | ")[0];
+                        myUser = e.split(" | ")[1];
+                        myPass = e.split(" | ")[2];
+                    }
+                }).fail(function (e) {
+                    settingsInfo["Daten Von Server Anzeigen"] = "FEHLER! Laden fehlgeschlagen";
+                    aalert("Laden fehlgeschlagen");
+                });
+                return "";
+            }
+        },
+        //"Neu Verbinden": function (callType) { if (!callType) { return "button"; } else { reconnect(); return ""; } },
         "Projekt namen anzeigen bei senden": function (callType) { if (!callType) {
             return "bool";
         }
@@ -721,6 +766,30 @@ let settings = {
         } },
     },
     "Aussehen": {
+        "Animationen Anzeigen": function (callType) { if (!callType) {
+            return "bool";
+        }
+        else {
+            return "";
+        } },
+        "Bilder Anzeigen": function (callType) { if (!callType) {
+            return "bool";
+        }
+        else {
+            return "";
+        } },
+        "  ": function (callType) { if (!callType) {
+            return "info";
+        }
+        else {
+            return "";
+        } },
+        "Farben:": function (callType) { if (!callType) {
+            return "info";
+        }
+        else {
+            return "";
+        } },
         "Darkmode": function (callType) { if (!callType) {
             return "bool";
         }
@@ -732,6 +801,12 @@ let settings = {
             else {
                 currentColor = colors["light"];
             }
+            return "";
+        } },
+        "": function (callType) { if (!callType) {
+            return "info";
+        }
+        else {
             return "";
         } },
         "Eigenens design": function (callType) {
@@ -751,15 +826,15 @@ let settings = {
                 var a = {};
                 var dK = Object.keys(d);
                 for (var x = 0; x < dK.length; x++) {
-                    a[dK[x]] = function (seId) {
+                    var v = dK[x].substring(0, dK[x].lastIndexOf('_'));
+                    v = v.substring(0, v.lastIndexOf('_')) + "  " + dK[x].substring(dK[x].lastIndexOf('_') + 1);
+                    a[v] = function (seId) {
                         var l = localStorage.getItem("!designs");
                         if (l != undefined) {
                             var d = JSON.parse(l);
                             var dK = Object.keys(d);
-                            for (var x = 0; x < dK.length; x++) {
-                                settingsInfo["Eigenens design"] = dK[seId];
-                                currentColor = JSON.parse(d[dK[seId]]);
-                            }
+                            settingsInfo["Eigenens design"] = dK[seId];
+                            currentColor = JSON.parse(d[dK[seId]]);
                         }
                         goTo("Settings", 1);
                     };
@@ -768,35 +843,7 @@ let settings = {
                 return "";
             }
         },
-        "Eigenens design hochladen": function (callType) {
-            if (!callType) {
-                return "button";
-            }
-            else {
-                var n = sprompt("name");
-                var j = sprompt("json");
-                var l = localStorage.getItem("!designs");
-                if (l != undefined) {
-                    var d = JSON.parse(l);
-                }
-                else {
-                    var d = {};
-                } //set JSON parsed var d
-                //ask override
-                if (d[n] != undefined) {
-                    if (window.confirm("override") == undefined) {
-                        aalert("canceled");
-                        return "";
-                    }
-                }
-                d[n] = j;
-                localStorage.setItem("!designs", JSON.stringify(d));
-                settingsInfo["Eigenens design"] = n;
-                currentColor = JSON.parse(j);
-                return "";
-            }
-        },
-        "Eigenens design löschen": function (callType) {
+        "Design löschen": function (callType) {
             if (!callType) {
                 return "button";
             }
@@ -826,68 +873,234 @@ let settings = {
                 return "";
             }
         },
+        "Design Durchstöbern": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                window.open("/Designs/");
+                return "";
+            }
+        },
+        " ": function (callType) { if (!callType) {
+            return "info";
+        }
+        else {
+            return "";
+        } },
+        "Dev:": function (callType) { if (!callType) {
+            return "info";
+        }
+        else {
+            return "";
+        } },
+        "Design JSON Hinzufügen": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                var n = sprompt("name") + "_userId_userName";
+                var j = sprompt("json");
+                var l = localStorage.getItem("!designs");
+                if (l != undefined) {
+                    var d = JSON.parse(l);
+                }
+                else {
+                    var d = {};
+                } //set JSON parsed var d
+                //ask override
+                if (d[n] != undefined) {
+                    if (window.confirm("override") == undefined) {
+                        aalert("canceled");
+                        return "";
+                    }
+                }
+                d[n] = j;
+                localStorage.setItem("!designs", JSON.stringify(d));
+                settingsInfo["Eigenens design"] = n;
+                currentColor = JSON.parse(j);
+                return "";
+            }
+        },
         "Eigenens design erstellen": function (callType) { if (!callType) {
             return "button";
         }
         else {
-            window.open("/colorMaker/");
+            openWindow("/colorMaker/");
             return "";
         } },
         //"test": function (callType) { if (!callType) { return "str"; } else { return ""; } },
     },
     "Konto": {
+        "/!\\ eine Anmeldung ist nicht Nötig /!\\": function (callType) { if (!callType) {
+            return "info";
+        }
+        else {
+            aalert("Eine Anmeldung ist nur nötig, wenn Aktionen benutzt werden");
+            return "";
+        } },
         "Anmelde Status": function (callType) {
             if (!callType) {
-                return "staticBool";
+                return "showingBool";
             }
             else {
+                if (staticElementsData["Anmelde Status"]) {
+                    staticElementsData["Anmelde Status"] = undefined;
+                    settingsInfo["Anmelde Status"] = "Abmelden...";
+                    $.ajax({
+                        type: "GET",
+                        url: "/google/logout",
+                        success: function () {
+                            UpdateStaticSettingsIfInSettings();
+                            settingsInfo["Anmelde Status"] = "";
+                        }
+                    }).fail(function (e) {
+                        settingsInfo["Anmelde Status"] = "FEHLER! Abmeldung fehlgeschlagen";
+                        alert("Abmeldung fehlgeschlagen");
+                        staticElementsData["Anmelde Status"] = undefined;
+                    });
+                    //var strWindowFeatures = "location=yes,height=570,width=520,scrollbars=yes,status=yes";
+                    //var URL = "/google/logout";
+                    //var win = window.open(URL, "_blank", strWindowFeatures) as Window;
+                }
+                else {
+                    var strWindowFeatures = "location=yes,height=570,width=520,scrollbars=yes,status=yes";
+                    var URL = "/google/login";
+                    var win = window.open(URL, "_blank", strWindowFeatures);
+                }
                 return "";
             }
         },
-        "abmelden": function (callType) { if (!callType) {
-            return "button";
-        }
-        else {
-            window.open("/google/logout");
-            return "";
-        } },
-        "anmelden": function (callType) { if (!callType) {
-            return "button";
-        }
-        else {
-            window.open("/auth");
-            return "";
-        } },
+        "Server MQTT Daten": function (callType) {
+            if (!callType) {
+                return "showingBool";
+            }
+            else {
+                if (staticElementsData["Server MQTT Daten"]) {
+                    staticElementsData["Server MQTT Daten"] = undefined;
+                    settingsInfo["Server MQTT Daten"] = "Löschen...";
+                    $.ajax({
+                        type: "POST",
+                        url: "/api/v0/remDat",
+                        success: function () {
+                            UpdateStaticSettingsIfInSettings();
+                        }
+                    }).fail(function (e) {
+                        settingsInfo["Server MQTT Daten"] = "FEHLER! Löschung fehlgeschlagen";
+                        alert("Löschung fehlgeschlagen");
+                        staticElementsData["Server MQTT Daten"] = undefined;
+                    });
+                }
+                else {
+                    staticElementsData["Server MQTT Daten"] = undefined;
+                    settingsInfo["Server MQTT Daten"] = "Senden...";
+                    $.ajax({
+                        type: "POST",
+                        url: "/api/v0/setDat",
+                        data: JSON.stringify([myTopic, myUser, myPass]),
+                        success: function (e) {
+                            if (e != "ok") {
+                                aalert(e);
+                            }
+                            UpdateStaticSettingsIfInSettings();
+                        }
+                    }).fail(function (e) {
+                        settingsInfo["Server MQTT Daten"] = "FEHLER! Senden fehlgeschlagen";
+                        alert("Senden fehlgeschlagen");
+                        staticElementsData["Server MQTT Daten"] = undefined;
+                    });
+                }
+                return "";
+            }
+        },
+        "Daten Von Server Anzeigen": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                settingsInfo["Daten Von Server Anzeigen"] = "Laden...";
+                $.ajax({
+                    type: "POST",
+                    url: "/api/v0/getDat",
+                    success: function (e) {
+                        settingsInfo["Daten Von Server Anzeigen"] = "";
+                        aalert(e);
+                    }
+                }).fail(function (e) {
+                    settingsInfo["Daten Von Server Anzeigen"] = "FEHLER! Laden fehlgeschlagen";
+                    aalert("Laden fehlgeschlagen");
+                });
+                return "";
+            }
+        },
+        //"abmelden": function (callType) { if (!callType) { return "button"; } else { if (staticElementsData["Anmelde Status"]) { openWindow("/google/logout"); } else { aalert("Du bist bereits abgemeldet") } return ""; } },
+        //"anmelden": function (callType) { if (!callType) { return "button"; } else { if (!staticElementsData["Anmelde Status"]) { openWindow("/auth"); } else { aalert("Du bist bereits angemeldet") } return ""; } },
     }
 };
 let settingsOnLoad = {
     "Anmelde Status": function () {
-        settingsInfo["Anmelde Status"] = "Lädt..";
-        staticElementsData["Anmelde Status"] = undefined;
+        settingsInfo["Anmelde Status"] = "Aktualisieren...";
         $.ajax({
             type: "POST",
             url: "/api/v0/checkLogin",
             success: function (e) {
                 if (e[0] == "t") {
-                    settingsInfo["Anmelde Status"] = e.substring(1);
+                    settingsInfo["Anmelde Status"] = e.substring(1) + " (Klick zu ändern)";
                     staticElementsData["Anmelde Status"] = true;
                 }
                 else {
-                    settingsInfo["Anmelde Status"] = "";
+                    settingsInfo["Anmelde Status"] = "(Klick zu ändern)";
                     staticElementsData["Anmelde Status"] = false;
                 }
             }
         }).fail(function (e) {
             settingsInfo["Anmelde Status"] = "FEHLER";
-            alert("keine verbindung!");
             staticElementsData["Anmelde Status"] = undefined;
         });
-    }
+    },
+    "Server MQTT Daten": function () {
+        settingsInfo["Server MQTT Daten"] = "Aktualisieren...";
+        $.ajax({
+            type: "POST",
+            url: "/api/v0/checkDat",
+            success: function (e) {
+                if (e[0] == "t") {
+                    settingsInfo["Server MQTT Daten"] = "(Klick zu ändern)";
+                    settingsInfo["AServer MQTT Daten"] = e.substring(1);
+                    staticElementsData["Server MQTT Daten"] = true;
+                }
+                else {
+                    settingsInfo["Server MQTT Daten"] = "(Klick zu ändern)";
+                    staticElementsData["Server MQTT Daten"] = false;
+                }
+            }
+        }).fail(function (e) {
+            settingsInfo["Anmelde Status"] = "FEHLER";
+            staticElementsData["Anmelde Status"] = undefined;
+        });
+    },
+    "Verbindung": function () {
+        staticElementsData["Verbindung"] = client.isConnected();
+        if (client.isConnected()) {
+            settingsInfo["Verbindung"] = host;
+        }
+        else {
+            settingsInfo["Verbindung"] = "";
+        }
+    },
 };
-let staticElementsData = { "Anmelde Status": undefined };
-let settingsInfo = { "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Eigenens design hochladen": "BETA! Designs können dieses Programm zerstören!", "Eigenens design löschen": "BETA!" };
-let setSettings = { "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false" };
+let staticElementsData = { "Anmelde Status": undefined, "Verbindung": undefined };
+let settingsInfo = { "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" };
+let setSettings = { "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true" };
 let settingsSelLeft = 0;
+function UpdateStaticSettingsIfInSettings() {
+    if (editType == "Settings") {
+        var sK = Object.keys(settingsOnLoad);
+        for (var i = 0; i < sK.length; i++) {
+            settingsOnLoad[sK[i]]();
+        }
+    }
+}
 let pictureId = -1;
 let animationId = -1;
 /**
@@ -923,7 +1136,16 @@ const notDragable = ["Start"];
 const dropdownMenuButtons = { "Bild anzeigen": { "Bearbeiten": function () { console.log("Bearbeiten"); }, "Anzeigen": function () { console.log("Anzeigen"); } }, "Animationen": { "Bearbeiten": function () { console.log("Bearbeiten"); } } };
 const specialRender = {
     "Bild anzeigen": {
-        0: [24, function (inputNum, posx, posy) { renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2, posy - 2, draw); }]
+        0: [24, function (inputNum, posx, posy) {
+                if (setSettings["Bilder Anzeigen"] == "true") {
+                    renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2, posy - 2, draw);
+                }
+            }]
+    },
+    "Animationen": {
+        0: [24, function (inputNum, posx, posy) {
+                toDrawAnimations.push([inputNum, posx, posy]);
+            }]
     },
 };
 let colors = { "light": { "background": "#fcfcfc", "backgroundPoints": "#646464", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" }, "dark": { "background": "#030303", "backgroundPoints": "#9b9b9b", "blockArgBackground": "#000000", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#4f4f4f", "EditMenu": "#2f0816", "EditMenuAccent": "#843653", "NormalText": "#ffffff", "MenuButtons": "#ffffff", "MenuBackground": "#ffffff", "MenuText": "#000000", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#2d2d2d", "settingsSelStandard": "#232323", "settingsSelSelected": "#373737", "backgroundBlur": "#ffffff", "settingsBackground": "#000000", "settingsBackgroundHighlight": "#0f0f0f", "questionRedBackgroundBlur": "#69ffff", "questionBackground": "#555555", "objectSidebarBlur": "#3f3f3f", "ProjectName": "#4287f5" } };
@@ -932,6 +1154,8 @@ let setYellow = ["Loop", "Unendlich", "Start", "End"];
 let setPurple = ["Bild anzeigen", "Animationen", "Laden"];
 let pictures = ["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"];
 let animations = [];
+let animationProgression = [];
+let toDrawAnimations = [];
 let Elements = [[["Start", ["0"]]]];
 let ElementPositions = [[0, 0]];
 let FreeElements = [];
@@ -1045,7 +1269,7 @@ function finishPicture() {
     else {
         aalert("Something went wrong: No ID!");
     }
-    autoSave;
+    autoSave();
 }
 function genProjectJson() {
     return JSON.stringify({ "Elements": Elements, "pictures": pictures, "ElementPositions": ElementPositions, "FreeElements": FreeElements, "animations": animations, "projectName": projectName });
@@ -1388,18 +1612,23 @@ function updatefunction() {
                 let pyM = py + hei * blockheight + blockheight;
                 if (mouseX > px && mouseX < pxM && mouseY > py && mouseY < pyM) {
                     EditMenuEdeting = Math.floor((mouseY - 20 - py) / blockheight);
-                    if (setSettings["Promt als eingabe"] == "false") {
-                        mouseSelectionRight = 1;
-                        //console.log(mouseY-20-py);
-                        mouseSelectionLeft = -2;
+                    if (EditMenuEdeting < Elements[mouseDataRight[0]][mouseDataRight[1]][1].length) {
+                        if (setSettings["Promt als eingabe"] == "false") {
+                            mouseSelectionRight = 1;
+                            //console.log(mouseY-20-py);
+                            mouseSelectionLeft = -2;
+                        }
+                        else {
+                            mouse[0] = false;
+                            //mouseSelectionLeft = -1;
+                            var r = pprompt("", Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting]);
+                            if (r != undefined) {
+                                Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = r;
+                            }
+                        }
                     }
                     else {
-                        mouse[0] = false;
-                        //mouseSelectionLeft = -1;
-                        var r = pprompt("", Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting]);
-                        if (r != undefined) {
-                            Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = r;
-                        }
+                        EditMenuEdeting = -1;
                     }
                 }
                 //if not in menu decrease number:
@@ -1535,6 +1764,26 @@ function updatefunction() {
 }
 function harddraw() {
     if (editType == "standartEdit") {
+        //Animations
+        if (setSettings["Animationen Anzeigen"] == "true") {
+            for (var x = 0; x < toDrawAnimations.length; x++) {
+                var inputNum = parseInt(toDrawAnimations[x][0]);
+                var pox = toDrawAnimations[x][1];
+                var poy = toDrawAnimations[x][2];
+                //function (inputNum: string, posx: number, posy: number) {
+                if (animations[inputNum] != undefined && animationProgression.length <= inputNum) {
+                    animationProgression.push(0);
+                }
+                if (isNaN(animationProgression[inputNum])) {
+                    animationProgression[inputNum] = 0;
+                }
+                renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 30, 30, pox - 2 + posx, poy - 2 + posy, drawReal);
+                animationProgression[inputNum] += 0.1;
+                if (animationProgression[inputNum] >= animations[inputNum].length - 0.5) {
+                    animationProgression[inputNum] = 0;
+                }
+            }
+        }
         font = "47px msyi";
         //Object sidebar
         if (mouseX < (sidebarSize + sidebarFadeIn) || sidebarFadeInTimer >= 0.05) {
@@ -1659,6 +1908,7 @@ function updateRects() {
     ToDraw = [];
     checkDisplay();
     if (editType == "standartEdit") {
+        toDrawAnimations = [];
         font = "47px msyi";
         //updatefunction();
         //////////
@@ -1920,7 +2170,6 @@ function updateRects() {
                     var sel = settinggruppe[Math.floor((mouseY - 70) / 30)];
                     if (sel != undefined) {
                         if (settings[hauptgruppe[settingsSelLeft]][sel](false) == "button") {
-                            settings[hauptgruppe[settingsSelLeft]][sel](true);
                         }
                         else if (settings[hauptgruppe[settingsSelLeft]][sel](false) == "bool") {
                             if (setSettings[sel] == "false") {
@@ -1939,6 +2188,8 @@ function updateRects() {
                             setSettings[sel] = sprompt(setSettings[sel] + " verändern zu");
                             settings[hauptgruppe[settingsSelLeft]][sel](true);
                         }
+                        mouse[0] = false;
+                        settings[hauptgruppe[settingsSelLeft]][sel](true);
                         setStorage();
                     }
                 }
@@ -1971,14 +2222,17 @@ function updateRects() {
         if (settings[hauptgruppe[settingsSelLeft]] != undefined) {
             var settinggruppe = Object.keys(settings[hauptgruppe[settingsSelLeft]]);
             for (s = 0; s < settinggruppe.length; s++) {
-                if (mouseX > 25 + 200 + 10 && mouseX < canvas.width - 45 && mouseY > 70 + s * 30 && mouseY < 70 + s * 30 + 31) {
-                    draw.rect(25 + 200 + 10, 70 + s * 30, canvas.width - 280, 27, currentColor["settingsSelMouseOver"], ctx); //mouse over: d2d2d2}
-                }
-                else {
-                    draw.rect(25 + 200 + 10, 70 + s * 30, canvas.width - 280, 27, currentColor["settingsSelStandard"], ctx); //mouse over: d2d2d2}
+                var type = settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]](false);
+                if (type != "info") {
+                    if (mouseX > 25 + 200 + 10 && mouseX < canvas.width - 45 && mouseY > 70 + s * 30 && mouseY < 70 + s * 30 + 31 && type != "staticBool") {
+                        draw.rect(25 + 200 + 10, 70 + s * 30, canvas.width - 280, 27, currentColor["settingsSelMouseOver"], ctx); //mouse over: d2d2d2}
+                    }
+                    else {
+                        draw.rect(25 + 200 + 10, 70 + s * 30, canvas.width - 280, 27, currentColor["settingsSelStandard"], ctx); //mouse over: d2d2d2}
+                    }
                 }
                 draw.text(25 + 200 + 10, 93 + s * 30, settinggruppe[s], currentColor["NormalText"], "left", font, ctx);
-                if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]](false) == "bool") {
+                if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && type == "bool") {
                     if (setSettings[settinggruppe[s]] == "false") {
                         draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolFalse"], ctx);
                     }
@@ -1986,7 +2240,7 @@ function updateRects() {
                         draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolTrue"], ctx);
                     }
                 }
-                if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]](false) == "staticBool") {
+                if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && (type == "staticBool" || type == "showingBool")) {
                     if (staticElementsData[settinggruppe[s]] == false) {
                         draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolFalse"], ctx);
                     }
@@ -2117,6 +2371,7 @@ function cursorUpdate() {
     }
 }
 setInterval(cursorUpdate, 100);
+setInterval(UpdateStaticSettingsIfInSettings, 10000);
 setInterval(drawScreen, 10);
 setInterval(updateScreen, 16);
 setTimeout(updateRects, 50);

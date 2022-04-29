@@ -82,8 +82,13 @@ function loadProject(jsonLoad: { Elements: [string, string[]][][]; pictures: str
         aalert("load failed");
     }
 }
-
 function createUserEvents() {
+    //Phone
+    document.addEventListener("touchstart", toutchStart);
+    document.addEventListener("touchend", toutchEnd);
+    document.addEventListener("touchmove", mousemove);
+
+    //PC
     document.addEventListener("mousedown", mousedown);
     document.addEventListener("mouseup", mouseup);
     document.addEventListener("mousemove", mousemove);
@@ -110,6 +115,16 @@ function createUserEvents() {
     function windowfocus() {
         pressedKeys = {};
     }
+    function toutchStart(e:TouchEvent){
+        mouseX = e.touches[0].clientX;
+        mouseY = e.touches[0].clientY;
+        mouse[0] = true;
+        offsetX = mouseX;
+        offsetY = mouseY;
+    }
+    function toutchEnd(e:TouchEvent){
+        mouse[0] = false;
+    }
     function mousemove(e: MouseEvent | TouchEvent) {
         mouseX = (e as TouchEvent).changedTouches ?
             (e as TouchEvent).changedTouches[0].pageX :
@@ -129,8 +144,6 @@ function createUserEvents() {
     }
     function mouseup(e: MouseEvent) {
         mouse[e.button] = false;
-        if (e.button == 0) {
-        }
         return true;
     }
     function keyEvent(e: KeyboardEvent) {
@@ -182,6 +195,8 @@ function mqttConstructor() {
     }
 }
 function onConnect() {
+    UpdateStaticSettingsIfInSettings();
+
     // Once a connection has been made, make a subscription and send a message.
     console.log("onConnect");
     client.subscribe(myTopic);
@@ -191,30 +206,32 @@ function onFailure() { console.log("on Failure"); }
 function onConnectionLost(responseObject: { errorCode: number; errorMessage: string; }) {
     if (responseObject.errorCode != 0) {
         console.log("onConnectionLost:" + responseObject.errorMessage + "\nreconnecting...");
-        client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
+        connect()
     }
 }
 function reconnect() {
     if (client.isConnected()) {
         client.disconnect()
     }
-    client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
+    connect()
 }
 function onMessageArrived(message: { payloadString: string; }) {
+    console.log("onMessageArrived:" + message.payloadString);
     if (message.payloadString.substring(1, 0) == ";" && waitingForMQTTPic) {
         console.log("load");
         pictureValues[page] = pictureString2Value(message.payloadString.substring(1))
         loadPictureVal(pictureValues[page]);
         waitingForMQTTPic = false
     }
-    console.log("onMessageArrived:" + message.payloadString);
 }
 function send(dat: string) {
     var message = new Paho.MQTT.Message(dat);
     message.destinationName = myTopic;
     client.send(message);
 }
-
+function connect() {
+    client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
+}
 class drawApp {
     public image(image: HTMLImageElement, posx: number, posy: number) {
         ctx.drawImage(image, posx, posy)
@@ -237,6 +254,7 @@ class drawApp {
 
         ctx.strokeRect(posx, posy, width, height);
         ctx.stroke();
+        ctx.closePath();
 
         if (ctx.globalAlpha != 1) {
             ctx.fillRect(posx + (radius / 2), posy - (radius / 2), width - radius, height + radius);
@@ -399,6 +417,7 @@ function removeItem(data: any[], index: number) {
     }
     return data;
 }
+
 function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: number) {
     setFont(font);
     let text = Element[0];
@@ -438,7 +457,7 @@ function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: num
         l += 5;
 
         if (Element[0] in specialRender && x in specialRender[Element[0]]) {
-            specialRender[Element[0]][x][1](Element[1][x], plx + l - 5, ply - 22 - 5);
+            try { specialRender[Element[0]][x][1](Element[1][x], plx + l - 5, ply - 22 - 5); } catch { }
             l += specialRender[Element[0]][x][0]
         } else {
             draw.roundedRect(plx + l + 2, ply - 5, ctx.measureText(t).width - 4, -(blockheight - 10) + 10, currentColor["blockArgBackground"], 10, ctx) //body outline
@@ -496,7 +515,7 @@ function aalert(message: string) {
 }
 function openWindow(url: string) {
     window.open(url);
-    mouse[0]=false;
+    mouse[0] = false;
 }
 
 
@@ -504,15 +523,15 @@ function openWindow(url: string) {
 let waitingForMQTTPic = false;
 
 var comesFrom = "";
-var editType = "standartEdit"; //standartEdit, PictureEdit, Question, Settings, Action
+/**standartEdit, PictureEdit, Question, Settings, Action*/
+var editType = "standartEdit";
+let projectName = "unset"
 
 let pictureEditKeyEvents: { [key: string]: () => void } = { "c": function () { navigator.clipboard.writeText(pictureValue2String(pictureValues[page])) }, "v": function () { navigator.clipboard.readText().then(clipText => { if (clipText.includes("\n")) { var d = clipText.split("\n"); for (var i = 0; i < d.length; i++) { if (pictureValues.length == page + i) { pictureValues.push(); } pictureValues[page + i] = pictureString2Value(d[i]); } } else { pictureValues[page] = pictureString2Value(clipText); } loadPictureVal(pictureValues[page]); }) } };
 
-var Question: [string, { [name: string]: (seId: number) => void }] = ["Frage ERROR", { "Antworten": function () { console.warn("Question without defenition"); } }]
+var Question: [string, { [name: string]: (seId: number) => void }] = ["ERROR", { "ERROR": function () { console.warn("Question without defenition"); } }]
 var Übergang = -1;
 var ÜbergangZu = "Question";
-
-let projectName = "unset"
 
 let actionElements = [
     ["jede", "minuten", "5"],
@@ -586,7 +605,7 @@ let menuButtons: { [name: string]: () => void } = {
 let menuWidth = 350
 
 
-/**type: bool, staticBool, str, num, button */
+/**type: bool, staticBool, showingBool, str, num, button, info */
 let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* false: lookup, true: click*/: boolean) => string /*<- type*/ } } = {
     "Allgemein": {
         "Automatisch speichert": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
@@ -613,6 +632,18 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
         "Promt als eingabe": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
     },
     "MQTT": {
+        "Verbindung": function (callType) {
+            if (!callType) { return "showingBool"; } else {
+                if (client.isConnected()) {
+                    client.disconnect();
+                    UpdateStaticSettingsIfInSettings();
+                } else {
+                    settingsInfo["Verbindung"] = "Verbinden...";
+                    staticElementsData["Verbindung"] = undefined;
+                    connect();
+                } return "";
+            }
+        },
         "Daten ändern": function (callType) {
             if (!callType) { return "button"; } else {
                 myTopic = sprompt("Topic");
@@ -624,11 +655,35 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
         },
         "Daten löschen": function (callType) { if (!callType) { return "button"; } else { myTopic = ""; myUser = ""; myPass = ""; if (client.isConnected()) { client.disconnect() }; return ""; } },
         "Daten einsehen": function (callType) { if (!callType) { return "button"; } else { aalert("Topic: " + myTopic + " | User: " + myUser + " | Password: " + myPass); return ""; } },
-        "Neu Verbinden": function (callType) { if (!callType) { return "button"; } else { reconnect(); return ""; } },
+        "Daten Von Server Einsetzen": function (callType) {
+            if (!callType) { return "button"; } else {
+                settingsInfo["Daten Von Server Anzeigen"] = "Laden...";
+                $.ajax({
+                    type: "POST",
+                    url: "/api/v0/getDat",
+                    success: function (e) {
+                        settingsInfo["Daten Von Server Anzeigen"] = "";
+                        myTopic= e.split(" | ")[0];
+                        myUser= e.split(" | ")[1];
+                        myPass= e.split(" | ")[2];
+                    }
+                }).fail(function (e) {
+                    settingsInfo["Daten Von Server Anzeigen"] = "FEHLER! Laden fehlgeschlagen";
+                    aalert("Laden fehlgeschlagen")
+                });
+                return "";
+            }
+        },
+        //"Neu Verbinden": function (callType) { if (!callType) { return "button"; } else { reconnect(); return ""; } },
         "Projekt namen anzeigen bei senden": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
     },
     "Aussehen": {
+        "Animationen Anzeigen": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
+        "Bilder Anzeigen": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
+        "  ": function (callType) { if (!callType) { return "info"; } else { return ""; } },
+        "Farben:": function (callType) { if (!callType) { return "info"; } else { return ""; } },
         "Darkmode": function (callType) { if (!callType) { return "bool"; } else { settingsInfo["Eigenens design"] = "BETA!"; if (setSettings["Darkmode"] == "true") { currentColor = colors["dark"]; } else { currentColor = colors["light"]; } return ""; } },
+        "": function (callType) { if (!callType) { return "info"; } else { return ""; } },
         "Eigenens design": function (callType) {
             if (!callType) { return "button"; } else {
                 var l = localStorage.getItem("!designs");
@@ -637,15 +692,15 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                 var a: { [n: string]: (seId: number) => void } = {};
                 var dK = Object.keys(d);
                 for (var x = 0; x < dK.length; x++) {
-                    a[dK[x]] = function (seId) {
+                    var v=dK[x].substring(0, dK[x].lastIndexOf('_'));
+                    v=v.substring(0, v.lastIndexOf('_'))+"  "+dK[x].substring(dK[x].lastIndexOf('_')+1);
+                    a[v] = function (seId) {
                         var l = localStorage.getItem("!designs");
                         if (l != undefined) {
                             var d: { [n: string]: any } = JSON.parse(l);
                             var dK: string[] = Object.keys(d);
-                            for (var x = 0; x < dK.length; x++) {
-                                settingsInfo["Eigenens design"] = dK[seId]
-                                currentColor = JSON.parse(d[dK[seId]]);
-                            }
+                            settingsInfo["Eigenens design"] = dK[seId]
+                            currentColor = JSON.parse(d[dK[seId]]);
                         }
                         goTo("Settings", 1);
                     }
@@ -655,29 +710,7 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                 return "";
             }
         },
-        "Eigenens design hochladen": function (callType) {
-            if (!callType) { return "button"; } else {
-                var n = sprompt("name");
-                var j = sprompt("json");
-                var l = localStorage.getItem("!designs");
-                if (l != undefined) { var d: { [name: string]: string } = JSON.parse(l); } else { var d: { [name: string]: string } = {}; } //set JSON parsed var d
-
-                //ask override
-                if (d[n] != undefined) {
-                    if (window.confirm("override") == undefined) {
-                        aalert("canceled")
-                        return "";
-                    }
-                }
-
-                d[n] = j;
-                localStorage.setItem("!designs", JSON.stringify(d));
-                settingsInfo["Eigenens design"] = n;
-                currentColor = JSON.parse(j);
-                return "";
-            }
-        },
-        "Eigenens design löschen": function (callType) {
+        "Design löschen": function (callType) {
             if (!callType) { return "button"; } else {
                 goTo("Question", 1);
                 var a: { [ind: string]: (seId: number) => void; } = {}
@@ -702,50 +735,186 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                 return "";
             }
         },
+        "Design Durchstöbern": function (callType) {
+            if (!callType) { return "button"; } else {
+                window.open("/Designs/");
+                return "";
+            }
+        },
+        " ": function (callType) { if (!callType) { return "info"; } else { return ""; } },
+        "Dev:": function (callType) { if (!callType) { return "info"; } else { return ""; } },
+        "Design JSON Hinzufügen": function (callType) {
+            if (!callType) { return "button"; } else {
+                var n = sprompt("name") + "_userId_userName";
+                var j = sprompt("json");
+                var l = localStorage.getItem("!designs");
+                if (l != undefined) { var d: { [name: string]: string } = JSON.parse(l); } else { var d: { [name: string]: string } = {}; } //set JSON parsed var d
+
+                //ask override
+                if (d[n] != undefined) {
+                    if (window.confirm("override") == undefined) {
+                        aalert("canceled")
+                        return "";
+                    }
+                }
+
+                d[n] = j;
+                localStorage.setItem("!designs", JSON.stringify(d));
+                settingsInfo["Eigenens design"] = n;
+                currentColor = JSON.parse(j);
+                return "";
+            }
+        },
         "Eigenens design erstellen": function (callType) { if (!callType) { return "button"; } else { openWindow("/colorMaker/"); return ""; } },
 
         //"test": function (callType) { if (!callType) { return "str"; } else { return ""; } },
     },
     "Konto": {
+        "/!\\ eine Anmeldung ist nicht Nötig /!\\": function (callType) { if (!callType) { return "info"; } else { aalert("Eine Anmeldung ist nur nötig, wenn Aktionen benutzt werden"); return ""; } },
         "Anmelde Status": function (callType) {
-            if (!callType) {
-                return "staticBool";
-            } else {
+            if (!callType) { return "showingBool"; } else {
+                if (staticElementsData["Anmelde Status"]) {
+                    staticElementsData["Anmelde Status"] = undefined;
+                    settingsInfo["Anmelde Status"] = "Abmelden...";
+                    $.ajax({
+                        type: "GET",
+                        url: "/google/logout",
+                        success: function () {
+                            UpdateStaticSettingsIfInSettings();
+                            settingsInfo["Anmelde Status"] = "";
+                        }
+                    }).fail(function (e) {
+                        settingsInfo["Anmelde Status"] = "FEHLER! Abmeldung fehlgeschlagen";
+                        alert("Abmeldung fehlgeschlagen")
+                        staticElementsData["Anmelde Status"] = undefined;
+                    });
 
+                    //var strWindowFeatures = "location=yes,height=570,width=520,scrollbars=yes,status=yes";
+                    //var URL = "/google/logout";
+                    //var win = window.open(URL, "_blank", strWindowFeatures) as Window;
+                } else {
+                    var strWindowFeatures = "location=yes,height=570,width=520,scrollbars=yes,status=yes";
+                    var URL = "/google/login";
+                    var win = window.open(URL, "_blank", strWindowFeatures) as Window;
+                } return "";
+            }
+        },
+        "Server MQTT Daten": function (callType) {
+            if (!callType) { return "showingBool"; } else {
+                if (staticElementsData["Server MQTT Daten"]) {
+                    staticElementsData["Server MQTT Daten"] = undefined;
+                    settingsInfo["Server MQTT Daten"] = "Löschen...";
+                    $.ajax({
+                        type: "POST",
+                        url: "/api/v0/remDat",
+                        success: function () {
+                            UpdateStaticSettingsIfInSettings();
+                        }
+                    }).fail(function (e) {
+                        settingsInfo["Server MQTT Daten"] = "FEHLER! Löschung fehlgeschlagen";
+                        alert("Löschung fehlgeschlagen")
+                        staticElementsData["Server MQTT Daten"] = undefined;
+                    });
+                } else {
+                    staticElementsData["Server MQTT Daten"] = undefined;
+                    settingsInfo["Server MQTT Daten"] = "Senden...";
+                    $.ajax({
+                        type: "POST",
+                        url: "/api/v0/setDat",
+                        data: JSON.stringify([myTopic, myUser, myPass]),
+                        success: function (e) {
+                            if (e != "ok") {
+                                aalert(e)
+                            }
+                            UpdateStaticSettingsIfInSettings();
+                        }
+                    }).fail(function (e) {
+                        settingsInfo["Server MQTT Daten"] = "FEHLER! Senden fehlgeschlagen";
+                        alert("Senden fehlgeschlagen")
+                        staticElementsData["Server MQTT Daten"] = undefined;
+                    });
+                } return "";
+            }
+        },
+        "Daten Von Server Anzeigen": function (callType) {
+            if (!callType) { return "button"; } else {
+                settingsInfo["Daten Von Server Anzeigen"] = "Laden...";
+                $.ajax({
+                    type: "POST",
+                    url: "/api/v0/getDat",
+                    success: function (e) {
+                        settingsInfo["Daten Von Server Anzeigen"] = "";
+                        aalert(e);
+                    }
+                }).fail(function (e) {
+                    settingsInfo["Daten Von Server Anzeigen"] = "FEHLER! Laden fehlgeschlagen";
+                    aalert("Laden fehlgeschlagen")
+                });
                 return "";
             }
         },
-        "abmelden": function (callType) { if (!callType) { return "button"; } else { openWindow("/google/logout"); return ""; } },
-        "anmelden": function (callType) { if (!callType) { return "button"; } else { openWindow("/auth"); return ""; } },
+        //"abmelden": function (callType) { if (!callType) { return "button"; } else { if (staticElementsData["Anmelde Status"]) { openWindow("/google/logout"); } else { aalert("Du bist bereits abgemeldet") } return ""; } },
+        //"anmelden": function (callType) { if (!callType) { return "button"; } else { if (!staticElementsData["Anmelde Status"]) { openWindow("/auth"); } else { aalert("Du bist bereits angemeldet") } return ""; } },
     }
 }
 let settingsOnLoad: any = {
     "Anmelde Status": function () {
-        settingsInfo["Anmelde Status"] = "Lädt..";
-        staticElementsData["Anmelde Status"] = undefined;
+        settingsInfo["Anmelde Status"] = "Aktualisieren...";
         $.ajax({
             type: "POST",
             url: "/api/v0/checkLogin",
             success: function (e) {
                 if (e[0] == "t") {
-                    settingsInfo["Anmelde Status"] = e.substring(1);
+                    settingsInfo["Anmelde Status"] = e.substring(1) + " (Klick zu ändern)";
                     staticElementsData["Anmelde Status"] = true;
                 } else {
-                    settingsInfo["Anmelde Status"] = "";
+                    settingsInfo["Anmelde Status"] = "(Klick zu ändern)";
                     staticElementsData["Anmelde Status"] = false;
                 }
             }
         }).fail(function (e) {
             settingsInfo["Anmelde Status"] = "FEHLER";
-            alert("keine verbindung!")
             staticElementsData["Anmelde Status"] = undefined;
         });
+    },
+    "Server MQTT Daten": function () {
+        settingsInfo["Server MQTT Daten"] = "Aktualisieren...";
+        $.ajax({
+            type: "POST",
+            url: "/api/v0/checkDat",
+            success: function (e) {
+                if (e[0] == "t") {
+                    settingsInfo["Server MQTT Daten"] = "(Klick zu ändern)";
+                    settingsInfo["AServer MQTT Daten"] = e.substring(1);
+                    staticElementsData["Server MQTT Daten"] = true;
+                } else {
+                    settingsInfo["Server MQTT Daten"] = "(Klick zu ändern)";
+                    staticElementsData["Server MQTT Daten"] = false;
+                }
+            }
+        }).fail(function (e) {
+            settingsInfo["Anmelde Status"] = "FEHLER";
+            staticElementsData["Anmelde Status"] = undefined;
+        });
+    },
+    "Verbindung": function () {
+        staticElementsData["Verbindung"] = client.isConnected();
+        if (client.isConnected()) { settingsInfo["Verbindung"] = host; } else { settingsInfo["Verbindung"] = ""; }
+    },
+}
+let staticElementsData: any = { "Anmelde Status": undefined, "Verbindung": undefined };
+let settingsInfo: { [einstellung: string]: string } = { "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" }
+let setSettings: { [einstellung: string]: string } = { "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true" };
+let settingsSelLeft = 0;
+function UpdateStaticSettingsIfInSettings() {
+    if (editType == "Settings") {
+        var sK = Object.keys(settingsOnLoad);
+        for (var i = 0; i < sK.length; i++) {
+            settingsOnLoad[sK[i]]();
+        }
     }
 }
-let staticElementsData: any = { "Anmelde Status": undefined };
-let settingsInfo: { [einstellung: string]: string } = { "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Eigenens design hochladen": "BETA! Designs können dieses Programm zerstören!", "Eigenens design löschen": "BETA!" }
-let setSettings: { [einstellung: string]: string } = { "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false" };
-let settingsSelLeft = 0;
+
 
 let pictureId = -1;
 let animationId = -1;
@@ -788,7 +957,16 @@ const notDragable = ["Start"];
 const dropdownMenuButtons = { "Bild anzeigen": { "Bearbeiten": function () { console.log("Bearbeiten"); }, "Anzeigen": function () { console.log("Anzeigen"); } }, "Animationen": { "Bearbeiten": function () { console.log("Bearbeiten"); } } }
 const specialRender: { [key: string]: { [key2: number]: [number, (inputNum: string, posx: number, posy: number) => void] } } = {
     "Bild anzeigen": {
-        0: [24, function (inputNum: string, posx: number, posy: number) { renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2, posy - 2, draw); }]
+        0: [24, function (inputNum: string, posx: number, posy: number) {
+            if (setSettings["Bilder Anzeigen"] == "true") {
+                renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2, posy - 2, draw);
+            }
+        }]
+    },
+    "Animationen": {
+        0: [24, function (inputNum: string, posx: number, posy: number) {
+            toDrawAnimations.push([inputNum, posx, posy]);
+        }]
     },
 };
 
@@ -799,6 +977,8 @@ let setPurple = ["Bild anzeigen", "Animationen", "Laden"];
 
 let pictures: string[] = ["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"]
 let animations: string[][] = [];
+let animationProgression: number[] = [];
+let toDrawAnimations: [string, number, number][] = [];
 let Elements: [string, string[]][][] = [[["Start", ["0"]]]];
 let ElementPositions = [[0, 0]];
 let FreeElements: [string, string[], [number, number]][] = [];
@@ -921,8 +1101,7 @@ function finishPicture() {
     } else {
         aalert("Something went wrong: No ID!")
     }
-
-    autoSave
+    autoSave();
 }
 
 function genProjectJson(): string {
@@ -1268,17 +1447,21 @@ function updatefunction(): boolean {
                 let pyM = py + hei * blockheight + blockheight;
                 if (mouseX > px && mouseX < pxM && mouseY > py && mouseY < pyM) {
                     EditMenuEdeting = Math.floor((mouseY - 20 - py) / blockheight);
-                    if (setSettings["Promt als eingabe"] == "false") {
-                        mouseSelectionRight = 1;
-                        //console.log(mouseY-20-py);
-                        mouseSelectionLeft = -2;
-                    } else {
-                        mouse[0] = false;
-                        //mouseSelectionLeft = -1;
-                        var r = pprompt("", Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting])
-                        if (r != undefined) {
-                            Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = r;
+                    if (EditMenuEdeting < Elements[mouseDataRight[0]][mouseDataRight[1]][1].length) {
+                        if (setSettings["Promt als eingabe"] == "false") {
+                            mouseSelectionRight = 1;
+                            //console.log(mouseY-20-py);
+                            mouseSelectionLeft = -2;
+                        } else {
+                            mouse[0] = false;
+                            //mouseSelectionLeft = -1;
+                            var r = pprompt("", Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting])
+                            if (r != undefined) {
+                                Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = r;
+                            }
                         }
+                    } else {
+                        EditMenuEdeting = -1
                     }
                 }
 
@@ -1413,6 +1596,25 @@ function updatefunction(): boolean {
 
 function harddraw() {
     if (editType == "standartEdit") {
+        //Animations
+        if (setSettings["Animationen Anzeigen"] == "true") {
+            for (var x = 0; x < toDrawAnimations.length; x++) {
+                var inputNum = parseInt(toDrawAnimations[x][0]);
+                var pox = toDrawAnimations[x][1];
+                var poy = toDrawAnimations[x][2];
+                //function (inputNum: string, posx: number, posy: number) {
+                if (animations[inputNum] != undefined && animationProgression.length <= inputNum) {
+                    animationProgression.push(0);
+                }
+                if (isNaN(animationProgression[inputNum])) {
+                    animationProgression[inputNum] = 0;
+                }
+                renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 30, 30, pox - 2 + posx, poy - 2 + posy, drawReal);
+                animationProgression[inputNum] += 0.1;
+                if (animationProgression[inputNum] >= animations[inputNum].length - 0.5) { animationProgression[inputNum] = 0; }
+            }
+        }
+
         font = "47px msyi";
         //Object sidebar
         if (mouseX < (sidebarSize + sidebarFadeIn) || sidebarFadeInTimer >= 0.05) {
@@ -1526,6 +1728,7 @@ function updateRects() {
     checkDisplay();
 
     if (editType == "standartEdit") {
+        toDrawAnimations = [];
         font = "47px msyi";
 
         //updatefunction();
@@ -1795,7 +1998,6 @@ function updateRects() {
                     var sel: string = settinggruppe[Math.floor((mouseY - 70) / 30)]
                     if (sel != undefined) {
                         if (settings[hauptgruppe[settingsSelLeft]][sel](false) == "button") {
-                            settings[hauptgruppe[settingsSelLeft]][sel](true);
                         } else if (settings[hauptgruppe[settingsSelLeft]][sel](false) == "bool") {
                             if (setSettings[sel] == "false") {
                                 setSettings[sel] = "true"
@@ -1810,6 +2012,9 @@ function updateRects() {
                             setSettings[sel] = sprompt(setSettings[sel] + " verändern zu");
                             settings[hauptgruppe[settingsSelLeft]][sel](true);
                         }
+                        mouse[0] = false;
+                        settings[hauptgruppe[settingsSelLeft]][sel](true);
+
                         setStorage();
                     }
                 }
@@ -1843,20 +2048,24 @@ function updateRects() {
         if (settings[hauptgruppe[settingsSelLeft]] != undefined) {
             var settinggruppe: string[] = Object.keys(settings[hauptgruppe[settingsSelLeft]]);
             for (s = 0; s < settinggruppe.length; s++) {
-                if (mouseX > 25 + 200 + 10 && mouseX < canvas.width - 45 && mouseY > 70 + s * 30 && mouseY < 70 + s * 30 + 31) {
-                    draw.rect(25 + 200 + 10, 70 + s * 30, canvas.width - 280, 27, currentColor["settingsSelMouseOver"], ctx); //mouse over: d2d2d2}
-                } else {
-                    draw.rect(25 + 200 + 10, 70 + s * 30, canvas.width - 280, 27, currentColor["settingsSelStandard"], ctx); //mouse over: d2d2d2}
+                var type = settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]](false);
+
+                if (type != "info") {
+                    if (mouseX > 25 + 200 + 10 && mouseX < canvas.width - 45 && mouseY > 70 + s * 30 && mouseY < 70 + s * 30 + 31 && type != "staticBool") {
+                        draw.rect(25 + 200 + 10, 70 + s * 30, canvas.width - 280, 27, currentColor["settingsSelMouseOver"], ctx); //mouse over: d2d2d2}
+                    } else {
+                        draw.rect(25 + 200 + 10, 70 + s * 30, canvas.width - 280, 27, currentColor["settingsSelStandard"], ctx); //mouse over: d2d2d2}
+                    }
                 }
                 draw.text(25 + 200 + 10, 93 + s * 30, settinggruppe[s], currentColor["NormalText"], "left", font, ctx);
-                if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]](false) == "bool") {
+                if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && type == "bool") {
                     if (setSettings[settinggruppe[s]] == "false") {
                         draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolFalse"], ctx);
                     } else {
                         draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolTrue"], ctx);
                     }
                 }
-                if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]](false) == "staticBool") {
+                if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && (type == "staticBool" || type == "showingBool")) {
                     if (staticElementsData[settinggruppe[s]] == false) {
                         draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolFalse"], ctx);
                     } else if (staticElementsData[settinggruppe[s]] == true) {
@@ -1961,6 +2170,7 @@ function cursorUpdate() {
 }
 
 setInterval(cursorUpdate, 100);
+setInterval(UpdateStaticSettingsIfInSettings, 10000);
 setInterval(drawScreen, 10);
 setInterval(updateScreen, 16);
 setTimeout(updateRects, 50);

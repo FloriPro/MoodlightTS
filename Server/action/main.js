@@ -9,12 +9,11 @@ var available = {
         "Tage": ["!numZeit: Ganzezahl"],
     },
     "Server eingang": {
-        "GET": ["!strPfad"],
-        "POST": ["!strPfad", "!strVariablen(not implemented): 'var1,var2,var3,...'"]
+        "GET": ["!str/moodlightRequests/<Pfad> (keine Anmeldung)"],
+        "POST": ["!str/moodlightRequests/<Pfad> (keine Anmeldung)", "!strVariablen(not implemented): 'var1,var2,var3,...'"]
     },
     "Website veränderung": {
-        "!strURL mit pfad": [],
-        "!strUpdates jede x Minuten": [],
+        "!strURL mit pfad (am bessten rss feeds ohne Zeit)": [],
     }
 }
 
@@ -105,15 +104,19 @@ window.onload = function () {
     select0Sel.onchange()
     select1Sel.onchange()
 
+    for (var x = 0; x < localStorage.length; x++) {
+        if (localStorage.key(x)[0] != "!") {
+            document.getElementById("projectSel").innerHTML += `<option>` + localStorage.key(x) + `</option>`
+        }
+    }
+
     load()
 }
 
 function setElem(elId, text) {
     if (document.getElementById("actionId" + nowEdeting + "Element" + elId) == undefined) {
         document.getElementById("actionId" + nowEdeting).innerHTML += `
-        <p onclick="edit(` + nowEdeting + `)" id="actionId` + nowEdeting + `Element` + elId + `" class="actionElement">undef</p>
-        <object width=10 height=1></object>
-        `;
+        <p onclick="edit(` + nowEdeting + `)" id="actionId` + nowEdeting + `Element` + elId + `" class="actionElement">undef</p>`;
     }
     document.getElementById("actionId" + nowEdeting + "Element" + elId).innerText = text;
 }
@@ -132,6 +135,12 @@ function finishEdit() {
             setElem(2, document.getElementById("input1").value);
         }
     }
+
+    document.getElementById("actionSouround" + nowEdeting).querySelector(".react").innerHTML = "";
+    document.getElementById("actionSouround" + nowEdeting).querySelector(".react").innerHTML += `<p class="reactElement">` + document.getElementById("typeSel").value + `</p>`;
+    document.getElementById("actionSouround" + nowEdeting).querySelector(".react").innerHTML += `<p class="reactElement">` + document.getElementById("projectSel").value + `</p>`;
+    document.getElementById("actionSouround" + nowEdeting).querySelector(".react").innerHTML += `<p class="reactElement">` + document.getElementById("startSel").value + `</p>`;
+
 
     document.getElementById("actionId" + nowEdeting).innerHTML += `<button onclick="del(this)" class="remo">Löschen</button>`;
 
@@ -169,6 +178,10 @@ function setData(id) {
             document.getElementById("input1").value = el.querySelector("#actionId" + id + "Element2").innerText;
         }
     }
+
+    document.getElementById("typeSel").value=document.getElementById("actionSouround" + id).querySelector(".react").querySelectorAll(".reactElement")[0].innerText
+    document.getElementById("projectSel").value=document.getElementById("actionSouround" + id).querySelector(".react").querySelectorAll(".reactElement")[1].innerText
+    document.getElementById("startSel").value=document.getElementById("actionSouround" + id).querySelector(".react").querySelectorAll(".reactElement")[2].innerText
 }
 
 function edit(id) {
@@ -188,7 +201,7 @@ function edit(id) {
 }
 
 function del(thi) {
-    thi.parentNode.remove();
+    thi.parentNode.parentNode.remove();
     var og = parseInt(thi.parentNode.id.substring(8));
     console.log(og)
     while (document.getElementById("actionId" + (og + 1)) != undefined) {
@@ -200,8 +213,8 @@ function del(thi) {
         }
         og++;
     }
-    var d=JSON.stringify(genSendData());
-    document.getElementById("list").innerHTML="";
+    var d = JSON.stringify(genSendData());
+    document.getElementById("list").innerHTML = "";
     loadData(d);
     try {
         upload()
@@ -210,11 +223,11 @@ function del(thi) {
 
 function add() {
     document.getElementById("list").innerHTML += `
-    <div id="actionId`+ document.getElementsByClassName("action").length + `" class="action">
+    <div id="actionSouround` + document.getElementsByClassName("action").length + `"><div id="actionId` + document.getElementsByClassName("action").length + `" class="action">
         <p onclick="edit(` + document.getElementsByClassName("action").length + `)" id="actionId` + document.getElementsByClassName("action").length + `Element0" class="actionElement">Bestimmte Uhrzeit</p>
         <p onclick="edit(` + document.getElementsByClassName("action").length + `)" id="actionId` + document.getElementsByClassName("action").length + `Element1" class="actionElement"></p>
         <button onclick="del(this)" class="remo">Löschen</button>
-    </div>`;
+    </div><div class="react"><p class="reactElement">lul</p><p class="reactElement">lul</p><p class="reactElement">lul</p></div></div>`;
     edit(document.getElementsByClassName("action").length - 1);
 }
 
@@ -228,16 +241,20 @@ function loadData(e) {
         return;
     }
     for (var x = 0; x < data.length; x++) {
-        toAdd = `<div id="actionId` + document.getElementsByClassName("action").length + `" class="action">`;
-        var yy = 0
-        for (var y = 0; y < data[x].length; y++) {
+        toAdd = `<div class="actionSouround" id="actionSouround` + document.getElementsByClassName("action").length + `"><div id="actionId` + document.getElementsByClassName("action").length + `" class="action">`;
+        var yy = 0;
+        for (var y = 0; y < data[x].length-3; y++) {
             if (data[x][y] != "") {
-                toAdd += `<p onclick="edit(` + document.getElementsByClassName("action").length + `)" id="actionId` + x + `Element` + yy + `" class="actionElement">` + data[x][y] + `</p>
-                    <object width=10 height=1></object>`;
+                toAdd += `<p onclick="edit(` + document.getElementsByClassName("action").length + `)" id="actionId` + x + `Element` + yy + `" class="actionElement">` + data[x][y] + `</p>`;
                 yy++
             }
         }
-        toAdd += `<button onclick="del(this)" class="remo">Löschen</button></div>`;
+        var end = ""
+        end += `<p class="reactElement">` + data[x][data[x].length - 3] + `</p>`
+        end += `<p class="reactElement">` + data[x][data[x].length - 2] + `</p>`
+        end += `<p class="reactElement">` + data[x][data[x].length - 1] + `</p>`
+        toAdd += `<button onclick="del(this)" class="remo">Löschen</button></div>
+        <div class="react">`+end+`</div></div>`;
         document.getElementById("list").innerHTML += toAdd;
     }
 }
@@ -272,6 +289,9 @@ function genSendData() {
         data[data.length - 1].push(document.getElementById("input0").value);
         data[data.length - 1].push(document.getElementById("input1").value);
         data[data.length - 1].push(document.getElementById("input2").value);
+        data[data.length - 1].push(document.getElementById("typeSel").value);
+        data[data.length - 1].push(document.getElementById("projectSel").value);
+        data[data.length - 1].push(document.getElementById("startSel").value);
     }
     return data;
 }

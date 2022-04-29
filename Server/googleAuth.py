@@ -18,7 +18,6 @@ AUTHORIZATION_SCOPE = 'openid email profile'
 AUTH_REDIRECT_URI = config("FN_AUTH_REDIRECT_URI")
 BASE_URI = config("FN_BASE_URI")
 CLIENT_ID = config("FN_CLIENT_ID")
-print(CLIENT_ID)
 CLIENT_SECRET = config("FN_CLIENT_SECRET")
 
 AUTH_TOKEN_KEY = 'auth_token'
@@ -69,10 +68,17 @@ def no_cache(view):
 
 @app.route('/google/loginReturn')
 def loginReturn():
+    session = OAuth2Session(CLIENT_ID, CLIENT_SECRET,
+                            scope=AUTHORIZATION_SCOPE,
+                            redirect_uri=AUTH_REDIRECT_URI)
+
+    uri, state = session.authorization_url(AUTHORIZATION_URL)
+
+    flask.session[AUTH_STATE_KEY] = state
+    flask.session.permanent = True
     response = flask.make_response(
-        '<meta http-equiv="Refresh" content="0; url=/google/login" />')
-    response.set_cookie("redirectAfterLogin",
-                        flask.request.args.get("redirect"))
+        '<meta http-equiv="Refresh" content="0; url='+uri+'" />')
+    response.set_cookie("redirectAfterLogin", flask.request.args.get("redirect"))
     return response
 
 
@@ -87,8 +93,10 @@ def login():
 
     flask.session[AUTH_STATE_KEY] = state
     flask.session.permanent = True
-
-    return flask.redirect(uri, code=302)
+    response = flask.make_response(
+        '<meta http-equiv="Refresh" content="0; url='+uri+'" />')
+    response.delete_cookie("redirectAfterLogin")
+    return response
 
 
 @app.route('/google/auth')

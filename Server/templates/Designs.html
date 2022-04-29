@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <title>Designs | MoodlightTS</title>
+    <style>
+        @font-face {
+            font-family: 'msyi';
+            src: url('/msyi.ttf');
+        }
+    </style>
+
+    <!--jquery-->
+    <script src="/jquery-3.6.0.min.js" type="text/javascript"></script>
+
+    <!--spectrunm-->
+    <script src="/spectrum.js" type="text/javascript"></script>
+    <link rel="stylesheet" type="text/css" href="/spectrum.css">
+</head>
+
+<body style="font-family: msyi;">
+    <h1>Designs</h1>
+    <h2>{{ pos+1 }}–{{ pos+10 }}</h2>
+    <ul id="DesignList" style="font-size: 30px;">
+        {% for item in colorsShemes %}
+        <li> 
+            <p><a href="#" onclick="load('{{ item }}')">{{ "_".join(item.split("_")[:-2]) }}</a> von <b title='{{ item.split("_")[-2] }}'>{{ item.split("_")[-1] }}</b></p>
+        </li>
+        {% endfor %}
+    </ul>
+    <div style="font-size: 50px;">
+        <a href="/Designs/?pos={{ pos-10 }}">⬅</a><a href="/Designs/?pos={{ pos+10 }}">➡</a>
+    </div>
+</body>
+<script>
+    let l = localStorage.getItem("!designs");
+    let d = JSON.parse(l);
+
+    function load(item) {
+        $.ajax({
+            type: "POST",
+            url: "/api/v0/getStyle",
+            data: item,
+            success: function (e) {
+                if (e.startsWith("ERROR")) {
+                    alert(e)
+                } else {
+                    d[item] = e;
+                    localStorage.setItem("!designs", JSON.stringify(d))
+                    alert("Zu eigenen Designs Hinzugefügt")
+                }
+            }
+        }).fail(function (e) {
+            alert("UPDATE FAILED: Error code " + e.status);
+        });
+    }
+</script>
+
+</html>

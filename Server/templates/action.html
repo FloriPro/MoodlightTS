@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
-<p id="loadingDataSign" style="color: rgb(255, 0, 0);font-family: 'Courier New', Courier, monospace;font-size: 60px;">Loading Site...</p>
+<p id="loadingDataSign" style="color: rgb(255, 0, 0);font-family: 'Courier New', Courier, monospace;font-size: 60px;">
+    Loading Site...</p>
 
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -26,6 +27,19 @@
         <input type="text" id="input1" style="width: 20%;">
         <input type="text" id="input2" style="width: 20%;">
 
+        <h2 style="margin-top: 40px;margin-bottom: 10px;">Ergebnis</h2>
+        <select id="typeSel">
+            <option>Laden</option>
+            <!--<option>Code</option>-->
+        </select>
+        <p style="font-size: 25px;margin: 0px;">Projekt (nur für "Code"): </p>
+        <select id="projectSel">
+        </select>
+        <p style="font-size: 25px;margin: 0px;">Projetk Start: </p>
+        <input id="startSel" type="number">
+        <br>
+        <br>
+        <br>
         <button onclick="finishEdit();">FERTIG</button>
     </div>
     <div id="All">
@@ -33,6 +47,11 @@
         <div style="width: 100%; background-color: red;">
             <h2 style="font-size: 40px;">Du bist nich angemeldet! Um Aktionen zu benutzen musst du dich <a
                     href="/google/loginReturn?redirect=/action">anmelden</a>.</h2>
+        </div>
+        {% endif %}
+        {% if nDat==True %}
+        <div style="width: 100%; background-color: red;">
+            <h2 style="font-size: 40px;">Du musst deine Daten an den Server Schicken, damit Aktionen ausgeführt werden. Gehe dazu in <a href="/">EasyEdit</a> > Einstellungen > Konto > Server MQTT Daten.</h2>
         </div>
         {% endif %}
         <div id="notMessage" style="display: none;">
