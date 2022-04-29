@@ -2,7 +2,7 @@
 <html lang="de">
 
 <head>
-    <title>Designs | MoodlightTS</title>
+    <title>Deine Designs | MoodlightTS</title>
     <style>
         @font-face {
             font-family: 'msyi';
@@ -23,18 +23,38 @@
     <h2>{{ pos+1 }}–{{ pos+10 }}</h2>
     <ul id="DesignList" style="font-size: 30px;">
         {% for item in colorsShemes %}
-        <li> 
-            <p><a href="#" onclick="load('{{ item }}')">{{ "_".join(item.split("_")[:-2]) }}</a> von <b title='{{ item.split("_")[-2] }}'>{{ item.split("_")[-1] }}</b></p>
+        <li>
+            <p><button onclick="rem(this,'{{ item }}');">X</button><a href="#"
+                    onclick="load('{{ item }}')">{{"_".join(item.split("_")[:-2]) }}</a></p>
         </li>
         {% endfor %}
     </ul>
-    <div style="font-size: 50px;">
-        <a href="/Designs/?pos={{ pos-10 }}">⬅</a><a href="/Designs/?pos={{ pos+10 }}">➡</a>
-    </div>
+    <a href="/ownDesigns/?pos={{ pos-10 }}">⬅</a><a href="/ownDesigns/?pos={{ pos+10 }}">➡</a>
 </body>
 <script>
     let l = localStorage.getItem("!designs");
     let d = JSON.parse(l);
+
+    function rem(t, item) {
+        var t = t.parentNode.querySelector("a").outerText;
+        if (confirm(t+" wirklich löschen?")) {
+            $.ajax({
+                type: "POST",
+                url: "/api/v0/removeStyle",
+                data: item,
+                success: function (e) {
+                    if (e.startsWith("ERROR")) {
+                        alert(e)
+                    } else {
+                        location.reload();
+                    }
+                }
+            }).fail(function (e) {
+                alert("DELETING FAILED: Error code " + e.status);
+            });
+        } else {
+        }
+    }
 
     function load(item) {
         $.ajax({

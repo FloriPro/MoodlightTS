@@ -8,23 +8,25 @@ from authlib.client import OAuth2Session
 import google.oauth2.credentials
 import googleapiclient.discovery
 
-from decouple import config
+from dotenv import load_dotenv
+load_dotenv()
 
 ACCESS_TOKEN_URI = 'https://www.googleapis.com/oauth2/v4/token'
 AUTHORIZATION_URL = 'https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&prompt=consent'
 
 AUTHORIZATION_SCOPE = 'openid email profile'
 
-AUTH_REDIRECT_URI = config("FN_AUTH_REDIRECT_URI")
-BASE_URI = config("FN_BASE_URI")
-CLIENT_ID = config("FN_CLIENT_ID")
-CLIENT_SECRET = config("FN_CLIENT_SECRET")
+AUTH_REDIRECT_URI = os.getenv("FN_AUTH_REDIRECT_URI")
+BASE_URI = os.getenv("FN_BASE_URI")
+CLIENT_ID = os.getenv("FN_CLIENT_ID")
+CLIENT_SECRET = os.getenv("FN_CLIENT_SECRET")
 
 AUTH_TOKEN_KEY = 'auth_token'
 AUTH_STATE_KEY = 'auth_state'
 
 app = flask.Blueprint('google_auth', __name__)
-
+app.secret_key = os.getenv("FN_FLASK_SECRET_KEY")
+print(app.secret_key)
 
 def is_logged_in():
     return True if AUTH_TOKEN_KEY in flask.session else False
@@ -78,7 +80,8 @@ def loginReturn():
     flask.session.permanent = True
     response = flask.make_response(
         '<meta http-equiv="Refresh" content="0; url='+uri+'" />')
-    response.set_cookie("redirectAfterLogin", flask.request.args.get("redirect"))
+    response.set_cookie("redirectAfterLogin",
+                        flask.request.args.get("redirect"))
     return response
 
 

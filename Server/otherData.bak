@@ -3,4 +3,4 @@
 'https://www.welt.de/', (1024, 138)
 'https://www.tagesschau.de/xml/rss2/', (1536, 138)
 'https://www.n-tv.de/rss', (2048, 138)
-'https://www.tagesschau.de/newsticker.rdf', (2560, 138)
+'https://www.tagesschau.de/newsticker.rdf', (2560, 143)

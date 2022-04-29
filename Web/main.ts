@@ -115,14 +115,14 @@ function createUserEvents() {
     function windowfocus() {
         pressedKeys = {};
     }
-    function toutchStart(e:TouchEvent){
+    function toutchStart(e: TouchEvent) {
         mouseX = e.touches[0].clientX;
         mouseY = e.touches[0].clientY;
         mouse[0] = true;
         offsetX = mouseX;
         offsetY = mouseY;
     }
-    function toutchEnd(e:TouchEvent){
+    function toutchEnd(e: TouchEvent) {
         mouse[0] = false;
     }
     function mousemove(e: MouseEvent | TouchEvent) {
@@ -527,7 +527,42 @@ var comesFrom = "";
 var editType = "standartEdit";
 let projectName = "unset"
 
-let pictureEditKeyEvents: { [key: string]: () => void } = { "c": function () { navigator.clipboard.writeText(pictureValue2String(pictureValues[page])) }, "v": function () { navigator.clipboard.readText().then(clipText => { if (clipText.includes("\n")) { var d = clipText.split("\n"); for (var i = 0; i < d.length; i++) { if (pictureValues.length == page + i) { pictureValues.push(); } pictureValues[page + i] = pictureString2Value(d[i]); } } else { pictureValues[page] = pictureString2Value(clipText); } loadPictureVal(pictureValues[page]); }) } };
+let pictureEditKeyEvents: { [key: string]: () => void } = {
+    "c": function () {
+        navigator.clipboard.writeText(pictureValue2String(pictureValues[page]))
+    }, "v": function () {
+        if (navigator.clipboard.readText != undefined) {
+            navigator.clipboard.readText().then(clipText => {
+                if (clipText.includes("\n")) {
+                    var d = clipText.split("\n");
+                    for (var i = 0; i < d.length; i++) {
+                        if (pictureValues.length == page + i) {
+                            pictureValues.push();
+                        } pictureValues[page + i] = pictureString2Value(d[i]);
+                    }
+                } else {
+                    pictureValues[page] = pictureString2Value(clipText);
+                }
+                loadPictureVal(pictureValues[page]);
+            });
+        } else {
+            var clipText = pprompt("please paste:");
+            if (clipText != undefined) {
+                if (clipText.includes("\n")) {
+                    var d = clipText.split("\n");
+                    for (var i = 0; i < d.length; i++) {
+                        if (pictureValues.length == page + i) {
+                            pictureValues.push();
+                        } pictureValues[page + i] = pictureString2Value(d[i]);
+                    }
+                } else {
+                    pictureValues[page] = pictureString2Value(clipText);
+                }
+                loadPictureVal(pictureValues[page]);
+            }
+        }
+    }
+};
 
 var Question: [string, { [name: string]: (seId: number) => void }] = ["ERROR", { "ERROR": function () { console.warn("Question without defenition"); } }]
 var Übergang = -1;
@@ -562,7 +597,8 @@ let menuButtons: { [name: string]: () => void } = {
         Question = ["Welches Projekt willst du laden?", a];
     },
     "Hinzufügen": function () {
-        goTo("Question", 1); Question = ["Was willst du hinzufügen", {
+        goTo("Question", 1);
+        Question = ["Was willst du hinzufügen", {
             "Start": function (seId) { ElementPositions.push([Elements.length * 400, 0]); Elements.push([["Start", [String(Elements.length)]]]); goTo(comesFrom, 1); },
             "Bild": function (seId) { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); pictureId = pictures.length; pictures.push("000000".repeat(32)); pictureEditType = 0; },
             "Animation": function (seId) { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); animationId = animations.length; animations.push(["000000".repeat(32)]); pictureEditType = 1; },
@@ -663,9 +699,9 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                     url: "/api/v0/getDat",
                     success: function (e) {
                         settingsInfo["Daten Von Server Anzeigen"] = "";
-                        myTopic= e.split(" | ")[0];
-                        myUser= e.split(" | ")[1];
-                        myPass= e.split(" | ")[2];
+                        myTopic = e.split(" | ")[0];
+                        myUser = e.split(" | ")[1];
+                        myPass = e.split(" | ")[2];
                     }
                 }).fail(function (e) {
                     settingsInfo["Daten Von Server Anzeigen"] = "FEHLER! Laden fehlgeschlagen";
@@ -692,8 +728,8 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                 var a: { [n: string]: (seId: number) => void } = {};
                 var dK = Object.keys(d);
                 for (var x = 0; x < dK.length; x++) {
-                    var v=dK[x].substring(0, dK[x].lastIndexOf('_'));
-                    v=v.substring(0, v.lastIndexOf('_'))+"  "+dK[x].substring(dK[x].lastIndexOf('_')+1);
+                    var v = dK[x].substring(0, dK[x].lastIndexOf('_'));
+                    v = v.substring(0, v.lastIndexOf('_')) + "  " + dK[x].substring(dK[x].lastIndexOf('_') + 1);
                     a[v] = function (seId) {
                         var l = localStorage.getItem("!designs");
                         if (l != undefined) {
@@ -785,7 +821,6 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                         }
                     }).fail(function (e) {
                         settingsInfo["Anmelde Status"] = "FEHLER! Abmeldung fehlgeschlagen";
-                        alert("Abmeldung fehlgeschlagen")
                         staticElementsData["Anmelde Status"] = undefined;
                     });
 
@@ -952,9 +987,9 @@ let util = new Utilitys();
 
 const errorImg = "000000ff0000ff00ff000000ff0000ff00ff000000000000ff00ffff0000000000ff00ffff0000ff00ff000000ff0000ff00ffff0000ff00ffff0000000000ff00ffff0000000000ff00ff000000ff0000ff00ff000000ff0000000000ff00ffff0000000000ff00ffff0000";
 const available: [string, string[]][] = [["Wait", ["0.25"]], ["Laden", ["0"]], ["Text", ["Text", "10"]], ["Uhrzeit", ["10"]], ["Bild anzeigen", ["0", "0"]], ["Animationen", ["0", "0", "10"]], ["Füllen", ["0", "0", "0"]], ["Loop", ["2"]], ["Unendlich", []], ["Custom", [""]]];
-const description = { "Wait": ["Sekunden"], "Laden": ["Nummer"], "Text": ["Text", "Geschwindigkeit"], "Uhrzeit": ["Geschwindigkeit"], "Bild anzeigen": ["[Bild-id]", "Übergangszeit"], "Animationen": ["[Animation]", "Übergangszeit", "Wartezeit (Sekunden X 100)"], "Füllen": ["R", "G", "B"], "Loop": ["Wiederholungen"], "Custom": ["Code"] };
+const description = { "Wait": ["Sekunden"], "Laden": ["Nummer"], "Text": ["Text", "Geschwindigkeit"], "Uhrzeit": ["Geschwindigkeit"], "Bild anzeigen": ["Bild", "Übergangszeit"], "Animationen": ["Animation", "Übergangszeit", "Wartezeit (Sekunden X 100)"], "Füllen": ["R", "G", "B"], "Loop": ["Wiederholungen"], "Custom": ["Code"] };
 const notDragable = ["Start"];
-const dropdownMenuButtons = { "Bild anzeigen": { "Bearbeiten": function () { console.log("Bearbeiten"); }, "Anzeigen": function () { console.log("Anzeigen"); } }, "Animationen": { "Bearbeiten": function () { console.log("Bearbeiten"); } } }
+const dropdownMenuButtons = { "Bild anzeigen": { "Bearbeiten": function () { console.log("Bearbeiten"); }, "Anzeigen": function () { console.log("Anzeigen"); } }, "Animationen": { "Bearbeiten": function () { console.log("Bearbeiten"); } } }//TODO
 const specialRender: { [key: string]: { [key2: number]: [number, (inputNum: string, posx: number, posy: number) => void] } } = {
     "Bild anzeigen": {
         0: [24, function (inputNum: string, posx: number, posy: number) {
@@ -969,6 +1004,39 @@ const specialRender: { [key: string]: { [key2: number]: [number, (inputNum: stri
         }]
     },
 };
+const specialBlockEditClick: { [key: string]: { [key2: number]: () => void } } = {
+    "Bild anzeigen": {
+        0: function () {
+            tempData = [mouseDataRight[0], mouseDataRight[1], EditMenuEdeting]
+            var qAnsw: { [name: string]: (seId: number) => void } = {}
+            for (var i = 0; i < pictures.length; i++) {
+                qAnsw["_P" + i] = function (selId) {
+                    Elements[tempData[0]][tempData[1]][1][tempData[2]] = "" + selId;
+                    goTo("standartEdit", 1);
+                }
+            }
+            mouse[0] = false;
+            Question = ["welches Bild?", qAnsw];
+            goTo("Question", 1);
+        }
+    },
+    "Animationen": {
+        0: function () {
+            tempData = [mouseDataRight[0], mouseDataRight[1], EditMenuEdeting]
+            var qAnsw: { [name: string]: (seId: number) => void } = {}
+            for (var i = 0; i < pictures.length; i++) {
+                qAnsw["_P" + i] = function (selId) {
+                    Elements[tempData[0]][tempData[1]][1][tempData[2]] = "" + selId;
+                    goTo("standartEdit", 1);
+                }
+            }
+            mouse[0] = false;
+            Question = ["welches Bild?", qAnsw];
+            goTo("Question", 1);
+        }
+    }
+};
+let tempData: any;
 
 let colors = { "light": { "background": "#fcfcfc", "backgroundPoints": "#646464", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" }, "dark": { "background": "#030303", "backgroundPoints": "#9b9b9b", "blockArgBackground": "#000000", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#4f4f4f", "EditMenu": "#2f0816", "EditMenuAccent": "#843653", "NormalText": "#ffffff", "MenuButtons": "#ffffff", "MenuBackground": "#ffffff", "MenuText": "#000000", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#2d2d2d", "settingsSelStandard": "#232323", "settingsSelSelected": "#373737", "backgroundBlur": "#ffffff", "settingsBackground": "#000000", "settingsBackgroundHighlight": "#0f0f0f", "questionRedBackgroundBlur": "#69ffff", "questionBackground": "#555555", "objectSidebarBlur": "#3f3f3f", "ProjectName": "#4287f5" } };
 let currentColor = { "background": "", "backgroundPoints": "", "blueBlock": "", "blockArgBackground": "", "blueBlockAccent": "", "YellowBlock": "", "YellowBlockAccent": "", "PurpleBlock": "", "PurpleBlockAccent": "", "MoveBlockShaddow": "", "EditMenu": "", "EditMenuAccent": "", "NormalText": "", "MenuButtons": "", "MenuBackground": "", "MenuText": "", "settingsBoolTrue": "", "settingsBoolFalse": "", "settingsSelMouseOver": "", "settingsSelStandard": "", "settingsSelSelected": "", "backgroundBlur": "", "settingsBackground": "", "settingsBackgroundHighlight": "", "questionRedBackgroundBlur": "", "questionBackground": "", "objectSidebarBlur": "", "ProjectName": "", };
@@ -1448,16 +1516,25 @@ function updatefunction(): boolean {
                 if (mouseX > px && mouseX < pxM && mouseY > py && mouseY < pyM) {
                     EditMenuEdeting = Math.floor((mouseY - 20 - py) / blockheight);
                     if (EditMenuEdeting < Elements[mouseDataRight[0]][mouseDataRight[1]][1].length) {
-                        if (setSettings["Promt als eingabe"] == "false") {
-                            mouseSelectionRight = 1;
-                            //console.log(mouseY-20-py);
-                            mouseSelectionLeft = -2;
-                        } else {
-                            mouse[0] = false;
-                            //mouseSelectionLeft = -1;
-                            var r = pprompt("", Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting])
-                            if (r != undefined) {
-                                Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = r;
+                        var edited = false;
+                        if (Elements[mouseDataRight[0]][mouseDataRight[1]][0] in specialBlockEditClick) {
+                            if (EditMenuEdeting in specialBlockEditClick[Elements[mouseDataRight[0]][mouseDataRight[1]][0]]) {
+                                edited = true;
+                                specialBlockEditClick[Elements[mouseDataRight[0]][mouseDataRight[1]][0]][EditMenuEdeting]();
+                            }
+                        }
+                        if (!edited) {
+                            if (setSettings["Promt als eingabe"] == "false") {
+                                mouseSelectionRight = 1;
+                                //console.log(mouseY-20-py);
+                                mouseSelectionLeft = -2;
+                            } else {
+                                mouse[0] = false;
+                                //mouseSelectionLeft = -1;
+                                var r = pprompt("", Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting])
+                                if (r != undefined) {
+                                    Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = r;
+                                }
                             }
                         }
                     } else {
@@ -1606,12 +1683,20 @@ function harddraw() {
                 if (animations[inputNum] != undefined && animationProgression.length <= inputNum) {
                     animationProgression.push(0);
                 }
-                if (isNaN(animationProgression[inputNum])) {
-                    animationProgression[inputNum] = 0;
+                if (animations[inputNum] != undefined) {
+                    if (isNaN(animationProgression[inputNum])) {
+                        animationProgression[inputNum] = 0;
+                    }
+                    renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 30, 30, pox - 2 + posx, poy - 2 + posy, drawReal);
                 }
-                renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 30, 30, pox - 2 + posx, poy - 2 + posy, drawReal);
-                animationProgression[inputNum] += 0.1;
-                if (animationProgression[inputNum] >= animations[inputNum].length - 0.5) { animationProgression[inputNum] = 0; }
+            }
+            for (var x = 0; x < animationProgression.length; x++) {
+                animationProgression[x] += 0.1;
+                if (animations[x] != undefined) {
+                    if (animationProgression[x] >= animations[x].length - 0.5) {
+                        animationProgression[x] = 0;
+                    }
+                }
             }
         }
 
