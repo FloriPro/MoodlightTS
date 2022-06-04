@@ -610,9 +610,6 @@ let actionElements = [
     ["jede", "minuten", "5"],
     ["server eingang", "GET", "specificPathForMyInput"]
 ];
-/**-1:not 0..:yes */
-let actionsEdeting = -1;
-let actionsEdetingPosition = -1;
 let menuOpen = 0;
 let menuButtons = {
     "Speichern": saveProject,
@@ -680,7 +677,7 @@ let menuButtons = {
     "Neues Projekt": function () { loadProject(JSON.parse(empty)); },
     "Zu Datei Speichern": downloadProject,
     "Von Datei Laden": function () { console.log("clickedLoad"); ProjectLoader.click(); },
-    "actions": function () { openWindow("/action"); },
+    //"actions": function () { openWindow("/action"); },
 };
 let menuWidth = 350;
 /**type: bool, staticBool, showingBool, str, num, button, info */
@@ -779,11 +776,8 @@ let settings = {
             aalert("Topic: " + myTopic + " | User: " + myUser + " | Password: " + myPass);
             return "";
         } },
-        "Daten Von Server Einsetzen": function (callType) {
-            if (!callType) {
-                return "button";
-            }
-            else {
+        /*"Daten Von Server Einsetzen": function (callType) {
+            if (!callType) { return "button"; } else {
                 settingsInfo["Daten Von Server Anzeigen"] = "Laden...";
                 $.ajax({
                     type: "POST",
@@ -796,11 +790,11 @@ let settings = {
                     }
                 }).fail(function (e) {
                     settingsInfo["Daten Von Server Anzeigen"] = "FEHLER! Laden fehlgeschlagen";
-                    aalert("Laden fehlgeschlagen");
+                    aalert("Laden fehlgeschlagen")
                 });
                 return "";
             }
-        },
+        },*/
         //"Neu Verbinden": function (callType) { if (!callType) { return "button"; } else { reconnect(); return ""; } },
         "Projekt namen anzeigen bei senden": function (callType) { if (!callType) {
             return "bool";
@@ -870,8 +864,8 @@ let settings = {
                 var a = {};
                 var dK = Object.keys(d);
                 for (var x = 0; x < dK.length; x++) {
-                    var v = dK[x].substring(0, dK[x].lastIndexOf('_'));
-                    v = v.substring(0, v.lastIndexOf('_')) + "  " + dK[x].substring(dK[x].lastIndexOf('_') + 1);
+                    var v = dK[x]; //.substring(0, dK[x].lastIndexOf('_'));
+                    //v = v.substring(0, v.lastIndexOf('_')) + "  " + dK[x].substring(dK[x].lastIndexOf('_') + 1);
                     a[v] = function (seId) {
                         var l = localStorage.getItem("!designs");
                         if (l != undefined) {
@@ -918,33 +912,20 @@ let settings = {
                 return "";
             }
         },
-        "Design Durchstöbern": function (callType) {
-            if (!callType) {
-                return "button";
-            }
-            else {
-                window.open("/Designs/");
-                return "";
-            }
-        },
-        " ": function (callType) { if (!callType) {
-            return "info";
-        }
-        else {
-            return "";
-        } },
-        "Dev:": function (callType) { if (!callType) {
-            return "info";
-        }
-        else {
-            return "";
-        } },
+        //"Design Durchstöbern": function (callType) {
+        //    if (!callType) { return "button"; } else {
+        //        window.open("/Designs/");
+        //        return "";
+        //    }
+        //},
+        //" ": function (callType) { if (!callType) { return "info"; } else { return ""; } },
+        //"Dev:": function (callType) { if (!callType) { return "info"; } else { return ""; } },
         "Design JSON Hinzufügen": function (callType) {
             if (!callType) {
                 return "button";
             }
             else {
-                var n = sprompt("name") + "_userId_userName";
+                var n = sprompt("name") /* + "_userId_userName"*/;
                 var j = sprompt("json");
                 var l = localStorage.getItem("!designs");
                 if (l != undefined) {
@@ -987,19 +968,10 @@ let settings = {
             }
         },
     },
-    "Konto": {
-        "/!\\ eine Anmeldung ist nicht Nötig /!\\": function (callType) { if (!callType) {
-            return "info";
-        }
-        else {
-            aalert("Eine Anmeldung ist nur nötig, wenn Aktionen benutzt werden");
-            return "";
-        } },
+    /*"Konto": {
+        "/!\\ eine Anmeldung ist nicht Nötig /!\\": function (callType) { if (!callType) { return "info"; } else { aalert("Eine Anmeldung ist nur nötig, wenn Aktionen benutzt werden"); return ""; } },
         "Anmelde Status": function (callType) {
-            if (!callType) {
-                return "showingBool";
-            }
-            else {
+            if (!callType) { return "showingBool"; } else {
                 if (staticElementsData["Anmelde Status"]) {
                     staticElementsData["Anmelde Status"] = undefined;
                     settingsInfo["Anmelde Status"] = "Abmelden...";
@@ -1014,23 +986,19 @@ let settings = {
                         settingsInfo["Anmelde Status"] = "FEHLER! Abmeldung fehlgeschlagen";
                         staticElementsData["Anmelde Status"] = undefined;
                     });
+
                     //var strWindowFeatures = "location=yes,height=570,width=520,scrollbars=yes,status=yes";
                     //var URL = "/google/logout";
                     //var win = window.open(URL, "_blank", strWindowFeatures) as Window;
-                }
-                else {
+                } else {
                     var strWindowFeatures = "location=yes,height=570,width=520,scrollbars=yes,status=yes";
                     var URL = "/google/login";
-                    var win = window.open(URL, "_blank", strWindowFeatures);
-                }
-                return "";
+                    var win = window.open(URL, "_blank", strWindowFeatures) as Window;
+                } return "";
             }
         },
         "Server MQTT Daten": function (callType) {
-            if (!callType) {
-                return "showingBool";
-            }
-            else {
+            if (!callType) { return "showingBool"; } else {
                 if (staticElementsData["Server MQTT Daten"]) {
                     staticElementsData["Server MQTT Daten"] = undefined;
                     settingsInfo["Server MQTT Daten"] = "Löschen...";
@@ -1042,11 +1010,10 @@ let settings = {
                         }
                     }).fail(function (e) {
                         settingsInfo["Server MQTT Daten"] = "FEHLER! Löschung fehlgeschlagen";
-                        alert("Löschung fehlgeschlagen");
+                        alert("Löschung fehlgeschlagen")
                         staticElementsData["Server MQTT Daten"] = undefined;
                     });
-                }
-                else {
+                } else {
                     staticElementsData["Server MQTT Daten"] = undefined;
                     settingsInfo["Server MQTT Daten"] = "Senden...";
                     $.ajax({
@@ -1055,24 +1022,20 @@ let settings = {
                         data: JSON.stringify([myTopic, myUser, myPass]),
                         success: function (e) {
                             if (e != "ok") {
-                                aalert(e);
+                                aalert(e)
                             }
                             UpdateStaticSettingsIfInSettings();
                         }
                     }).fail(function (e) {
                         settingsInfo["Server MQTT Daten"] = "FEHLER! Senden fehlgeschlagen";
-                        alert("Senden fehlgeschlagen");
+                        alert("Senden fehlgeschlagen")
                         staticElementsData["Server MQTT Daten"] = undefined;
                     });
-                }
-                return "";
+                } return "";
             }
         },
         "Daten Von Server Anzeigen": function (callType) {
-            if (!callType) {
-                return "button";
-            }
-            else {
+            if (!callType) { return "button"; } else {
                 settingsInfo["Daten Von Server Anzeigen"] = "Laden...";
                 $.ajax({
                     type: "POST",
@@ -1083,14 +1046,14 @@ let settings = {
                     }
                 }).fail(function (e) {
                     settingsInfo["Daten Von Server Anzeigen"] = "FEHLER! Laden fehlgeschlagen";
-                    aalert("Laden fehlgeschlagen");
+                    aalert("Laden fehlgeschlagen")
                 });
                 return "";
             }
         },
         //"abmelden": function (callType) { if (!callType) { return "button"; } else { if (staticElementsData["Anmelde Status"]) { openWindow("/google/logout"); } else { aalert("Du bist bereits abgemeldet") } return ""; } },
         //"anmelden": function (callType) { if (!callType) { return "button"; } else { if (!staticElementsData["Anmelde Status"]) { openWindow("/auth"); } else { aalert("Du bist bereits angemeldet") } return ""; } },
-    }
+    }*/
 };
 function delay(milliseconds) {
     return new Promise(resolve => {
@@ -1109,7 +1072,7 @@ function asyncStuff(stuff) {
     });
 }
 let settingsOnLoad = {
-    "Anmelde Status": function () {
+    /*"Anmelde Status": function () {
         settingsInfo["Anmelde Status"] = "Aktualisieren...";
         $.ajax({
             type: "POST",
@@ -1118,8 +1081,7 @@ let settingsOnLoad = {
                 if (e[0] == "t") {
                     settingsInfo["Anmelde Status"] = e.substring(1) + " (Klick zu ändern)";
                     staticElementsData["Anmelde Status"] = true;
-                }
-                else {
+                } else {
                     settingsInfo["Anmelde Status"] = "(Klick zu ändern)";
                     staticElementsData["Anmelde Status"] = false;
                 }
@@ -1139,8 +1101,7 @@ let settingsOnLoad = {
                     settingsInfo["Server MQTT Daten"] = "(Klick zu ändern)";
                     settingsInfo["AServer MQTT Daten"] = e.substring(1);
                     staticElementsData["Server MQTT Daten"] = true;
-                }
-                else {
+                } else {
                     settingsInfo["Server MQTT Daten"] = "(Klick zu ändern)";
                     staticElementsData["Server MQTT Daten"] = false;
                 }
@@ -1149,7 +1110,7 @@ let settingsOnLoad = {
             settingsInfo["Anmelde Status"] = "FEHLER";
             staticElementsData["Anmelde Status"] = undefined;
         });
-    },
+    },*/
     "Verbindung": function () {
         staticElementsData["Verbindung"] = client.isConnected();
         if (client.isConnected()) {

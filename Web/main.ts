@@ -579,9 +579,6 @@ let actionElements = [
     ["jede", "minuten", "5"],
     ["server eingang", "GET", "specificPathForMyInput"]
 ]
-/**-1:not 0..:yes */
-let actionsEdeting = -1
-let actionsEdetingPosition = -1;
 
 let menuOpen = 0;
 let menuButtons: { [name: string]: () => void } = {
@@ -643,7 +640,7 @@ let menuButtons: { [name: string]: () => void } = {
     "Neues Projekt": function () { loadProject(JSON.parse(empty)) },
     "Zu Datei Speichern": downloadProject,
     "Von Datei Laden": function () { console.log("clickedLoad"); ProjectLoader.click(); },
-    "actions": function () { openWindow("/action"); },
+    //"actions": function () { openWindow("/action"); },
 }
 let menuWidth = 350
 
@@ -698,7 +695,7 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
         },
         "Daten löschen": function (callType) { if (!callType) { return "button"; } else { myTopic = ""; myUser = ""; myPass = ""; if (client.isConnected()) { client.disconnect() }; return ""; } },
         "Daten einsehen": function (callType) { if (!callType) { return "button"; } else { aalert("Topic: " + myTopic + " | User: " + myUser + " | Password: " + myPass); return ""; } },
-        "Daten Von Server Einsetzen": function (callType) {
+        /*"Daten Von Server Einsetzen": function (callType) {
             if (!callType) { return "button"; } else {
                 settingsInfo["Daten Von Server Anzeigen"] = "Laden...";
                 $.ajax({
@@ -716,7 +713,7 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                 });
                 return "";
             }
-        },
+        },*/
         //"Neu Verbinden": function (callType) { if (!callType) { return "button"; } else { reconnect(); return ""; } },
         "Projekt namen anzeigen bei senden": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
     },
@@ -735,8 +732,8 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                 var a: { [n: string]: (seId: number) => void } = {};
                 var dK = Object.keys(d);
                 for (var x = 0; x < dK.length; x++) {
-                    var v = dK[x].substring(0, dK[x].lastIndexOf('_'));
-                    v = v.substring(0, v.lastIndexOf('_')) + "  " + dK[x].substring(dK[x].lastIndexOf('_') + 1);
+                    var v = dK[x]//.substring(0, dK[x].lastIndexOf('_'));
+                    //v = v.substring(0, v.lastIndexOf('_')) + "  " + dK[x].substring(dK[x].lastIndexOf('_') + 1);
                     a[v] = function (seId) {
                         var l = localStorage.getItem("!designs");
                         if (l != undefined) {
@@ -780,17 +777,17 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                 return "";
             }
         },
-        "Design Durchstöbern": function (callType) {
-            if (!callType) { return "button"; } else {
-                window.open("/Designs/");
-                return "";
-            }
-        },
-        " ": function (callType) { if (!callType) { return "info"; } else { return ""; } },
-        "Dev:": function (callType) { if (!callType) { return "info"; } else { return ""; } },
+        //"Design Durchstöbern": function (callType) {
+        //    if (!callType) { return "button"; } else {
+        //        window.open("/Designs/");
+        //        return "";
+        //    }
+        //},
+        //" ": function (callType) { if (!callType) { return "info"; } else { return ""; } },
+        //"Dev:": function (callType) { if (!callType) { return "info"; } else { return ""; } },
         "Design JSON Hinzufügen": function (callType) {
             if (!callType) { return "button"; } else {
-                var n = sprompt("name") + "_userId_userName";
+                var n = sprompt("name")/* + "_userId_userName"*/;
                 var j = sprompt("json");
                 var l = localStorage.getItem("!designs");
                 if (l != undefined) { var d: { [name: string]: string } = JSON.parse(l); } else { var d: { [name: string]: string } = {}; } //set JSON parsed var d
@@ -824,7 +821,7 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
             }
         },
     },
-    "Konto": {
+    /*"Konto": {
         "/!\\ eine Anmeldung ist nicht Nötig /!\\": function (callType) { if (!callType) { return "info"; } else { aalert("Eine Anmeldung ist nur nötig, wenn Aktionen benutzt werden"); return ""; } },
         "Anmelde Status": function (callType) {
             if (!callType) { return "showingBool"; } else {
@@ -909,7 +906,7 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
         },
         //"abmelden": function (callType) { if (!callType) { return "button"; } else { if (staticElementsData["Anmelde Status"]) { openWindow("/google/logout"); } else { aalert("Du bist bereits abgemeldet") } return ""; } },
         //"anmelden": function (callType) { if (!callType) { return "button"; } else { if (!staticElementsData["Anmelde Status"]) { openWindow("/auth"); } else { aalert("Du bist bereits angemeldet") } return ""; } },
-    }
+    }*/
 }
 
 function delay(milliseconds: number) {
@@ -929,7 +926,7 @@ async function asyncStuff(stuff: string) {
 }
 
 let settingsOnLoad: any = {
-    "Anmelde Status": function () {
+    /*"Anmelde Status": function () {
         settingsInfo["Anmelde Status"] = "Aktualisieren...";
         $.ajax({
             type: "POST",
@@ -967,7 +964,7 @@ let settingsOnLoad: any = {
             settingsInfo["Anmelde Status"] = "FEHLER";
             staticElementsData["Anmelde Status"] = undefined;
         });
-    },
+    },*/
     "Verbindung": function () {
         staticElementsData["Verbindung"] = client.isConnected();
         if (client.isConnected()) { settingsInfo["Verbindung"] = host; } else { settingsInfo["Verbindung"] = ""; }
