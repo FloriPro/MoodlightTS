@@ -1,3 +1,5 @@
+import { time } from "console";
+
 /*
  * TODO:
  *  -Output
@@ -184,6 +186,7 @@ function keyDown(key: string) {
 }
 
 //MQTT
+let latesMQTTMessage = "";
 var client = new Paho.MQTT.Client('hotti.info', 10833, "client" + ((new Date).getTime().toString(16) + Math.floor(1E7 * Math.random()).toString(16)));
 function mqttConstructor() {
     client.onConnectionLost = onConnectionLost;
@@ -222,6 +225,9 @@ function onMessageArrived(message: { payloadString: string; }) {
         pictureValues[page] = pictureString2Value(message.payloadString.substring(1))
         loadPictureVal(pictureValues[page]);
         waitingForMQTTPic = false
+    }
+    else {
+        latesMQTTMessage = message.payloadString;
     }
 }
 function send(dat: string) {
@@ -748,6 +754,7 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
         },
         "Design löschen": function (callType) {
             if (!callType) { return "button"; } else {
+                console.log("del");
                 goTo("Question", 1);
                 var a: { [ind: string]: (seId: number) => void; } = {}
                 var l = localStorage.getItem("!designs")
@@ -762,7 +769,8 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                         var d = JSON.parse(l);
                         delete d[Object.keys(d)[seId]];
 
-                        localStorage.setItem("!designs", JSON.stringify(d)); console.log("rem: " + Object.keys(localStorage)[seId]);
+                        localStorage.setItem("!designs", JSON.stringify(d));
+                        console.log("rem: " + Object.keys(localStorage)[seId]);
                         goTo("Settings", 1, false);
                     }
                 }
@@ -804,6 +812,16 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
         "Eigenens design erstellen": function (callType) { if (!callType) { return "button"; } else { openWindow("/colorMaker/"); return ""; } },
 
         //"test": function (callType) { if (!callType) { return "str"; } else { return ""; } },
+    },
+    "MoodLight": {
+        "Firmware": function (callType) {
+            if (!callType) {
+                return "button";
+            } else {
+                asyncStuff("firmware");
+                return "";
+            }
+        },
     },
     "Konto": {
         "/!\\ eine Anmeldung ist nicht Nötig /!\\": function (callType) { if (!callType) { return "info"; } else { aalert("Eine Anmeldung ist nur nötig, wenn Aktionen benutzt werden"); return ""; } },
@@ -892,6 +910,23 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
         //"anmelden": function (callType) { if (!callType) { return "button"; } else { if (!staticElementsData["Anmelde Status"]) { openWindow("/auth"); } else { aalert("Du bist bereits angemeldet") } return ""; } },
     }
 }
+
+function delay(milliseconds: number) {
+    return new Promise(resolve => {
+        setTimeout(resolve, milliseconds);
+    });
+}
+
+async function asyncStuff(stuff: string) {
+    if (stuff == "firmware") {
+        send("V");
+        while (!latesMQTTMessage.startsWith(";V")) {
+            await delay(100);
+        }
+        aalert(latesMQTTMessage);
+    }
+}
+
 let settingsOnLoad: any = {
     "Anmelde Status": function () {
         settingsInfo["Anmelde Status"] = "Aktualisieren...";
@@ -987,7 +1022,7 @@ let util = new Utilitys();
 
 const errorImg = "000000ff0000ff00ff000000ff0000ff00ff000000000000ff00ffff0000000000ff00ffff0000ff00ff000000ff0000ff00ffff0000ff00ffff0000000000ff00ffff0000000000ff00ff000000ff0000ff00ff000000ff0000000000ff00ffff0000000000ff00ffff0000";
 const available: [string, string[]][] = [["Wait", ["0.25"]], ["Laden", ["0"]], ["Text", ["Text", "10"]], ["Uhrzeit", ["10"]], ["Bild anzeigen", ["0", "0"]], ["Animationen", ["0", "0", "10"]], ["Füllen", ["0", "0", "0"]], ["Loop", ["2"]], ["Unendlich", []], ["Custom", [""]]];
-const description = { "Wait": ["Sekunden"], "Laden": ["Nummer"], "Text": ["Text", "Geschwindigkeit"], "Uhrzeit": ["Geschwindigkeit"], "Bild anzeigen": ["Bild", "Übergangszeit"], "Animationen": ["Animation", "Übergangszeit", "Wartezeit (Sekunden X 100)"], "Füllen": ["R", "G", "B"], "Loop": ["Wiederholungen"], "Custom": ["Code"] };
+const description = { "Wait": ["Sekunden"], "Laden": ["Nummer"], "Text": ["Text", "Geschwindigkeit"], "Uhrzeit": ["Geschwindigkeit"], "Bild anzeigen": ["Bild", "Übergangszeit"], "Animationen": ["Animation", "Übergangszeit", "Wartezeit (Sekunden X 100)"], "Füllen": ["R 0-255", "G 0-255", "B 0-255"], "Loop": ["Wiederholungen"], "Custom": ["Code"] };
 const notDragable = ["Start"];
 const dropdownMenuButtons = { "Bild anzeigen": { "Bearbeiten": function () { console.log("Bearbeiten"); }, "Anzeigen": function () { console.log("Anzeigen"); } }, "Animationen": { "Bearbeiten": function () { console.log("Bearbeiten"); } } }//TODO
 const specialRender: { [key: string]: { [key2: number]: [number, (inputNum: string, posx: number, posy: number) => void] } } = {
@@ -1017,6 +1052,7 @@ const specialBlockEditClick: { [key: string]: { [key2: number]: () => void } } =
             }
             mouse[0] = false;
             Question = ["welches Bild?", qAnsw];
+            cursorMessage = "";
             goTo("Question", 1);
         }
     },
@@ -1024,14 +1060,15 @@ const specialBlockEditClick: { [key: string]: { [key2: number]: () => void } } =
         0: function () {
             tempData = [mouseDataRight[0], mouseDataRight[1], EditMenuEdeting]
             var qAnsw: { [name: string]: (seId: number) => void } = {}
-            for (var i = 0; i < pictures.length; i++) {
-                qAnsw["_P" + i] = function (selId) {
+            for (var i = 0; i < animations.length; i++) {
+                qAnsw["_A" + i] = function (selId) {
                     Elements[tempData[0]][tempData[1]][1][tempData[2]] = "" + selId;
                     goTo("standartEdit", 1);
                 }
             }
             mouse[0] = false;
-            Question = ["welches Bild?", qAnsw];
+            Question = ["welche Animation?", qAnsw];
+            cursorMessage = "";
             goTo("Question", 1);
         }
     }
@@ -1772,6 +1809,15 @@ function harddraw() {
             py = 0 + r / 2 + (x * (s / 2));
             drawReal.roundedRect(px, py, s, 1, currentColor["MenuButtons"], 5, ctx);
         }
+    } else if (editType == "Question") {
+        for (var x = 0; x < animationProgression.length; x++) {
+            animationProgression[x] += 0.1;
+            if (animations[x] != undefined) {
+                if (animationProgression[x] >= animations[x].length - 0.5) {
+                    animationProgression[x] = 0;
+                }
+            }
+        }
     }
 
     //keysDown debug
@@ -2018,7 +2064,20 @@ function updateRects() {
                 renderPicture(pictures[parseInt(q1[x].substring(2, 100))], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw);
             } else if (q1[x].startsWith("_p")) {
                 renderPicture(q1[x].substring(3, 500), 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw);
-            } else {
+            } else if (q1[x].startsWith("_A")) {
+                var inputNum = x;
+                //function (inputNum: string, posx: number, posy: number) {
+                if (animations[inputNum] != undefined && animationProgression.length <= inputNum) {
+                    animationProgression.push(0);
+                }
+                if (animations[inputNum] != undefined) {
+                    if (isNaN(animationProgression[inputNum])) {
+                        animationProgression[inputNum] = 0;
+                    }
+                    renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw);
+                }
+            }
+            else {
                 draw.text(canvas.width / 2, 150 + x * blockheight, q1[x], currentColor["NormalText"], "center", font, ctx);
             }
         }
