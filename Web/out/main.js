@@ -1,4 +1,15 @@
 "use strict";
+/// <reference path="compiler.ts" />
+/// <reference path="utilitys.ts" />
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 /*
  * TODO:
  *  -Output
@@ -172,6 +183,7 @@ function keyDown(key) {
     return true;
 }
 //MQTT
+let latesMQTTMessage = "";
 var client = new Paho.MQTT.Client('hotti.info', 10833, "client" + ((new Date).getTime().toString(16) + Math.floor(1E7 * Math.random()).toString(16)));
 function mqttConstructor() {
     client.onConnectionLost = onConnectionLost;
@@ -209,6 +221,9 @@ function onMessageArrived(message) {
         pictureValues[page] = pictureString2Value(message.payloadString.substring(1));
         loadPictureVal(pictureValues[page]);
         waitingForMQTTPic = false;
+    }
+    else {
+        latesMQTTMessage = message.payloadString;
     }
 }
 function send(dat) {
@@ -877,6 +892,7 @@ let settings = {
                 return "button";
             }
             else {
+                console.log("del");
                 goTo("Question", 1);
                 var a = {};
                 var l = localStorage.getItem("!designs");
@@ -959,6 +975,17 @@ let settings = {
             return "";
         } },
         //"test": function (callType) { if (!callType) { return "str"; } else { return ""; } },
+    },
+    "MoodLight": {
+        "Firmware": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                asyncStuff("firmware");
+                return "";
+            }
+        },
     },
     "Konto": {
         "/!\\ eine Anmeldung ist nicht Nötig /!\\": function (callType) { if (!callType) {
@@ -1065,6 +1092,22 @@ let settings = {
         //"anmelden": function (callType) { if (!callType) { return "button"; } else { if (!staticElementsData["Anmelde Status"]) { openWindow("/auth"); } else { aalert("Du bist bereits angemeldet") } return ""; } },
     }
 };
+function delay(milliseconds) {
+    return new Promise(resolve => {
+        setTimeout(resolve, milliseconds);
+    });
+}
+function asyncStuff(stuff) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (stuff == "firmware") {
+            send("V");
+            while (!latesMQTTMessage.startsWith(";V")) {
+                yield delay(100);
+            }
+            aalert(latesMQTTMessage);
+        }
+    });
+}
 let settingsOnLoad = {
     "Anmelde Status": function () {
         settingsInfo["Anmelde Status"] = "Aktualisieren...";
@@ -1159,7 +1202,7 @@ let drawReal = new drawApp();
 let util = new Utilitys();
 const errorImg = "000000ff0000ff00ff000000ff0000ff00ff000000000000ff00ffff0000000000ff00ffff0000ff00ff000000ff0000ff00ffff0000ff00ffff0000000000ff00ffff0000000000ff00ff000000ff0000ff00ff000000ff0000000000ff00ffff0000000000ff00ffff0000";
 const available = [["Wait", ["0.25"]], ["Laden", ["0"]], ["Text", ["Text", "10"]], ["Uhrzeit", ["10"]], ["Bild anzeigen", ["0", "0"]], ["Animationen", ["0", "0", "10"]], ["Füllen", ["0", "0", "0"]], ["Loop", ["2"]], ["Unendlich", []], ["Custom", [""]]];
-const description = { "Wait": ["Sekunden"], "Laden": ["Nummer"], "Text": ["Text", "Geschwindigkeit"], "Uhrzeit": ["Geschwindigkeit"], "Bild anzeigen": ["Bild", "Übergangszeit"], "Animationen": ["Animation", "Übergangszeit", "Wartezeit (Sekunden X 100)"], "Füllen": ["R", "G", "B"], "Loop": ["Wiederholungen"], "Custom": ["Code"] };
+const description = { "Wait": ["Sekunden"], "Laden": ["Nummer"], "Text": ["Text", "Geschwindigkeit"], "Uhrzeit": ["Geschwindigkeit"], "Bild anzeigen": ["Bild", "Übergangszeit"], "Animationen": ["Animation", "Übergangszeit", "Wartezeit (Sekunden X 100)"], "Füllen": ["R 0-255", "G 0-255", "B 0-255"], "Loop": ["Wiederholungen"], "Custom": ["Code"] };
 const notDragable = ["Start"];
 const dropdownMenuButtons = { "Bild anzeigen": { "Bearbeiten": function () { console.log("Bearbeiten"); }, "Anzeigen": function () { console.log("Anzeigen"); } }, "Animationen": { "Bearbeiten": function () { console.log("Bearbeiten"); } } }; //TODO
 const specialRender = {
@@ -1189,6 +1232,7 @@ const specialBlockEditClick = {
             }
             mouse[0] = false;
             Question = ["welches Bild?", qAnsw];
+            cursorMessage = "";
             goTo("Question", 1);
         }
     },
@@ -1196,14 +1240,15 @@ const specialBlockEditClick = {
         0: function () {
             tempData = [mouseDataRight[0], mouseDataRight[1], EditMenuEdeting];
             var qAnsw = {};
-            for (var i = 0; i < pictures.length; i++) {
-                qAnsw["_P" + i] = function (selId) {
+            for (var i = 0; i < animations.length; i++) {
+                qAnsw["_A" + i] = function (selId) {
                     Elements[tempData[0]][tempData[1]][1][tempData[2]] = "" + selId;
                     goTo("standartEdit", 1);
                 };
             }
             mouse[0] = false;
-            Question = ["welches Bild?", qAnsw];
+            Question = ["welche Animation?", qAnsw];
+            cursorMessage = "";
             goTo("Question", 1);
         }
     }
@@ -1946,6 +1991,16 @@ function harddraw() {
             drawReal.roundedRect(px, py, s, 1, currentColor["MenuButtons"], 5, ctx);
         }
     }
+    else if (editType == "Question") {
+        for (var x = 0; x < animationProgression.length; x++) {
+            animationProgression[x] += 0.1;
+            if (animations[x] != undefined) {
+                if (animationProgression[x] >= animations[x].length - 0.5) {
+                    animationProgression[x] = 0;
+                }
+            }
+        }
+    }
     //keysDown debug
     let k = Object.keys(pressedKeys);
     let i = 0;
@@ -2184,6 +2239,19 @@ function updateRects() {
             }
             else if (q1[x].startsWith("_p")) {
                 renderPicture(q1[x].substring(3, 500), 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw);
+            }
+            else if (q1[x].startsWith("_A")) {
+                var inputNum = x;
+                //function (inputNum: string, posx: number, posy: number) {
+                if (animations[inputNum] != undefined && animationProgression.length <= inputNum) {
+                    animationProgression.push(0);
+                }
+                if (animations[inputNum] != undefined) {
+                    if (isNaN(animationProgression[inputNum])) {
+                        animationProgression[inputNum] = 0;
+                    }
+                    renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw);
+                }
             }
             else {
                 draw.text(canvas.width / 2, 150 + x * blockheight, q1[x], currentColor["NormalText"], "center", font, ctx);

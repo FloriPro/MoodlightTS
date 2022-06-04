@@ -1,4 +1,5 @@
-import { time } from "console";
+/// <reference path="compiler.ts" />
+/// <reference path="utilitys.ts" />
 
 /*
  * TODO:

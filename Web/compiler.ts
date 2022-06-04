@@ -1,3 +1,5 @@
+/// <reference path="main.ts" />
+/// <reference path="utilitys.ts" />
 /**
  * @param animationData pictures
  * @param wait xxxx seconds*100

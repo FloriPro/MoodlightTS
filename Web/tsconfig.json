@@ -12,7 +12,13 @@
     "strict": true,
     "skipLibCheck": true,
     "watch": true,
-    
   },
-  "exclude": ["out/"]
+  "exclude": [
+    "out/"
+  ],
+  "include": [
+    "compiler.ts",
+    "main.ts",
+    "utilitys.ts"
+  ]
 }
