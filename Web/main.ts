@@ -1929,6 +1929,7 @@ function updateRects() {
         //Elements
         for (let ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
             let i = 0
+            let lastDragElement = false;
             let indentation = 0;
             for (let ElementList = 0; ElementList < Elements[ElementLoadPos].length; ElementList++) {
                 //if dragElement in middle
@@ -1941,6 +1942,7 @@ function updateRects() {
                                 draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), currentColor["MoveBlockShaddow"], 10, ctx) //body
                                 ctx.globalAlpha = 1;
                                 i++;
+                                lastDragElement = true;
                             }
                         }
                     }
@@ -1971,9 +1973,14 @@ function updateRects() {
                 //connector
                 if (ElementList != 0) {
                     pyC = (py + 4) - blockheight;
+                    if (lastDragElement == true) {
+                        pyC -= blockheight;
+                        lastDragElement = false;
+                    }
+
                     if ("End" == Elements[ElementLoadPos][ElementList][0]) { px += 10 }
                     draw.polygon(ctx, drawcolorO, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]]) //connector
-                    draw.polygonOutline(ctx, drawcolorAccentO, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]], 1) //connector outline}
+                    draw.polygonOutline(ctx, drawcolorAccentO, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]], 1) //connector outline
 
                     if ("End" == Elements[ElementLoadPos][ElementList][0]) { px -= 10 }
                 }
