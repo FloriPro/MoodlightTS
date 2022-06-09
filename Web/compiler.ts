@@ -6,7 +6,7 @@
  * @param morph xx
  */
 
-function compileAnimation(animationData: string[][], wait: number, morph: number) {
+async function compileAnimation(animationData: string[][], wait: number, morph: number) {
     /**Data getting sended */
     var dat: string[] = []
     dat[0] = "*;D;T" + addZero(morph, 2);
@@ -28,15 +28,17 @@ function compileAnimation(animationData: string[][], wait: number, morph: number
         dat.push(pictureValue2String(animationData[i]))
     }
     for (var i = 0; i < dat.length; i++) {
+        await delay(parseInt(setSettings["Upload Delay"]))
         send("S" + addZero(i, 2) + dat[i]);
     }
     send("*;L0;");
+    finishedUpload();
 }
 
 let split = false;
 let maxCommandsPerSave = 500;
 
-function compileProject() {
+async function compileProject() {
     var pics: string[] = [...pictures];
 
     //make commands
@@ -195,7 +197,7 @@ function compileProject() {
             }
             picId[pics2.length].push(x);
             pics2.push(pics[x])
-        }else{
+        } else {
             picId[pics2.indexOf(pics[x])].push(x);
         }
     }
@@ -236,13 +238,28 @@ function compileProject() {
 
     console.log(output)
     console.log("SENDING...")
-
+    var d = parseInt(setSettings["Upload Delay"]);
     for (var i = 0; i < output.length; i++) {
+        setInformation(output.length, i);
         send("S" + addZero(i, 2) + output[i]);
+
+        await delay(d)
     }
     if (setSettings["Projekt namen anzeigen bei senden"] == "true") {
         send('*;T07;I000000000000;O0,35;Iffffff000000;"' + projectName + ' ";W;L00;');
     } else {
         send("L00");
     }
+    finishedUpload();
+}
+
+async function setInformation(maxFrames: number, currentFrame: number) {
+    var up: HTMLDivElement = document.querySelector("#Uploading") as HTMLDivElement;
+    up.style.display = "";
+    var p: HTMLElement = up.querySelector("p") as HTMLElement;
+    p.innerText = "Uploading (Frame " + currentFrame + "/" + maxFrames + ")";
+}
+function finishedUpload() {
+    var up: HTMLDivElement = document.querySelector("#Uploading") as HTMLDivElement;
+    up.style.display = "none";
 }

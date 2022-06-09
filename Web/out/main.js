@@ -807,6 +807,12 @@ let settings = {
         else {
             return "";
         } },
+        "Upload Delay": function (callType) { if (!callType) {
+            return "num";
+        }
+        else {
+            return "";
+        } },
     },
     "Aussehen": {
         "Animationen Anzeigen": function (callType) { if (!callType) {
@@ -869,15 +875,15 @@ let settings = {
                 var a = {};
                 var dK = Object.keys(d);
                 for (var x = 0; x < dK.length; x++) {
-                    var v = dK[x]; //.substring(0, dK[x].lastIndexOf('_'));
-                    //v = v.substring(0, v.lastIndexOf('_')) + "  " + dK[x].substring(dK[x].lastIndexOf('_') + 1);
+                    var v = dK[x];
+                    setSettings["Darkmode"] = "undefined";
                     a[v] = function (seId) {
                         var l = localStorage.getItem("!designs");
                         if (l != undefined) {
                             var d = JSON.parse(l);
                             var dK = Object.keys(d);
                             settingsInfo["Eigenens design"] = dK[seId];
-                            currentColor = JSON.parse(d[dK[seId]]);
+                            currentColor = d[dK[seId]];
                         }
                         goTo("Settings", 1);
                     };
@@ -946,7 +952,7 @@ let settings = {
                         return "";
                     }
                 }
-                d[n] = j;
+                d[n] = JSON.parse(j);
                 localStorage.setItem("!designs", JSON.stringify(d));
                 settingsInfo["Eigenens design"] = n;
                 currentColor = JSON.parse(j);
@@ -984,92 +990,6 @@ let settings = {
             }
         },
     },
-    /*"Konto": {
-        "/!\\ eine Anmeldung ist nicht Nötig /!\\": function (callType) { if (!callType) { return "info"; } else { aalert("Eine Anmeldung ist nur nötig, wenn Aktionen benutzt werden"); return ""; } },
-        "Anmelde Status": function (callType) {
-            if (!callType) { return "showingBool"; } else {
-                if (staticElementsData["Anmelde Status"]) {
-                    staticElementsData["Anmelde Status"] = undefined;
-                    settingsInfo["Anmelde Status"] = "Abmelden...";
-                    $.ajax({
-                        type: "GET",
-                        url: "/google/logout",
-                        success: function () {
-                            UpdateStaticSettingsIfInSettings();
-                            settingsInfo["Anmelde Status"] = "";
-                        }
-                    }).fail(function (e) {
-                        settingsInfo["Anmelde Status"] = "FEHLER! Abmeldung fehlgeschlagen";
-                        staticElementsData["Anmelde Status"] = undefined;
-                    });
-
-                    //var strWindowFeatures = "location=yes,height=570,width=520,scrollbars=yes,status=yes";
-                    //var URL = "/google/logout";
-                    //var win = window.open(URL, "_blank", strWindowFeatures) as Window;
-                } else {
-                    var strWindowFeatures = "location=yes,height=570,width=520,scrollbars=yes,status=yes";
-                    var URL = "/google/login";
-                    var win = window.open(URL, "_blank", strWindowFeatures) as Window;
-                } return "";
-            }
-        },
-        "Server MQTT Daten": function (callType) {
-            if (!callType) { return "showingBool"; } else {
-                if (staticElementsData["Server MQTT Daten"]) {
-                    staticElementsData["Server MQTT Daten"] = undefined;
-                    settingsInfo["Server MQTT Daten"] = "Löschen...";
-                    $.ajax({
-                        type: "POST",
-                        url: "/api/v0/remDat",
-                        success: function () {
-                            UpdateStaticSettingsIfInSettings();
-                        }
-                    }).fail(function (e) {
-                        settingsInfo["Server MQTT Daten"] = "FEHLER! Löschung fehlgeschlagen";
-                        alert("Löschung fehlgeschlagen")
-                        staticElementsData["Server MQTT Daten"] = undefined;
-                    });
-                } else {
-                    staticElementsData["Server MQTT Daten"] = undefined;
-                    settingsInfo["Server MQTT Daten"] = "Senden...";
-                    $.ajax({
-                        type: "POST",
-                        url: "/api/v0/setDat",
-                        data: JSON.stringify([myTopic, myUser, myPass]),
-                        success: function (e) {
-                            if (e != "ok") {
-                                aalert(e)
-                            }
-                            UpdateStaticSettingsIfInSettings();
-                        }
-                    }).fail(function (e) {
-                        settingsInfo["Server MQTT Daten"] = "FEHLER! Senden fehlgeschlagen";
-                        alert("Senden fehlgeschlagen")
-                        staticElementsData["Server MQTT Daten"] = undefined;
-                    });
-                } return "";
-            }
-        },
-        "Daten Von Server Anzeigen": function (callType) {
-            if (!callType) { return "button"; } else {
-                settingsInfo["Daten Von Server Anzeigen"] = "Laden...";
-                $.ajax({
-                    type: "POST",
-                    url: "/api/v0/getDat",
-                    success: function (e) {
-                        settingsInfo["Daten Von Server Anzeigen"] = "";
-                        aalert(e);
-                    }
-                }).fail(function (e) {
-                    settingsInfo["Daten Von Server Anzeigen"] = "FEHLER! Laden fehlgeschlagen";
-                    aalert("Laden fehlgeschlagen")
-                });
-                return "";
-            }
-        },
-        //"abmelden": function (callType) { if (!callType) { return "button"; } else { if (staticElementsData["Anmelde Status"]) { openWindow("/google/logout"); } else { aalert("Du bist bereits abgemeldet") } return ""; } },
-        //"anmelden": function (callType) { if (!callType) { return "button"; } else { if (!staticElementsData["Anmelde Status"]) { openWindow("/auth"); } else { aalert("Du bist bereits angemeldet") } return ""; } },
-    }*/
 };
 function delay(milliseconds) {
     return new Promise(resolve => {
@@ -1080,10 +1000,17 @@ function asyncStuff(stuff) {
     return __awaiter(this, void 0, void 0, function* () {
         if (stuff == "firmware") {
             send("V");
-            while (!latesMQTTMessage.startsWith(";V")) {
+            var i = 0;
+            while (!latesMQTTMessage.startsWith(";V") && i < 200) {
                 yield delay(100);
+                i++;
             }
-            aalert(latesMQTTMessage);
+            if (i >= 200) {
+                aalert("ERROR");
+            }
+            else {
+                aalert(latesMQTTMessage);
+            }
         }
     });
 }
@@ -1139,7 +1066,7 @@ let settingsOnLoad = {
 };
 let staticElementsData = { "Anmelde Status": undefined, "Verbindung": undefined };
 let settingsInfo = { "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" };
-let setSettings = { "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "MoodLight Größe": "6" };
+let setSettings = { "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "MoodLight Größe": "6", "Upload Delay": "0" };
 let settingsSelLeft = 0;
 function UpdateStaticSettingsIfInSettings() {
     if (editType == "Settings") {
@@ -2389,8 +2316,11 @@ function updateRects() {
                     if (setSettings[settinggruppe[s]] == "false") {
                         draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolFalse"], ctx);
                     }
-                    else {
+                    else if (setSettings[settinggruppe[s]] == "true") {
                         draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolTrue"], ctx);
+                    }
+                    else {
+                        draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, "#5e5e5e", ctx);
                     }
                 }
                 if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && (type == "staticBool" || type == "showingBool")) {

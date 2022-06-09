@@ -55,6 +55,10 @@
     load(colors);
 
     let l = localStorage.getItem("!designs");
+    if (l == null) {
+        l = "{}";
+        localStorage.setItem("!designs", l);
+    }
     let d = JSON.parse(l);
     let a = {};
     let dK = Object.keys(d);
