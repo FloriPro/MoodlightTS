@@ -8,19 +8,6 @@
  */
 const empty: string = '{"Elements":[[["Start",["0"]]]],"pictures":["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"],"ElementPositions":[[0,0]],"FreeElements":[],"animations":[],"projectName":"unset"}';
 
-let moodLightSizeX = 6;
-let moodLightSizeY = 6;
-
-//gen color selection Table
-let colorSelTable = document.getElementById('colorSelTable') as HTMLCanvasElement;
-for (var x = 0; x < moodLightSizeY; x++) {
-    var i = '<tr>';
-    for (var y = 0; y < moodLightSizeX; y++) {
-        i += '<th style="background:white" class="ColorSelContainer"><div class="ColorSelButton" style="background:black" id="y' + y + "x" + x + '"></div></th>';
-    }
-    colorSelTable.innerHTML += i + "</tr>";
-}
-
 //utility variables
 let isFocused = false
 
@@ -453,10 +440,18 @@ function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: num
         }
         l += 5;
     }
+
+    if ("End" == text) {
+        blockheight /= 2
+    }
+
     draw.roundedRect(plx, ply, l, -(blockheight - 10), drawcolorAccent, 10, ctx) //body outline
     draw.roundedRect(plx + 1, ply - 1, l - 2, -blockheight + 12, drawcolor, 10, ctx) //body
-    draw.text(plx, ply, text, currentColor["NormalText"], "left", font, ctx);
-
+    if ("End" != text) {
+        draw.text(plx, ply, text, currentColor["NormalText"], "left", font, ctx);
+    } else {
+        blockheight *= 2
+    }
     l = ctx.measureText(text).width + 7;
     for (let x = 0; x < Element[1].length; x++) {
         let t = Element[1][x];
@@ -478,6 +473,7 @@ function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: num
 function elementLenght(Element: [string, string[]]) {
     setFont(font);
     let text = Element[0];
+
     let l = ctx.measureText(Element[0]).width + 10;
     //space between options: 5;
     for (let x = 0; x < Element[1].length; x++) {
@@ -493,6 +489,7 @@ function elementLenght(Element: [string, string[]]) {
         }
         l += 5;
     }
+
     return l;
 }
 /**
@@ -625,7 +622,16 @@ let menuButtons: { [name: string]: () => void } = {
                 goTo("Question", 1);
                 var qAnsw: { [name: string]: (seId: number) => void } = {}
                 for (var i = 0; i < animations.length; i++) {
-                    qAnsw["_A" + i] = function (selId) { goTo("PictureEdit", 0); mouse[0] = false; animationId = selId; pictureEditType = 1; pictureValues = []; for (var i = 0; i < animations[selId].length; i++) { pictureValues[i] = pictureString2Value(animations[selId][i]); } loadPictureVal(pictureValues[0]); }
+                    qAnsw["_A" + i] = function (selId) {
+                        goTo("PictureEdit", 0);
+                        mouse[0] = false;
+                        animationId = selId;
+                        pictureEditType = 1;
+                        pictureValues = [];
+                        for (var i = 0; i < animations[selId].length; i++) {
+                            pictureValues[i] = pictureString2Value(animations[selId][i]);
+                        } loadPictureVal(pictureValues[0]);
+                    }
                 }
                 Question = ["Was willst du bearbeiten", qAnsw];
             },
@@ -807,7 +813,14 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                 return "";
             }
         },
-        "Eigenens design erstellen": function (callType) { if (!callType) { return "button"; } else { openWindow("/colorMaker/"); return ""; } },
+        "Eigenens design erstellen": function (callType) {
+            if (!callType) {
+                return "button";
+            } else {
+                openWindow("/colorMaker/");
+                return "";
+            }
+        },
 
         //"test": function (callType) { if (!callType) { return "str"; } else { return ""; } },
     },
@@ -817,6 +830,14 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                 return "button";
             } else {
                 asyncStuff("firmware");
+                return "";
+            }
+        },
+        "MoodLight Größe": function (callType) {
+            if (!callType) {
+                return "num";
+            } else {
+                UpdateSizeMoodlightSize();
                 return "";
             }
         },
@@ -972,7 +993,7 @@ let settingsOnLoad: any = {
 }
 let staticElementsData: any = { "Anmelde Status": undefined, "Verbindung": undefined };
 let settingsInfo: { [einstellung: string]: string } = { "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" }
-let setSettings: { [einstellung: string]: string } = { "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true" };
+let setSettings: { [einstellung: string]: string } = { "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "MoodLight Größe": "6" };
 let settingsSelLeft = 0;
 function UpdateStaticSettingsIfInSettings() {
     if (editType == "Settings") {
@@ -1124,6 +1145,25 @@ if (setSettings["Darkmode"] == "true") {
 } else {
     currentColor = colors["light"]
 }
+let moodLightSizeX = 0;
+let moodLightSizeY = 0;
+
+function UpdateSizeMoodlightSize() {
+    moodLightSizeX = parseInt(setSettings["MoodLight Größe"]);
+    moodLightSizeY = parseInt(setSettings["MoodLight Größe"]);
+
+    //gen color selection Table
+    let colorSelTable = document.getElementById('colorSelTable') as HTMLCanvasElement;
+    colorSelTable.innerHTML = "";
+    for (var x = 0; x < moodLightSizeY; x++) {
+        var i = '<tr>';
+        for (var y = 0; y < moodLightSizeX; y++) {
+            i += '<th style="background:white" class="ColorSelContainer"><div class="ColorSelButton" style="background:black" id="y' + y + "x" + x + '"></div></th>';
+        }
+        colorSelTable.innerHTML += i + "</tr>";
+    }
+}
+UpdateSizeMoodlightSize();
 
 function setFont(font: string) {
     if (ctx.font != font) { ctx.font = font; }
@@ -1476,7 +1516,9 @@ function updatefunction(): boolean {
                         textLength = elementLenght([FreeElements[ElementLoadPos][0], FreeElements[ElementLoadPos][1]])
                         if (mouseX > px && mouseX < px + textLength && mouseY < py && mouseY > py - blockheight) {
                             mouseSelectionLeft = 1;
-                            mouseDataLeft = ElementLoadPos;
+                            FreeElements.push(FreeElements[ElementLoadPos])
+                            FreeElements.splice(ElementLoadPos, 1);
+                            mouseDataLeft = FreeElements.length - 1;
                             break;
                         }
                     }
@@ -1710,6 +1752,7 @@ function harddraw() {
     if (editType == "standartEdit") {
         //Animations
         if (setSettings["Animationen Anzeigen"] == "true") {
+            ctx.globalAlpha = 1;
             for (var x = 0; x < toDrawAnimations.length; x++) {
                 var inputNum = parseInt(toDrawAnimations[x][0]);
                 var pox = toDrawAnimations[x][1];
@@ -1903,7 +1946,10 @@ function updateRects() {
                     }
                 }
 
-                if ("End" == Elements[ElementLoadPos][ElementList][0]) { indentation--; }
+                if ("End" == Elements[ElementLoadPos][ElementList][0]) {
+                    indentation--;
+                }
+
                 px = ElementPositions[ElementLoadPos][0] + (indentation * 10);
                 py = ElementPositions[ElementLoadPos][1] + i * blockheight;
 
@@ -1942,6 +1988,12 @@ function updateRects() {
                 }
 
                 if (["Loop", "Unendlich"].includes(Elements[ElementLoadPos][ElementList][0])) { indentation++; }
+                if ("End" == Elements[ElementLoadPos][ElementList][0]) {
+                    x = 0
+                    var addit = 20
+                    draw.rect(px - (x * 10) - 5, py + 10 - addit, 10, (-blockheight - 9) + addit, currentColor["YellowBlockAccent"], ctx);
+                    draw.rect(px - (x * 10) - 4, py + 10 - addit, 8, (-blockheight - 9) + addit, currentColor["YellowBlock"], ctx);
+                }
                 i++;
             }
             pyC = (py + 4);
@@ -2030,7 +2082,7 @@ function updateRects() {
                     setTimeout(updateRects, 15);
                     mouse[0] = false;
                 } else {
-                    goTo("standartEdit", 0);
+                    goTo("standartEdit", 1);
                     setTimeout(updateRects, 15);
                     mouse[0] = false;
                 }
