@@ -1,5 +1,6 @@
 /// <reference path="main.ts" />
 /// <reference path="utilitys.ts" />
+
 /**
  * @param animationData pictures
  * @param wait xxxx seconds*100
@@ -7,6 +8,20 @@
  */
 
 async function compileAnimation(animationData: string[][], wait: number, morph: number) {
+    if (!client.isConnected()) {
+        goTo("Question", 1)
+        Question = ["Nicht verbunden!", {
+            "Abbrechen": function (seId) {
+                goTo("PictureEdit", 1);
+            },
+            "Einstellungen öffnen": function (seId) {
+                goTo("Settings", 1)
+                settingsSelLeft = 1;
+            }
+        }]
+        return "";
+    }
+
     /**Data getting sended */
     var dat: string[] = []
     dat[0] = "*;D;T" + addZero(morph, 2);
@@ -30,6 +45,8 @@ async function compileAnimation(animationData: string[][], wait: number, morph: 
     for (var i = 0; i < dat.length; i++) {
         await delay(parseInt(setSettings["Upload Delay"]))
         send("S" + addZero(i, 2) + dat[i]);
+
+        setInformation(dat.length, i);
     }
     send("*;L0;");
     finishedUpload();
@@ -39,7 +56,21 @@ let split = false;
 let maxCommandsPerSave = 500;
 
 async function compileProject() {
-    var pics: string[] = [...pictures];
+    if (!client.isConnected()) {
+        goTo("Question", 1)
+        Question = ["Nicht verbunden!", {
+            "Abbrechen": function (seId) {
+                goTo("standartEdit", 1);
+            },
+            "Einstellungen öffnen": function (seId) {
+                goTo("Settings", 1)
+                settingsSelLeft = 1;
+            }
+        }]
+        return "";
+    }
+
+    var pics: string[] = []//[...pictures];
 
     //make commands
     var rawCommands: string[][] = []
@@ -59,11 +90,32 @@ async function compileProject() {
                     rawCommands[savePos].push("W" + addZero(Math.round(parseFloat(params[0]) * 100), 4))
                     break;
 
+                case "Bewegen":
+                    if (params[1] == "R") {
+                        rawCommands[savePos].push("I" + params[1]);
+                    } else if (params[1] == "V") {
+                        //Don't change (V == Vorher)
+                    } else {
+                        rawCommands[savePos].push("I000000" + params[1]);
+                    }
+
+                    rawCommands[savePos].push("J" + joggAvailLookup["" + params[0]]);
+                    break;
+
                 case "Uhrzeit":
                     if (T_time != parseInt(params[0])) {
                         T_time = parseInt(params[0]);
                         rawCommands[savePos].push("T" + addZero(T_time, 2));
                     }
+
+                    if (params[1] == "R" || params[2] == "R") {
+                        rawCommands[savePos].push("IR");
+                    } else if (params[1] == "V" || params[2] == "V") {
+                        //Don't change (V == Vorher)
+                    } else {
+                        rawCommands[savePos].push("I" + params[2] + params[3]);
+                    }
+
                     rawCommands[savePos].push("Iffffff000000");
                     rawCommands[savePos].push("\"\"")
                     rawCommands[savePos].push("W");
@@ -74,7 +126,13 @@ async function compileProject() {
                         T_time = parseInt(params[1]);
                         rawCommands[savePos].push("T" + addZero(T_time, 2));
                     }
-                    rawCommands[savePos].push("Iffffff000000");
+                    if (params[2] == "R" || params[3] == "R") {
+                        rawCommands[savePos].push("IR");
+                    } else if (params[2] == "V" || params[3] == "V") {
+                        //Don't change (V == Vorher)
+                    } else {
+                        rawCommands[savePos].push("I" + params[2] + params[3]);
+                    }
                     rawCommands[savePos].push("\"" + params[0] + "\"");
                     rawCommands[savePos].push("W");
                     break;
@@ -87,20 +145,25 @@ async function compileProject() {
                     break;
 
                 case "Füllen":
-                    rawCommands[savePos].push("I" + rgb2hex(parseInt(params[0]), parseInt(params[1]), parseInt(params[2])));
+                    //rawCommands[savePos].push("I" + rgb2hex(parseInt(params[0]), parseInt(params[1]), parseInt(params[2])));
+                    if (params[0] != "V") {
+                        rawCommands[savePos].push("I" + params[0]);
+                    }
                     rawCommands[savePos].push("O00," + ((moodLightSizeX * moodLightSizeY) - 1).toString())
                     break;
 
                 case "Bild anzeigen":
+                    var picIdd = pics.length.toString();
+                    pics.push(pictures[parseInt(params[0])]);
                     if (parseInt(params[1]) != 0) {
                         if (T_time != parseInt(params[1])) {
                             T_time = parseInt(params[1]);
                             rawCommands[savePos].push("T" + addZero(T_time, 2));
                         }
-                        rawCommands[savePos].push("__MPic" + params[0]);
+                        rawCommands[savePos].push("__MPic" + picIdd);
                         rawCommands[savePos].push("W");
                     } else {
-                        rawCommands[savePos].push("__Pic" + params[0]);
+                        rawCommands[savePos].push("__Pic" + picIdd);
                     }
                     break;
 
@@ -150,6 +213,22 @@ async function compileProject() {
                             rawCommands[savePos].push("R" + addZero(parseInt(Elements[loadPos][pos + 1][1][0]) - 1, 4));
                         }
                     }
+                    break;
+                case "Farben":
+                    if (params[0] == "R" || params[1] == "R") {
+                        rawCommands[savePos].push("IR");
+                    } else if (params[0] == "V" || params[1] == "V") {
+                        //Don't change (V == Vorher)
+                    } else {
+                        rawCommands[savePos].push("I" + params[0] + params[1]);
+                    }
+                    break;
+
+                case "Pixel":
+                    if (params[1] != "V") {
+                        rawCommands[savePos].push("I" + params[1]);
+                    }
+                    rawCommands[savePos].push("O" + params[0]);
                     break;
 
                 default:
@@ -239,6 +318,10 @@ async function compileProject() {
     console.log(output)
     console.log("SENDING...")
     var d = parseInt(setSettings["Upload Delay"]);
+    if (output.length > 100) {
+        aalert("Projekt zu Groß! Da dieses Projekt zurzeit keine Banken benutzt, kannst du maximal 100 Bilder + Starts haben.");
+        return;
+    }
     for (var i = 0; i < output.length; i++) {
         setInformation(output.length, i);
         send("S" + addZero(i, 2) + output[i]);
@@ -248,6 +331,7 @@ async function compileProject() {
     if (setSettings["Projekt namen anzeigen bei senden"] == "true") {
         send('*;T07;I000000000000;O0,35;Iffffff000000;"' + projectName + ' ";W;L00;');
     } else {
+        send("*;Iffffff000000");
         send("L00");
     }
     finishedUpload();

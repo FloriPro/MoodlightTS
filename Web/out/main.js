@@ -15,14 +15,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
  *  -Output
  *  -Einstellungen
  */
-const empty = '{"Elements":[[["Start",["0"]]]],"pictures":["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"],"ElementPositions":[[0,0]],"FreeElements":[],"animations":[],"projectName":"unset"}';
+const empty = '{"sizeX":"6","Elements":[[["Start",["0"]]]],"pictures":[],"ElementPositions":[[0,0]],"FreeElements":[],"animations":[],"projectName":"unset"}';
 //utility variables
 let isFocused = false;
 let font = "47px msyi";
-let host = "hotti.info";
-let myTopic = ""; //"fablab114/ML";
-let myUser = ""; //"fablab114";
-let myPass = ""; //"fab!FG1Dw9";
+let host = "";
+let myTopic = "";
+let myUser = "";
+let myPass = "";
 let mouseX = 500;
 let mouseY = 500;
 let mouse = {};
@@ -30,10 +30,13 @@ let pressedKeys = {};
 let canvas = document.getElementById('canvas');
 let colorTextOut = document.getElementById("color");
 let colorPicker = $("#colorpicker");
+let colorPicker2 = $("#colorpicker2");
 let hider = document.getElementById("hider");
 let ctx = canvas.getContext("2d");
 let ProjectLoader = document.querySelector("#projectLoader");
 let pageTeller = document.getElementById("pageTeller");
+let colorSelTable = document.getElementById('colorSelTable');
+let LiveMoodLight = document.getElementById('LiveMoodLight');
 let latestCanvasPicStr = canvas.toDataURL("image/png");
 var latestCanvasPic = new Image;
 latestCanvasPic.src = latestCanvasPicStr;
@@ -48,12 +51,18 @@ function loadProject(jsonLoad) {
     var FreeElementsSave = FreeElements;
     var animationsSave = animations;
     var projectNameSave = projectName;
+    var sizeXSave = moodLightSizeX;
     try {
         Elements = jsonLoad.Elements;
         pictures = jsonLoad.pictures;
         ElementPositions = jsonLoad.ElementPositions;
         FreeElements = jsonLoad.FreeElements;
         animations = jsonLoad.animations;
+        if (jsonLoad.sizeX == undefined) {
+            jsonLoad.sizeX = 6;
+        }
+        moodLightSizeX = jsonLoad.sizeX;
+        moodLightSizeY = jsonLoad.sizeX;
         if (jsonLoad.projectName != undefined) {
             projectName = jsonLoad.projectName;
         }
@@ -68,6 +77,8 @@ function loadProject(jsonLoad) {
         FreeElements = FreeElementsSave;
         animations = animationsSave;
         projectName = projectNameSave;
+        moodLightSizeX = sizeXSave;
+        moodLightSizeY = sizeXSave;
         aalert("load failed");
     }
 }
@@ -173,15 +184,20 @@ function keyDown(key) {
 }
 //MQTT
 let latesMQTTMessage = "";
-var client = new Paho.MQTT.Client('hotti.info', 10833, "client" + ((new Date).getTime().toString(16) + Math.floor(1E7 * Math.random()).toString(16)));
+let client;
 function mqttConstructor() {
+    client = new Paho.MQTT.Client(host, 10833, "client" + ((new Date).getTime().toString(16) + Math.floor(1E7 * Math.random()).toString(16)));
     client.onConnectionLost = onConnectionLost;
     client.onMessageArrived = onMessageArrived;
-    if (myUser != "" && myPass != "" && myTopic != "") {
+    try {
         client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
     }
-    else {
-        //TODO
+    catch (e) {
+        settingsInfo["Verbindung"] = e.message;
+        staticElementsData["Verbindung"] = false;
+        console.error(e);
+        settings;
+        //console.error("empty data!")
     }
 }
 function onConnect() {
@@ -190,9 +206,14 @@ function onConnect() {
     console.log("onConnect");
     client.subscribe(myTopic);
 }
-function onFailure() { console.log("on Failure"); }
+function onFailure() {
+    UpdateStaticSettingsIfInSettings();
+    settingsInfo["Verbindung"] = "Failed: evtl. Passwort/Topic/Username Falsch";
+    console.log("on Failure");
+}
 function onConnectionLost(responseObject) {
     if (responseObject.errorCode != 0) {
+        staticElementsData["Verbindung"] = false;
         console.log("onConnectionLost:" + responseObject.errorMessage + "\nreconnecting...");
         connect();
     }
@@ -200,20 +221,30 @@ function onConnectionLost(responseObject) {
 function reconnect() {
     if (client.isConnected()) {
         client.disconnect();
+        UpdateStaticSettingsIfInSettings();
     }
+    staticElementsData["Verbindung"] = undefined;
+    settingsInfo["Verbindung"] = "Verbinden...";
     connect();
 }
 function onMessageArrived(message) {
-    console.log("onMessageArrived:" + message.payloadString);
+    //console.log("onMessageArrived:" + message.payloadString);
+    var tag = document.createElement("p");
+    var text = document.createTextNode(message.payloadString);
+    tag.appendChild(text);
+    var objDiv = document.querySelector("#consoleOut");
+    objDiv.appendChild(tag);
+    objDiv.scrollTop = objDiv.scrollHeight;
     if (message.payloadString.substring(1, 0) == ";" && waitingForMQTTPic) {
         console.log("load");
         pictureValues[page] = pictureString2Value(message.payloadString.substring(1));
         loadPictureVal(pictureValues[page]);
         waitingForMQTTPic = false;
     }
-    else {
-        latesMQTTMessage = message.payloadString;
+    else if (message.payloadString.substring(1, 0) == ";") {
+        LiveMoodLightUpdate(message.payloadString.replace(";", ""));
     }
+    latesMQTTMessage = message.payloadString;
 }
 function send(dat) {
     var message = new Paho.MQTT.Message(dat);
@@ -221,7 +252,8 @@ function send(dat) {
     client.send(message);
 }
 function connect() {
-    client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
+    mqttConstructor();
+    //client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
 }
 class drawApp {
     image(image, posx, posy) {
@@ -365,6 +397,7 @@ function setStorage() {
     setCookie("myTopic", myTopic, 10);
     setCookie("myPass", myPass, 10);
     setCookie("myUser", myUser, 10);
+    setCookie("host", host, 10);
 }
 function getStorage() {
     try {
@@ -390,6 +423,12 @@ function getStorage() {
     }
     catch (_e) {
         setCookie("myUser", myUser, 10);
+    }
+    try {
+        host = getCookie("host");
+    }
+    catch (_f) {
+        setCookie("host", host, 10);
     }
 }
 class Utilitys {
@@ -469,6 +508,10 @@ function elementLenghtAndDraw(Element, plx, ply) {
         blockheight /= 2;
     }
     draw.roundedRect(plx, ply, l, -(blockheight - 10), drawcolorAccent, 10, ctx); //body outline
+    if ("Start" == text) {
+        draw.circle(plx + 23, ply - 22, 30 - 3, drawcolorAccent, ctx);
+        draw.circle(plx + 23, ply - 22, 29 - 3, drawcolor, ctx);
+    }
     draw.roundedRect(plx + 1, ply - 1, l - 2, -blockheight + 12, drawcolor, 10, ctx); //body
     if ("End" != text) {
         draw.text(plx, ply, text, currentColor["NormalText"], "left", font, ctx);
@@ -556,13 +599,13 @@ function openWindow(url) {
 //Game Variables
 let waitingForMQTTPic = false;
 var comesFrom = "";
-/**standartEdit, PictureEdit, Question, Settings, Action*/
+/**standartEdit, PictureEdit, Question, Settings, Action, Sheduler, Console, ColorPicker*/
 var editType = "standartEdit";
 let projectName = "unset";
 let pictureEditKeyEvents = {
-    "c": function () {
+    "y": function () {
         navigator.clipboard.writeText(pictureValue2String(pictureValues[page]));
-    }, "v": function () {
+    }, "x": function () {
         if (navigator.clipboard.readText != undefined) {
             navigator.clipboard.readText().then(clipText => {
                 if (clipText.includes("\n")) {
@@ -679,12 +722,63 @@ let menuButtons = {
     },
     "Einstellungen": function () { goTo("Settings", 1); },
     "Senden": function () { compileProject(); },
-    "Neues Projekt": function () { loadProject(JSON.parse(empty)); },
+    "Neues Projekt": function () {
+        var empt = JSON.parse(empty);
+        empt.projectName = pprompt("Name");
+        loadProject(empt);
+        setCookie("lastUsed", projectName, 0.5);
+    },
     "Zu Datei Speichern": downloadProject,
     "Von Datei Laden": function () { console.log("clickedLoad"); ProjectLoader.click(); },
+    "": function () { },
+    "Experimental:": function () { },
+    "Sheduler": function () {
+        goTo("Sheduler", 0);
+    },
+    "Console": function () {
+        goTo("Console", 0);
+    }
     //"actions": function () { openWindow("/action"); },
 };
 let menuWidth = 350;
+function delay(milliseconds) {
+    return new Promise(resolve => {
+        setTimeout(resolve, milliseconds);
+    });
+}
+function asyncStuff(stuff) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (stuff == "firmware") {
+            send("V");
+            var i = 0;
+            while (!latesMQTTMessage.startsWith(";V") && i < 20) {
+                yield delay(100);
+                i++;
+            }
+            if (i >= 20) {
+                aalert("ERROR: Timeout");
+            }
+            else {
+                aalert(latesMQTTMessage);
+            }
+        }
+        else if (stuff == "colorPickerOfElement") {
+            //tempData = [mouseDataRight[0], mouseDataRight[1], EditMenuEdeting]
+            colorPicker2.spectrum('set', "#" + Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting]);
+            colorPicker2.spectrum('show');
+            tempData = undefined;
+            cursorMessage = "";
+            console.log(tempData);
+            while (tempData == undefined) {
+                yield delay(100);
+            }
+            Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = tempData;
+            updateRects();
+            yield delay(100);
+            updateRects();
+        }
+    });
+}
 /**type: bool, staticBool, showingBool, str, num, button, info */
 let settings = {
     "Allgemein": {
@@ -730,6 +824,15 @@ let settings = {
         else {
             return "";
         } },
+        "Farben Informationen": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                aalert("Bei Farben Wird eine Zufällige Farbe mit 'R' und die Selbe Farbe, welche vorher benutzt wurde mit 'V' gekenzeichnet. Wenn Zwei Farben ausgewählt werden und mindestens eine Random ist, sind beide Farben Random. Das gleiche auch mit dem Vorherigen!");
+                return "";
+            }
+        },
     },
     "MQTT": {
         "Verbindung": function (callType) {
@@ -757,6 +860,7 @@ let settings = {
                 myTopic = sprompt("Topic");
                 myUser = sprompt("User");
                 myPass = sprompt("Pass");
+                setStorage();
                 reconnect();
                 return "";
             }
@@ -813,6 +917,17 @@ let settings = {
         else {
             return "";
         } },
+        "Host Verändern": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                host = sprompt("Host (" + host + ")");
+                setStorage();
+                reconnect();
+                return "";
+            }
+        },
     },
     "Aussehen": {
         "Animationen Anzeigen": function (callType) { if (!callType) {
@@ -982,38 +1097,61 @@ let settings = {
         },
         "MoodLight Größe": function (callType) {
             if (!callType) {
-                return "num";
+                return "button";
             }
             else {
-                UpdateSizeMoodlightSize();
+                var p = prompt("Welche größe hat dein Moodlight (6/8)");
+                if (p != undefined) {
+                    var r = parseInt(p);
+                    moodLightSizeX = r;
+                    moodLightSizeY = r;
+                    UpdateSizeMoodlightSize();
+                }
+                return "";
+            }
+        },
+        "Live MoodLight": function (callType) {
+            if (!callType) {
+                return "bool";
+            }
+            else {
                 return "";
             }
         },
     },
-};
-function delay(milliseconds) {
-    return new Promise(resolve => {
-        setTimeout(resolve, milliseconds);
-    });
-}
-function asyncStuff(stuff) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (stuff == "firmware") {
-            send("V");
-            var i = 0;
-            while (!latesMQTTMessage.startsWith(";V") && i < 200) {
-                yield delay(100);
-                i++;
-            }
-            if (i >= 200) {
-                aalert("ERROR");
-            }
-            else {
-                aalert(latesMQTTMessage);
-            }
+    "Über": {
+        "Einfaches Code Bearbeitungsprogramm für HOTTIs MoodLight": function (callType) { if (!callType) {
+            return "info";
         }
-    });
-}
+        else {
+            return "";
+        } },
+        "": function (callType) { if (!callType) {
+            return "info";
+        }
+        else {
+            return "";
+        } },
+        " ": function (callType) { if (!callType) {
+            return "info";
+        }
+        else {
+            return "";
+        } },
+        "  ": function (callType) { if (!callType) {
+            return "info";
+        }
+        else {
+            return "";
+        } },
+        "©Florian Lohner": function (callType) { if (!callType) {
+            return "info";
+        }
+        else {
+            return "";
+        } },
+    }
+};
 let settingsOnLoad = {
     /*"Anmelde Status": function () {
         settingsInfo["Anmelde Status"] = "Aktualisieren...";
@@ -1057,16 +1195,19 @@ let settingsOnLoad = {
     "Verbindung": function () {
         staticElementsData["Verbindung"] = client.isConnected();
         if (client.isConnected()) {
-            settingsInfo["Verbindung"] = host;
+            settingsInfo["Verbindung"] = client.host;
         }
-        else {
+        else if (settingsInfo["Verbindung"] != undefined && !settingsInfo["Verbindung"].startsWith("Failed")) {
+            settingsInfo["Verbindung"] = "";
+        }
+        else if (settingsInfo["Verbindung"] == undefined) {
             settingsInfo["Verbindung"] = "";
         }
     },
 };
 let staticElementsData = { "Anmelde Status": undefined, "Verbindung": undefined };
-let settingsInfo = { "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" };
-let setSettings = { "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "MoodLight Größe": "6", "Upload Delay": "0" };
+let settingsInfo = { "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" };
+let setSettings = { "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "0" };
 let settingsSelLeft = 0;
 function UpdateStaticSettingsIfInSettings() {
     if (editType == "Settings") {
@@ -1104,11 +1245,53 @@ let EditMenuEdeting = -1;
 let draw = new drawAdder();
 let drawReal = new drawApp();
 let util = new Utilitys();
-const errorImg = "000000ff0000ff00ff000000ff0000ff00ff000000000000ff00ffff0000000000ff00ffff0000ff00ff000000ff0000ff00ffff0000ff00ffff0000000000ff00ffff0000000000ff00ff000000ff0000ff00ff000000ff0000000000ff00ffff0000000000ff00ffff0000";
-const available = [["Wait", ["0.25"]], ["Laden", ["0"]], ["Text", ["Text", "10"]], ["Uhrzeit", ["10"]], ["Bild anzeigen", ["0", "0"]], ["Animationen", ["0", "0", "10"]], ["Füllen", ["0", "0", "0"]], ["Loop", ["2"]], ["Unendlich", []], ["Custom", [""]]];
-const description = { "Wait": ["Sekunden"], "Laden": ["Nummer"], "Text": ["Text", "Geschwindigkeit"], "Uhrzeit": ["Geschwindigkeit"], "Bild anzeigen": ["Bild", "Übergangszeit"], "Animationen": ["Animation", "Übergangszeit", "Wartezeit (Sekunden X 100)"], "Füllen": ["R 0-255", "G 0-255", "B 0-255"], "Loop": ["Wiederholungen"], "Custom": ["Code"] };
+const errorImg = { "MAX": "ff00ff".repeat(100 * 100), "6": "ff00ffff00ffff00ff000000000000000000000000000000000000ff00ffff00ffff00ffff00ffff00ffff00ff000000000000000000ffffffffffffffffff00ff0000ff0000ff0000ff0000ff0000ff00ffffffffffffffffffffffffffffffffffff00ff0000ff0000ff00", "8": "ff00ffff00ffff00ffff00ff000000000000000000000000000000000000000000000000ff00ffff00ffff00ffff00ffff00ffff00ffff00ffff00ff000000000000000000000000000000000000000000000000ff00ffff00ffff00ffff00ff00ff0000ff0000ff0000ff00ffffffffffffffffffffffffffffffffffffffffffffffff00ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff00ffffffffffffffffffffffffffffffffffffffffffffffff00ff0000ff0000ff0000ff00" };
+const available = [
+    ["Bild anzeigen", ["0", "0"]],
+    ["Animationen", ["0", "0", "10"]],
+    ["Wait", ["0.25"]],
+    ["Text", ["Text", "10", "ffffff", "000000"]],
+    ["Uhrzeit", ["10", "ffffff", "000000"]],
+    ["Füllen", ["000000"]],
+    ["Loop", ["2"]],
+    ["Unendlich", []],
+    ["Custom", [""]],
+    ["Bewegen", ["verschieben links", "000000"]],
+    ["Farben", ["ffffff", "000000"]],
+    ["Laden", ["0"]],
+    ["Pixel", ["0", "ff0000"]]
+];
+const description = {
+    "Wait": ["Sekunden"],
+    "Laden": ["Nummer"],
+    "Text": ["Text", "Geschwindigkeit", "Vordergrund Farbe", "Hintergrund Farbe"],
+    "Uhrzeit": ["Geschwindigkeit", "Vordergrund Farbe", "Hintergrund Farbe"],
+    "Bild anzeigen": ["Bild", "Übergangszeit"],
+    "Animationen": ["Animation", "Übergangszeit", "Wartezeit (Sekunden X 100)"],
+    "Füllen": ["Farbe"],
+    "Loop": ["Wiederholungen"],
+    "Custom": ["Code"],
+    "Farben": ["Vordergrund", "Hintergrund"],
+    "Bewegen": ["Richtung", "Hintergrund"],
+    "Pixel": ["Pixel Position (R für zufällige Position)", "Farbe"],
+};
+const joggAvailLookup = { "pixel verschieben nach vorne": 0, "pixel verschieben nach hinten": 1, "verschieben links": 9, "verschieben rechts": 7, "verschieben oben": 6, "verschieben unten": 8, "drehen links": 5, "drehen rechts": 3, "drehen oben": 2, "drehen unten": 4 };
+const joggAvail = Object.keys(joggAvailLookup);
 const notDragable = ["Start"];
-const dropdownMenuButtons = { "Bild anzeigen": { "Bearbeiten": function () { console.log("Bearbeiten"); }, "Anzeigen": function () { console.log("Anzeigen"); } }, "Animationen": { "Bearbeiten": function () { console.log("Bearbeiten"); } } }; //TODO
+const dropdownMenuButtons = {
+    "Bild anzeigen": {
+        "Bearbeiten": function () {
+            console.log("Bearbeiten");
+        },
+        "Anzeigen": function () {
+            console.log("Anzeigen");
+        }
+    }, "Animationen": {
+        "Bearbeiten": function () {
+            console.log("Bearbeiten");
+        }
+    }
+}; //TODO
 const specialRender = {
     "Bild anzeigen": {
         0: [24, function (inputNum, posx, posy) {
@@ -1122,6 +1305,45 @@ const specialRender = {
                 toDrawAnimations.push([inputNum, posx, posy]);
             }]
     },
+    "Text": {
+        2: [24, function (inputNum, posx, posy) {
+                drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            }],
+        3: [24, function (inputNum, posx, posy) {
+                drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            }]
+    },
+    "Uhrzeit": {
+        1: [24, function (inputNum, posx, posy) {
+                drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            }],
+        2: [24, function (inputNum, posx, posy) {
+                drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            }]
+    },
+    "Farben": {
+        0: [24, function (inputNum, posx, posy) {
+                drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            }],
+        1: [24, function (inputNum, posx, posy) {
+                drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            }]
+    },
+    "Füllen": {
+        0: [24, function (inputNum, posx, posy) {
+                drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            }]
+    },
+    "Pixel": {
+        1: [24, function (inputNum, posx, posy) {
+                drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            }]
+    },
+    "Bewegen": {
+        1: [24, function (inputNum, posx, posy) {
+                drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            }]
+    }
 };
 const specialBlockEditClick = {
     "Bild anzeigen": {
@@ -1151,18 +1373,146 @@ const specialBlockEditClick = {
                 };
             }
             mouse[0] = false;
-            Question = ["welche Animation?", qAnsw];
+            Question = ["Welche Art von Bewegung?", qAnsw];
             cursorMessage = "";
             goTo("Question", 1);
         }
+    },
+    "Text": {
+        2: function () {
+            goTo("ColorPicker", 1);
+            asyncStuff("colorPickerOfElement");
+        },
+        3: function () {
+            goTo("ColorPicker", 1);
+            asyncStuff("colorPickerOfElement");
+        }
+    },
+    "Uhrzeit": {
+        1: function () {
+            goTo("ColorPicker", 1);
+            asyncStuff("colorPickerOfElement");
+        },
+        2: function () {
+            goTo("ColorPicker", 1);
+            asyncStuff("colorPickerOfElement");
+        }
+    },
+    "Farben": {
+        0: function () {
+            goTo("ColorPicker", 1);
+            asyncStuff("colorPickerOfElement");
+        },
+        1: function () {
+            goTo("ColorPicker", 1);
+            asyncStuff("colorPickerOfElement");
+        }
+    },
+    "Füllen": {
+        0: function () {
+            goTo("ColorPicker", 1);
+            asyncStuff("colorPickerOfElement");
+        }
+    },
+    "Pixel": {
+        1: function () {
+            goTo("ColorPicker", 1);
+            asyncStuff("colorPickerOfElement");
+        }
+    },
+    "Bewegen": {
+        0: function () {
+            tempData = [mouseDataRight[0], mouseDataRight[1], EditMenuEdeting];
+            var qAnsw = {};
+            for (var i = 0; i < joggAvail.length; i++) {
+                qAnsw[joggAvail[i]] = function (selId) {
+                    Elements[tempData[0]][tempData[1]][1][tempData[2]] = joggAvail[selId];
+                    goTo("standartEdit", 1);
+                };
+            }
+            mouse[0] = false;
+            Question = ["welche Bewegung?", qAnsw];
+            cursorMessage = "";
+            goTo("Question", 1);
+        },
+        1: function () {
+            goTo("ColorPicker", 1);
+            asyncStuff("colorPickerOfElement");
+        }
     }
 };
+const specialBlockDropdownRender = {
+    "Animationen": {
+        0: function (inputNum, posx, posy) {
+            toDrawAnimations.push([inputNum, posx + 6, posy - 24 + 2]);
+        }
+    },
+    "Bild anzeigen": {
+        0: function (inputNum, posx, posy) {
+            if (setSettings["Bilder Anzeigen"] == "true") {
+                renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2 + 6, posy - 2 - 22, draw);
+            }
+        }
+    },
+    "Füllen": {
+        0: function (inputNum, posx, posy) {
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+        }
+    },
+    "Pixel": {
+        1: function (inputNum, posx, posy) {
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+        }
+    },
+    "Bewegen": {
+        1: function (inputNum, posx, posy) {
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+        }
+    },
+    "Text": {
+        2: function (inputNum, posx, posy) {
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+        },
+        3: function (inputNum, posx, posy) {
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+        }
+    },
+    "Uhrzeit": {
+        1: function (inputNum, posx, posy) {
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+        },
+        2: function (inputNum, posx, posy) {
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+        }
+    },
+    "Farben": {
+        0: function (inputNum, posx, posy) {
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+        },
+        1: function (inputNum, posx, posy) {
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+        }
+    }
+};
+function drawColerRect(posx, posy, sizeX, sizeY, colorStr, ctx) {
+    if (colorStr == "#R") {
+        draw.roundedRect(posx + 5, posy + 5, 25 - 5 * 2, 30 - 5 * 2, "#ffffff", 15, ctx);
+        draw.text(posx, posy + 28, "R", "#ff0000", "left", font, ctx);
+    }
+    else if (colorStr == "#V") {
+        draw.roundedRect(posx + 5, posy + 5, 25 - 5 * 2, 30 - 5 * 2, "#ffffff", 15, ctx);
+        draw.text(posx, posy + 28, "V", "#ff0000", "left", font, ctx);
+    }
+    else {
+        draw.rect(posx, posy, sizeX, sizeY, colorStr, ctx);
+    }
+}
 let tempData;
 let colors = { "light": { "background": "#fcfcfc", "backgroundPoints": "#646464", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" }, "dark": { "background": "#030303", "backgroundPoints": "#9b9b9b", "blockArgBackground": "#000000", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#4f4f4f", "EditMenu": "#2f0816", "EditMenuAccent": "#843653", "NormalText": "#ffffff", "MenuButtons": "#ffffff", "MenuBackground": "#ffffff", "MenuText": "#000000", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#2d2d2d", "settingsSelStandard": "#232323", "settingsSelSelected": "#373737", "backgroundBlur": "#ffffff", "settingsBackground": "#000000", "settingsBackgroundHighlight": "#0f0f0f", "questionRedBackgroundBlur": "#69ffff", "questionBackground": "#555555", "objectSidebarBlur": "#3f3f3f", "ProjectName": "#4287f5" } };
 let currentColor = { "background": "", "backgroundPoints": "", "blueBlock": "", "blockArgBackground": "", "blueBlockAccent": "", "YellowBlock": "", "YellowBlockAccent": "", "PurpleBlock": "", "PurpleBlockAccent": "", "MoveBlockShaddow": "", "EditMenu": "", "EditMenuAccent": "", "NormalText": "", "MenuButtons": "", "MenuBackground": "", "MenuText": "", "settingsBoolTrue": "", "settingsBoolFalse": "", "settingsSelMouseOver": "", "settingsSelStandard": "", "settingsSelSelected": "", "backgroundBlur": "", "settingsBackground": "", "settingsBackgroundHighlight": "", "questionRedBackgroundBlur": "", "questionBackground": "", "objectSidebarBlur": "", "ProjectName": "", };
 let setYellow = ["Loop", "Unendlich", "Start", "End"];
-let setPurple = ["Bild anzeigen", "Animationen", "Laden"];
-let pictures = ["000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d7000000000000000000000000d7d7d7d7d7d70000000000000000001e12001e12001e12001e12000000000000000000001e12001e1200000000000000"];
+let setPurple = ["Bild anzeigen", "Animationen", "Laden", "Farben", "Pixel"];
+let pictures = [];
 let animations = [];
 let animationProgression = [];
 let toDrawAnimations = [];
@@ -1188,30 +1538,32 @@ let blockheight = 38;
 getStorage();
 setStorage();
 mqttConstructor();
-var la = getCookie("lastUsed");
-if (la != "" && localStorage[la] != undefined) {
-    loadProject(JSON.parse(localStorage[la]));
-}
 if (setSettings["Darkmode"] == "true") {
     currentColor = colors["dark"];
 }
 else {
     currentColor = colors["light"];
 }
-let moodLightSizeX = 0;
-let moodLightSizeY = 0;
+let moodLightSizeX = 6;
+let moodLightSizeY = 6;
+var la = getCookie("lastUsed");
+if (la != "" && localStorage[la] != undefined) {
+    loadProject(JSON.parse(localStorage[la]));
+}
 function UpdateSizeMoodlightSize() {
-    moodLightSizeX = parseInt(setSettings["MoodLight Größe"]);
-    moodLightSizeY = parseInt(setSettings["MoodLight Größe"]);
     //gen color selection Table
-    let colorSelTable = document.getElementById('colorSelTable');
     colorSelTable.innerHTML = "";
+    LiveMoodLight.innerHTML = "";
     for (var x = 0; x < moodLightSizeY; x++) {
         var i = '<tr>';
+        var i2 = '';
         for (var y = 0; y < moodLightSizeX; y++) {
             i += '<th style="background:white" class="ColorSelContainer"><div class="ColorSelButton" style="background:black" id="y' + y + "x" + x + '"></div></th>';
+            i2 += '<div class="LiveDisplay" style="background:black" id="2_y' + x + "x" + y + '"></div>';
         }
+        i2 += '<div class="break"></div>';
         colorSelTable.innerHTML += i + "</tr>";
+        LiveMoodLight.innerHTML += i2;
     }
 }
 UpdateSizeMoodlightSize();
@@ -1256,7 +1608,7 @@ function pictureString2Value(input) {
         }
     }
     catch (_a) {
-        out = pictureString2Value(errorImg);
+        out = pictureString2Value(getErrorIMG());
     }
     return out;
 }
@@ -1265,11 +1617,17 @@ function pictureValue2String(input) {
     for (var i = 0; i < moodLightSizeY; i++) {
         if (i % 2 == 0) {
             for (var ii = 0; ii < moodLightSizeX; ii++) {
+                if (input[i * moodLightSizeY + ii] == "") {
+                    input[i * moodLightSizeY + ii] = "000000";
+                }
                 out = out + input[i * moodLightSizeY + ii];
             }
         }
         else {
             for (var ii = moodLightSizeX - 1; ii >= 0; ii--) {
+                if (input[i * moodLightSizeY + ii] == "") {
+                    input[i * moodLightSizeY + ii] = "000000";
+                }
                 out = out + input[i * moodLightSizeY + ii];
             }
         }
@@ -1299,7 +1657,7 @@ function finishPicture() {
     autoSave();
 }
 function genProjectJson() {
-    return JSON.stringify({ "Elements": Elements, "pictures": pictures, "ElementPositions": ElementPositions, "FreeElements": FreeElements, "animations": animations, "projectName": projectName });
+    return JSON.stringify({ "sizeX": moodLightSizeX, "Elements": Elements, "pictures": pictures, "ElementPositions": ElementPositions, "FreeElements": FreeElements, "animations": animations, "projectName": projectName });
 }
 function downloadProject() {
     var filename = projectName;
@@ -1312,6 +1670,12 @@ function downloadProject() {
 function saveProject() {
     localStorage.setItem(projectName, genProjectJson());
 }
+function getErrorIMG() {
+    if (errorImg[moodLightSizeX] == undefined) {
+        return errorImg["MAX"];
+    }
+    return errorImg[moodLightSizeX];
+}
 function autoSave() {
     if (setSettings["Automatisch speichert"] == "true") {
         saveProject();
@@ -1319,6 +1683,7 @@ function autoSave() {
 }
 /**
 * type: 0=fadein+fadeout; 1=cut
+* standartEdit, PictureEdit, Question, Settings, Actions, Sheduler, Console
 */
 function goTo(übergangTo, type, settingsSelLef) {
     latestCanvasPicStr = canvas.toDataURL("image/png");
@@ -1331,6 +1696,7 @@ function goTo(übergangTo, type, settingsSelLef) {
     else if (type == 1) {
         editType = übergangTo;
     }
+    checkDisplay();
     if (übergangTo == "PictureEdit") {
         page = 0;
     }
@@ -1446,7 +1812,8 @@ function drawScreen() {
     harddraw();
     if (cursorMessage != "" && cursorMessage != undefined) {
         setFont(font);
-        drawReal.rect(mouseX, mouseY, ctx.measureText(cursorMessage).width, 35, "#bebebe", ctx);
+        drawReal.rect(mouseX - 1, mouseY - 1, ctx.measureText(cursorMessage).width + 2, 35 + 2, "#bebebe", ctx); //outline
+        drawReal.rect(mouseX, mouseY, ctx.measureText(cursorMessage).width, 35, "#d9d9d9", ctx); //background
         drawReal.text(mouseX, mouseY + 30, cursorMessage, currentColor["NormalText"], "left", font, ctx);
     }
 }
@@ -1454,6 +1821,7 @@ function updateScreen() {
     var update = updatefunction();
     ctx.globalAlpha = 1;
     if (update) {
+        console.log("update");
         updateRects();
     }
 }
@@ -1476,7 +1844,7 @@ function updatefunction() {
         ////////////
         // Update //
         ////////////
-        // mouseSelectionLeft types: 0=move Screen; 1=move Elements; -2=none;
+        // mouseSelectionLeft types: 0=move Screen; 1=move Elements; 2=move Start; -2=none;
         //right mouse click
         if (mouse[2] && (mouseSelectionRight == -1 || mouseSelectionRight == 0) && HoldingEnd == -1) {
             update = true;
@@ -1577,49 +1945,55 @@ function updatefunction() {
                             let px = posx + ElementPositions[ElementLoadPos][0];
                             let py = posy + ElementPositions[ElementLoadPos][1] + ElementList * blockheight;
                             textLength = elementLenght(Elements[ElementLoadPos][ElementList]);
-                            if (mouseX > px && mouseX < px + textLength && mouseY < py && mouseY > py - blockheight && notDragable.indexOf(Elements[ElementLoadPos][ElementList][0]) == -1) {
-                                if (Elements[ElementLoadPos][ElementList][0] == "End") {
-                                    Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList);
-                                    HoldingEnd = ElementLoadPos;
-                                    offsetX = mouseX - 10 + mouseX;
-                                    offsetY = mouseY - (blockheight / 2);
-                                    mouseDataLeft = FreeElements.length;
-                                    FreeElements.push(["End", [], [mouseX - posx, mouseY - posy]]);
-                                    mouseSelectionLeft = 1;
-                                }
-                                else {
-                                    offsetX = mouseX + (mouseX - px);
-                                    offsetY = mouseY + (mouseY - py);
-                                    mouseSelectionLeft = 1;
-                                    mouseDataLeft = FreeElements.length;
-                                    let i = Elements[ElementLoadPos][ElementList];
-                                    FreeElements.push([[...Elements[ElementLoadPos][ElementList][0]].join(""), [...Elements[ElementLoadPos][ElementList][1]], [mouseX - posx, mouseY - posy]]);
-                                    if (!keyDown("alt")) {
-                                        //search End
-                                        if (["Loop", "Unendlich"].includes(Elements[ElementLoadPos][ElementList][0])) {
-                                            let it = ElementList;
-                                            let indentation = 1;
-                                            while (indentation > 0) {
-                                                it++;
-                                                if (["Loop", "Unendlich"].includes(Elements[ElementLoadPos][it][0])) {
-                                                    indentation++;
-                                                }
-                                                if ("End" == Elements[ElementLoadPos][it][0]) {
-                                                    indentation--;
-                                                }
-                                            }
-                                            Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], it);
-                                            Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList);
-                                        }
-                                        else {
-                                            Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList);
-                                        }
+                            if (mouseX > px && mouseX < px + textLength && mouseY < py && mouseY > py - blockheight) {
+                                if (notDragable.indexOf(Elements[ElementLoadPos][ElementList][0]) == -1) {
+                                    if (Elements[ElementLoadPos][ElementList][0] == "End") {
+                                        Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList);
+                                        HoldingEnd = ElementLoadPos;
+                                        offsetX = mouseX - 10 + mouseX;
+                                        offsetY = mouseY - (blockheight / 2);
+                                        mouseDataLeft = FreeElements.length;
+                                        FreeElements.push(["End", [], [mouseX - posx, mouseY - posy]]);
+                                        mouseSelectionLeft = 1;
                                     }
                                     else {
-                                        console.log("ALT");
+                                        offsetX = mouseX + (mouseX - px);
+                                        offsetY = mouseY + (mouseY - py);
+                                        mouseSelectionLeft = 1;
+                                        mouseDataLeft = FreeElements.length;
+                                        let i = Elements[ElementLoadPos][ElementList];
+                                        FreeElements.push([[...Elements[ElementLoadPos][ElementList][0]].join(""), [...Elements[ElementLoadPos][ElementList][1]], [mouseX - posx, mouseY - posy]]);
+                                        if (!keyDown("alt")) {
+                                            //search End
+                                            if (["Loop", "Unendlich"].includes(Elements[ElementLoadPos][ElementList][0])) {
+                                                let it = ElementList;
+                                                let indentation = 1;
+                                                while (indentation > 0) {
+                                                    it++;
+                                                    if (["Loop", "Unendlich"].includes(Elements[ElementLoadPos][it][0])) {
+                                                        indentation++;
+                                                    }
+                                                    if ("End" == Elements[ElementLoadPos][it][0]) {
+                                                        indentation--;
+                                                    }
+                                                }
+                                                Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], it);
+                                                Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList);
+                                            }
+                                            else {
+                                                Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList);
+                                            }
+                                        }
+                                        else {
+                                            console.log("ALT");
+                                        }
                                     }
+                                    break;
                                 }
-                                break;
+                                else if (Elements[ElementLoadPos][ElementList][0] == "Start") {
+                                    mouseSelectionLeft = 2;
+                                    mouseDataLeft = ElementLoadPos;
+                                }
                             }
                         }
                     }
@@ -1743,11 +2117,13 @@ function updatefunction() {
                         if (i == insertY) {
                             break;
                         }
-                        if (Elements[HoldingEnd][i][0] == "End") {
-                            indentation--;
-                        }
-                        if (["Loop", "Unendlich"].includes(Elements[HoldingEnd][i][0])) {
-                            indentation++;
+                        if (Elements[HoldingEnd][i] != undefined) {
+                            if (Elements[HoldingEnd][i][0] == "End") {
+                                indentation--;
+                            }
+                            if (["Loop", "Unendlich"].includes(Elements[HoldingEnd][i][0])) {
+                                indentation++;
+                            }
                         }
                         i++;
                     }
@@ -1781,6 +2157,12 @@ function updatefunction() {
             update = true;
             FreeElements[mouseDataLeft][2][0] += mouseX - offsetX;
             FreeElements[mouseDataLeft][2][1] += mouseY - offsetY;
+        }
+        //move Start
+        if (mouseSelectionLeft == 2) {
+            update = true;
+            ElementPositions[mouseDataLeft][0] += mouseX - offsetX;
+            ElementPositions[mouseDataLeft][1] += mouseY - offsetY;
         }
         //move HoldingEnd
         if (HoldingEnd != -1) {
@@ -1818,6 +2200,9 @@ function harddraw() {
                         animationProgression[inputNum] = 0;
                     }
                     renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 30, 30, pox - 2 + posx, poy - 2 + posy, drawReal);
+                }
+                else {
+                    renderPicture(getErrorIMG(), 30, 30, pox - 2 + posx, poy - 2 + posy, drawReal);
                 }
             }
             for (var x = 0; x < animationProgression.length; x++) {
@@ -1935,15 +2320,24 @@ function harddraw() {
         }
     }
 }
+function LiveMoodLightUpdate(data) {
+    var values = pictureString2Value(data);
+    console.log(values);
+    for (var x = 0; x < moodLightSizeX; x++) {
+        for (var y = 0; y < moodLightSizeY; y++) {
+            document.getElementById("2_y" + y + "x" + x).style.background = "#" + values[y * moodLightSizeX + x];
+        }
+    }
+}
 function checkDisplay() {
-    var _a, _c, _d, _e;
+    var _a, _c, _d, _e, _f, _h, _j, _k, _l, _m, _o, _p;
     if (editType != "PictureEdit") {
         //whole pictureEdit
         if (((_a = document.getElementById("pictureEdit")) === null || _a === void 0 ? void 0 : _a.style.display) == "") {
             $("#pictureEdit").css("display", "none");
         }
     }
-    else {
+    else if (editType == "PictureEdit") {
         //whole pictureEdit
         if (((_c = document.getElementById("pictureEdit")) === null || _c === void 0 ? void 0 : _c.style.display) == "none") {
             $("#pictureEdit").css("display", "");
@@ -1952,16 +2346,62 @@ function checkDisplay() {
         if (pictureEditType == 0) {
             if (((_d = document.getElementById("multiPage")) === null || _d === void 0 ? void 0 : _d.style.display) != "none") {
                 $("#multiPage").css("display", "none");
+                $("#LoadAnimationToMoodLight").css("display", "none");
             }
         }
         else if (((_e = document.getElementById("multiPage")) === null || _e === void 0 ? void 0 : _e.style.display) != "") {
             $("#multiPage").css("display", "");
+            $("#LoadAnimationToMoodLight").css("display", "");
+        }
+    }
+    if (editType == "Sheduler") {
+        if (((_f = document.getElementById("Sheduler")) === null || _f === void 0 ? void 0 : _f.style.display) != "") {
+            $("#Sheduler").css("display", "");
+        }
+    }
+    else {
+        if (((_h = document.getElementById("Sheduler")) === null || _h === void 0 ? void 0 : _h.style.display) == "") {
+            $("#Sheduler").css("display", "none");
+        }
+    }
+    if (editType == "Console") {
+        if (((_j = document.getElementById("Console")) === null || _j === void 0 ? void 0 : _j.style.display) != "") {
+            $("#Console").css("display", "");
+        }
+    }
+    else {
+        if (((_k = document.getElementById("Console")) === null || _k === void 0 ? void 0 : _k.style.display) == "") {
+            $("#Console").css("display", "none");
+        }
+    }
+    if (editType == "ColorPicker") {
+        if (((_l = document.getElementById("ColorPicker")) === null || _l === void 0 ? void 0 : _l.style.display) != "") {
+            $("#ColorPicker").css("display", "");
+        }
+    }
+    else {
+        if (((_m = document.getElementById("ColorPicker")) === null || _m === void 0 ? void 0 : _m.style.display) == "") {
+            $("#ColorPicker").css("display", "none");
+        }
+    }
+    if (editType == "Console") {
+    }
+    else {
+    }
+    //made this here, because of slow Update cycle
+    if (setSettings["Live MoodLight"] == "true") {
+        if (((_o = document.getElementById("MoodLightDisplay")) === null || _o === void 0 ? void 0 : _o.style.display) != "") {
+            $("#MoodLightDisplay").css("display", "");
+        }
+    }
+    else {
+        if (((_p = document.getElementById("MoodLightDisplay")) === null || _p === void 0 ? void 0 : _p.style.display) == "") {
+            $("#MoodLightDisplay").css("display", "none");
         }
     }
 }
 function updateRects() {
     ToDraw = [];
-    checkDisplay();
     if (editType == "standartEdit") {
         toDrawAnimations = [];
         font = "47px msyi";
@@ -2099,7 +2539,17 @@ function updateRects() {
             font = "35px msyi";
             setFont(font);
             for (let x = 0; x < hei; x++) {
-                draw.text(px, py + x * blockheight + blockheight + 10, Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], currentColor["NormalText"], "left", font, ctx);
+                if (specialBlockDropdownRender[Elements[mouseDataRight[0]][mouseDataRight[1]][0]] != undefined) {
+                    if (specialBlockDropdownRender[Elements[mouseDataRight[0]][mouseDataRight[1]][0]][x] != undefined) {
+                        specialBlockDropdownRender[Elements[mouseDataRight[0]][mouseDataRight[1]][0]][x](Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], px, py + x * blockheight + blockheight + 10);
+                    }
+                    else {
+                        draw.text(px, py + x * blockheight + blockheight + 10, Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], currentColor["NormalText"], "left", font, ctx);
+                    }
+                }
+                else {
+                    draw.text(px, py + x * blockheight + blockheight + 10, Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], currentColor["NormalText"], "left", font, ctx);
+                }
                 if (x == EditMenuEdeting) {
                     draw.rect(px + ctx.measureText(Elements[mouseDataRight[0]][mouseDataRight[1]][1][x]).width, py + x * blockheight + blockheight + 15, 0.75, -30, currentColor["NormalText"], ctx);
                 }
@@ -2204,8 +2654,14 @@ function updateRects() {
                 let a = document.getElementById("y" + x + "x" + y);
                 if (a != null) {
                     if (!keyDown("alt")) {
-                        pictureValues[page][y * moodLightSizeY + x] = rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b);
-                        a.style.backgroundColor = colorPicker.spectrum("get");
+                        if (pictureValues[page][y * moodLightSizeY + x] != rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b)) {
+                            pictureValues[page][y * moodLightSizeY + x] = rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b);
+                            a.style.backgroundColor = colorPicker.spectrum("get");
+                            var au = document.querySelector("#autoUptade");
+                            if (au.checked) {
+                                send(pictureValue2String(pictureValues[page]));
+                            }
+                        }
                     }
                     else {
                         colorPicker.spectrum("set", a.style.backgroundColor);
@@ -2337,6 +2793,9 @@ function updateRects() {
             }
         }
     }
+    else if (editType == "ColorPicker") {
+        draw.image(latestCanvasPic, 0, 0);
+    }
     if (!document.hasFocus()) {
         isFocused = false;
     }
@@ -2352,6 +2811,7 @@ function updateRects() {
         else {
             if (editType != ÜbergangZu) {
                 editType = ÜbergangZu;
+                checkDisplay();
             }
             alpha = 2 - (Übergang / 25);
         }
@@ -2455,10 +2915,72 @@ function cursorUpdate() {
 }
 setInterval(cursorUpdate, 100);
 setInterval(UpdateStaticSettingsIfInSettings, 10000);
+setInterval(checkDisplay, 500);
 setInterval(drawScreen, 10);
+setInterval(function () {
+    if (setSettings["Live MoodLight"] == "true") {
+        send("&");
+    }
+}, 250);
 setInterval(updateScreen, 16);
+setTimeout(checkDisplay, 50);
 setTimeout(updateRects, 50);
 setTimeout(updateRects, 100);
 setTimeout(updateRects, 150);
 setTimeout(updateRects, 200);
+//HTML load events
+var a = document.querySelector("#autoUptade");
+var o = a.onload;
+o();
+//check first start
+setTimeout(() => {
+    var firstTry = getCookie("FirstTry");
+    if (firstTry == "") {
+        setCookie("FirstTry", "No", 10);
+        goTo("Question", 1);
+        Question = ["Wilkommen. Willst du dich mit deinem Moodlight Verbinden?", {
+                "Ja": function () {
+                    host = sprompt("Server/Host");
+                    myTopic = sprompt("Topic");
+                    myUser = sprompt("User");
+                    myPass = sprompt("Pass");
+                    setStorage();
+                    reconnect();
+                    firstTry2();
+                    goTo("Question", 1);
+                },
+                "Nein": function () {
+                    firstTry2();
+                    goTo("Question", 1);
+                }
+            }];
+    }
+}, 200);
+function firstTry2() {
+    ctx.globalAlpha = 0.8;
+    drawReal.fill("#ffffff", ctx);
+    ctx.globalAlpha = 1;
+    Question = ["Du kannst diese Daten in den Einstellungen under 'MQTT' verändern", {
+            "OK": function () {
+                firstTry3();
+                goTo("Question", 1);
+            }
+        }];
+}
+function firstTry3() {
+    ctx.globalAlpha = 0.8;
+    drawReal.fill("#ffffff", ctx);
+    ctx.globalAlpha = 1;
+    Question = ["Willst du eine Kurze Liste an informationen?", {
+            "Ja": function () {
+                goTo("standartEdit", 0);
+                aalert("Von Links kannst du elemente in das Bearbeitungs Feld Ziehen. Häfte diese hintereinander unter [Start <0>]. Die Paramenter kannst du nun von den hineingezogenen Elementen mit einem Rechtsklick auf diese verändern.");
+                aalert("Wenn du Animationen/Bilder hinzufügen willst, klicken oben rechts auf den Menü Knopf. Dort kannst du unter 'Hinzufügen' Bilder und Animationen hinzufügen. Wenn du diese Wieder bearbeiten willst, kannst du auf 'Bearbeiten' klicken.");
+                aalert("Zudem kannst du 'Start' hinzufügen. Dort kannst du andere Elemente hinzufügen. [Start <0>] wird beim Hochfahren des Moodlights geladen. Mit [Laden <id>] kannst du andere Starts laden.");
+            },
+            "Nein": function () {
+                goTo("standartEdit", 0);
+            },
+        }];
+}
 //# sourceMappingURL=main.js.map

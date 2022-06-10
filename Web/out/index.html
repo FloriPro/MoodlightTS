@@ -17,6 +17,11 @@
             height: 58px;
         }
 
+        .LiveDisplay{
+            width: 23px;
+            height: 23px;
+        }
+
         button {
             background-color: rgb(210, 210, 210);
             color: black;
@@ -32,13 +37,47 @@
         button:hover {
             background-color: rgb(190, 190, 190);
         }
+
+        #consoleOut2 {
+            max-height: 90%;
+            text-align: left;
+            background: black;
+            color: gainsboro;
+            width: 100%;
+            min-height: 200px;
+        }
+
+        p {
+            margin-top: 0;
+            margin-bottom: 0;
+            font-size: 20px;
+        }
+
+        #text {
+            width: -webkit-fill-available;
+            width: -moz-available;
+            border: 0px;
+            padding-right: 0px;
+            padding-top: 0px;
+            padding-bottom: 0px;
+            padding-left: 0px;
+            background: black;
+
+            font-size: 20px;
+            color: gainsboro;
+        }
+
+        .break {
+            flex-basis: 100%;
+            height: 0;
+        }
     </style>
     <meta charset="utf-8" />
 
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=.25" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
 
-    <title>Easy Edit HTML</title>
+    <title>Easy Edit</title>
 
     <!--mqtt-->
     <script src="/mqttws31.min.js" type="text/javascript"></script>
@@ -50,14 +89,28 @@
     <script src="/spectrum.js" type="text/javascript"></script>
     <link rel="stylesheet" type="text/css" href="spectrum.css">
 
+    <script>
+        function send2(data) {
+            if (data == "cls" || data == "clear") {
+                document.querySelector("#consoleOut").innerHTML = "";
+                return;
+            }
+            if (data == "help") {
+                document.querySelector("#consoleOut").innerHTML += `<p>- <a href="https://www.hotti.info/fabuser/ml6/help.html" target="_blank">MoodLight Informationen</a><br>- cls/clear: Console löschen</p>`;
+                return;
+            }
+            send(data);
+        }
+    </script>
+
 </head>
 
 <body style="margin:0px;overflow: hidden;" oncontextmenu="return false;" onselectstart="return false;"
     ondragstart="return false;">
-    <div id="Uploading" style="z-index: 5; position: fixed; display: none;">
+    <div id="Uploading" style="z-index: 5; position: fixed; display: none;background-color: aliceblue;">
         <p>Uploading (Frame X/X)</p>
     </div>
-    <div id="pictureEdit">
+    <div id="pictureEdit" style="display: none;">
         <div style="background: transparent; position: fixed; display: flex;flex-wrap: wrap;align-items: flex-start;">
             <div>
                 <table style="border-collapse: collapse;">
@@ -67,14 +120,12 @@
                 <div id="multiPage">
                     <button id="arrow0" onclick="
                         if (page>0){
-                            console.log(page);
                             page-=1;
                             loadPictureVal(pictureValues[page]);
                         }"> ⬅
                     </button>
                     <button id="arrow1" onclick="
                         if (page<pictureValues.length-1){
-                            console.log(page);
                             page+=1;
                             loadPictureVal(pictureValues[page]);
                         }">
@@ -116,26 +167,100 @@
                     <button
                         onclick='send(rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b).repeat(moodLightSizeX*moodLightSizeY));'>Farbe
                         Ausprobieren</button><br>
-                    <button onclick="send(pictureValue2String(pictureValues[page]));">Bild Anzeigen</button><br>
+                    <button onclick="send(pictureValue2String(pictureValues[page]));">Bild Anzeigen</button>
+                    <input type="checkbox" name="autoUptade" id="autoUptade"
+                        onchange='setCookie("AutoSendIMG",document.querySelector("#autoUptade").checked.toString(),10)'
+                        onload='if (getCookie("AutoSendIMG")=="true"){document.querySelector("#autoUptade").checked=true;}else{document.querySelector("#autoUptade").checked=false;}'>
+                    <label for="autoUptade">Automatisch Bild Senden</label><br>
                     <button onclick="waitingForMQTTPic=true;send('&');">Bild von Moodlight Laden</button><br>
-                    <!--<label name="autoSend">Automatisch Bild senden</label>
-                    <input type="checkbox" name="autoSend"><br>-->
 
                     <br>
 
                     <button onclick="send('L--');">Animation auf Moodlight Stoppen</button><br>
-                    <button onclick="compileAnimation(pictureValues,10,0);">Animation auf Moodlight Laden</button><br>
+                    <button id="LoadAnimationToMoodLight" onclick="compileAnimation(pictureValues,10,0);">Animation auf
+                        Moodlight Laden</button><br>
 
                     <br>
 
-                    <button onclick="alert('WIP use key c / v')">Speichern</button><br>
-                    <button onclick="alert('WIP use key c / v')">Laden</button><br>
+                    <button onclick="alert('WIP use key y(copy) / x(paste)')">Speichern</button><br>
+                    <button onclick="alert('WIP use key y(copy) / x(paste)')">Laden</button><br>
 
                     <br>
 
                     <button onclick="finishPicture();">Fertig</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="Sheduler" style="display: none;">
+        <div
+            style="background: white;position: fixed;display: flex;flex-wrap: wrap;align-items: flex-start;width: 100%;height: 100%;">
+            <h1>
+                WIP Sheduler
+            </h1>
+            <button onclick="goTo('standartEdit',0)">Back</button>
+        </div>
+    </div>
+
+    <div id="ColorPicker" style="display: none;">
+        <div
+            style="background: transparent;position: fixed;flex-wrap: wrap;align-items: flex-start; left:0;right:0;top:10%;">
+            <div style="max-width: 418px;margin: 0 auto;">
+                <input id='colorpicker2' />
+                <script>
+                    $("#colorpicker2").spectrum({
+                        color: "#ff0000",
+                        preferredFormat: "hex",
+                        showInitial: true,
+                        showInput: true,
+                        showAlpha: false,
+                        flat: true,
+                        showButtons: false,
+                    });
+                </script><br>
+                <button style="width:100%"
+                    onclick='send(rgb2hex(colorPicker2.spectrum("get")._r, colorPicker2.spectrum("get")._g, colorPicker2.spectrum("get")._b).repeat(moodLightSizeX*moodLightSizeY));'>Farbe
+                    Ausprobieren</button>
+                <br>
+                <button style="width:100%" onclick="send('L--');">Animation auf Moodlight Stoppen</button>
+                <br>
+                <button style="width:33.3333%"
+                    onclick="tempData=colorPicker2.spectrum('get').toHexString().replace('#', '');goTo('standartEdit',1)">OK</button><button
+                    style="width:33.3333%" onclick="tempData='R';goTo('standartEdit',1)">Random</button><button
+                    style="width:33.3333%" onclick="tempData='V';goTo('standartEdit',1)">Vorherige</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="Console" style="display: none;">
+        <div
+            style="background: white;position: fixed;flex-wrap: wrap;align-items: flex-start;width: 100%;height: 100%;">
+            <div id="consoleOut2" style="overflow-y: scroll;">
+                <code>
+                    <div id="consoleOut">
+                    </div>
+                    <div style="display: flex;">
+                        <p>>&nbsp;</p>
+                        <input style="font-family: monospace;" id="text" type="text" placeholder="[command]" onkeypress="if(event.key==='Enter'){send2(document.querySelector('#text').value)}">
+                    </div>
+                </code>
+            </div>
+            <button onclick="goTo('standartEdit',0)">Back</button>
+        </div>
+    </div>
+
+    <div id="MoodLightDisplay">
+        <div style="
+            background: white;
+            position: fixed;
+            flex-wrap: wrap;
+            display: flex;
+            align-items: flex-start;
+            width: 138px;
+            height: 138px;
+            bottom: 0px;
+            right: 0px;" id ="LiveMoodLight">
         </div>
     </div>
 
@@ -149,7 +274,7 @@
 </body>
 
 <!--main script-->
-<script src="main.js?v=0.004"></script>
+<script src="main.js"></script>
 <script src="utilitys.js"></script>
 <script src="compiler.js"></script>
 <script>(function (global) { var startY = 0; var enabled = false; var supportsPassiveOption = false; try { var opts = Object.defineProperty({}, "passive", { get: function () { supportsPassiveOption = true } }); window.addEventListener("test", null, opts) } catch (e) { } var handleTouchmove = function (evt) { var el = evt.target; var zoom = window.innerWidth / window.document.documentElement.clientWidth; if (evt.touches.length > 1 || zoom !== 1) { return } while (el !== document.body && el !== document) { var style = window.getComputedStyle(el); if (!style) { break } if (el.nodeName === "INPUT" && el.getAttribute("type") === "range") { return } var scrolling = style.getPropertyValue("-webkit-overflow-scrolling"); var overflowY = style.getPropertyValue("overflow-y"); var height = parseInt(style.getPropertyValue("height"), 10); var isScrollable = scrolling === "touch" && (overflowY === "auto" || overflowY === "scroll"); var canScroll = el.scrollHeight > el.offsetHeight; if (isScrollable && canScroll) { var curY = evt.touches ? evt.touches[0].screenY : evt.screenY; var isAtTop = startY <= curY && el.scrollTop === 0; var isAtBottom = startY >= curY && el.scrollHeight - el.scrollTop === height; if (isAtTop || isAtBottom) { evt.preventDefault() } return } el = el.parentNode } evt.preventDefault() }; var handleTouchstart = function (evt) { startY = evt.touches ? evt.touches[0].screenY : evt.screenY }; var enable = function () { window.addEventListener("touchstart", handleTouchstart, supportsPassiveOption ? { passive: false } : false); window.addEventListener("touchmove", handleTouchmove, supportsPassiveOption ? { passive: false } : false); enabled = true }; var disable = function () { window.removeEventListener("touchstart", handleTouchstart, false); window.removeEventListener("touchmove", handleTouchmove, false); enabled = false }; var isEnabled = function () { return enabled }; var testDiv = document.createElement("div"); document.documentElement.appendChild(testDiv); testDiv.style.WebkitOverflowScrolling = "touch"; var scrollSupport = "getComputedStyle" in window && window.getComputedStyle(testDiv)["-webkit-overflow-scrolling"] === "touch"; document.documentElement.removeChild(testDiv); if (scrollSupport) { enable() } var iNoBounce = { enable: enable, disable: disable, isEnabled: isEnabled }; if (typeof module !== "undefined" && module.exports) { module.exports = iNoBounce } if (typeof global.define === "function") { (function (define) { define("iNoBounce", [], function () { return iNoBounce }) })(global.define) } else { global.iNoBounce = iNoBounce } })(this);</script>
