@@ -104,6 +104,9 @@ function loadProject(jsonLoad, lastUsed) {
         console.error(e);
     }
 }
+let clickStart = -1;
+let clickTime = -1;
+let waitClickTime = 200;
 function createUserEvents() {
     //Phone
     document.addEventListener("touchstart", toutchStart);
@@ -138,9 +141,11 @@ function createUserEvents() {
         mouse[0] = true;
         offsetX = mouseX;
         offsetY = mouseY;
+        clickStart = getMS();
     }
     function toutchEnd(e) {
         mouse[0] = false;
+        clickTime = getMS() - clickStart;
     }
     function mousemove(e) {
         mouseX = e.changedTouches ?
@@ -157,10 +162,12 @@ function createUserEvents() {
         mouse[e.button] = true;
         offsetX = mouseX;
         offsetY = mouseY;
+        clickStart = getMS();
         return true;
     }
     function mouseup(e) {
         mouse[e.button] = false;
+        clickTime = getMS() - clickStart;
         return true;
     }
     function keyEvent(e) {
@@ -860,6 +867,12 @@ let settings = {
                 return "";
             }
         },
+        "Emulierter Rechtsklick": function (callType) { if (!callType) {
+            return "bool";
+        }
+        else {
+            return "";
+        } },
     },
     "MQTT": {
         "Verbindung": function (callType) {
@@ -1269,8 +1282,8 @@ let settingsOnLoad = {
     },
 };
 let staticElementsData = { "Anmelde Status": undefined, "Verbindung": undefined };
-let settingsInfo = { "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" };
-let setSettings = { "Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true", "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
+let settingsInfo = { "Emulierter Rechtsklick": "Viele Fehler! Normale Linksklicks müssen min 200ms gehalten werden!", "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" };
+let setSettings = { "Emulierter Rechtsklick": "false", "Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true", "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
 let settingsSelLeft = 0;
 function UpdateStaticSettingsIfInSettings() {
     if (editType == "Settings") {
@@ -1914,7 +1927,7 @@ function updatefunction() {
         ////////////
         // mouseSelectionLeft types: 0=move Screen; 1=move Elements; 2=move Start; -2=none;
         //right mouse click
-        if (mouse[2] && (mouseSelectionRight == -1 || mouseSelectionRight == 0) && HoldingEnd == -1) {
+        if ((mouse[2] || (setSettings["Emulierter Rechtsklick"] == "true" && clickTime <= waitClickTime && clickStart != -1 && !mouse[0] && mouseSelectionRight == -1)) && (mouseSelectionRight == -1 || mouseSelectionRight == 0) && HoldingEnd == -1) {
             update = true;
             let c = true;
             for (let ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
@@ -1940,7 +1953,7 @@ function updatefunction() {
             mouseSelectionRight = 0;
         }
         //left mouse click
-        if (mouse[0] && mouseSelectionLeft == -1 && HoldingEnd == -1) {
+        if (mouse[0] && mouseSelectionLeft == -1 && HoldingEnd == -1 && (setSettings["Emulierter Rechtsklick"] != "true" || (clickTime >= waitClickTime || mouseSelectionRight != -1))) {
             update = true;
             //if EditMenu closed
             if (mouseSelectionRight == -1) {
@@ -2245,6 +2258,8 @@ function updatefunction() {
     else {
         update = true;
     }
+    if (!mouse[0])
+        clickStart = -1;
     if (Übergang != -1) {
         update = true;
     }

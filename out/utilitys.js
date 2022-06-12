@@ -25,4 +25,8 @@ function delAll() {
         }
     });
 }
+function getMS() {
+    var d = new Date();
+    return d.getTime();
+}
 //# sourceMappingURL=utilitys.js.map

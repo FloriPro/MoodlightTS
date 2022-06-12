@@ -112,6 +112,9 @@ function loadProject(jsonLoad: {
         console.error(e);
     }
 }
+let clickStart = -1
+let clickTime = -1;
+let waitClickTime = 200;
 function createUserEvents() {
     //Phone
     document.addEventListener("touchstart", toutchStart);
@@ -151,9 +154,12 @@ function createUserEvents() {
         mouse[0] = true;
         offsetX = mouseX;
         offsetY = mouseY;
+
+        clickStart = getMS();
     }
     function toutchEnd(e: TouchEvent) {
         mouse[0] = false;
+        clickTime = getMS() - clickStart;
     }
     function mousemove(e: MouseEvent | TouchEvent) {
         mouseX = (e as TouchEvent).changedTouches ?
@@ -170,10 +176,14 @@ function createUserEvents() {
         mouse[e.button] = true;
         offsetX = mouseX;
         offsetY = mouseY;
+
+        clickStart = getMS();
         return true;
     }
     function mouseup(e: MouseEvent) {
         mouse[e.button] = false;
+
+        clickTime = getMS() - clickStart;
         return true;
     }
     function keyEvent(e: KeyboardEvent) {
@@ -808,6 +818,7 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/* fals
                 return "";
             }
         },
+        "Emulierter Rechtsklick": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
     },
     "MQTT": {
         "Verbindung": function (callType) {
@@ -1097,8 +1108,8 @@ let settingsOnLoad: any = {
     },
 }
 let staticElementsData: any = { "Anmelde Status": undefined, "Verbindung": undefined };
-let settingsInfo: { [einstellung: string]: string } = { "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" }
-let setSettings: { [einstellung: string]: string } = { "Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true", "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
+let settingsInfo: { [einstellung: string]: string } = { "Emulierter Rechtsklick": "Viele Fehler! Normale Linksklicks müssen min 200ms gehalten werden!", "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" }
+let setSettings: { [einstellung: string]: string } = { "Emulierter Rechtsklick": "false", "Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true", "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
 let settingsSelLeft = 0;
 function UpdateStaticSettingsIfInSettings() {
     if (editType == "Settings") {
@@ -1410,7 +1421,7 @@ function drawColerRect(posx: number, posy: number, sizeX: number, sizeY: number,
 
 let tempData: any;
 
-let colors = { "light": { "GrayBlock":"#f0f0f0","GrayBlockAccent":"#ffffff", "background": "#fcfcfc", "backgroundPoints": "#646464", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" }, "dark": { "GrayBlock":"#f0f0f0","GrayBlockAccent":"#ffffff", "background": "#030303", "backgroundPoints": "#9b9b9b", "blockArgBackground": "#000000", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#4f4f4f", "EditMenu": "#2f0816", "EditMenuAccent": "#843653", "NormalText": "#ffffff", "MenuButtons": "#ffffff", "MenuBackground": "#ffffff", "MenuText": "#000000", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#2d2d2d", "settingsSelStandard": "#232323", "settingsSelSelected": "#373737", "backgroundBlur": "#ffffff", "settingsBackground": "#000000", "settingsBackgroundHighlight": "#0f0f0f", "questionRedBackgroundBlur": "#69ffff", "questionBackground": "#555555", "objectSidebarBlur": "#3f3f3f", "ProjectName": "#4287f5" } };
+let colors = { "light": { "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#fcfcfc", "backgroundPoints": "#646464", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" }, "dark": { "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#030303", "backgroundPoints": "#9b9b9b", "blockArgBackground": "#000000", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#4f4f4f", "EditMenu": "#2f0816", "EditMenuAccent": "#843653", "NormalText": "#ffffff", "MenuButtons": "#ffffff", "MenuBackground": "#ffffff", "MenuText": "#000000", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#2d2d2d", "settingsSelStandard": "#232323", "settingsSelSelected": "#373737", "backgroundBlur": "#ffffff", "settingsBackground": "#000000", "settingsBackgroundHighlight": "#0f0f0f", "questionRedBackgroundBlur": "#69ffff", "questionBackground": "#555555", "objectSidebarBlur": "#3f3f3f", "ProjectName": "#4287f5" } };
 let currentColor = { "GrayBlock": "", "GrayBlockAccent": "", "background": "", "backgroundPoints": "", "blueBlock": "", "blockArgBackground": "", "blueBlockAccent": "", "YellowBlock": "", "YellowBlockAccent": "", "PurpleBlock": "", "PurpleBlockAccent": "", "MoveBlockShaddow": "", "EditMenu": "", "EditMenuAccent": "", "NormalText": "", "MenuButtons": "", "MenuBackground": "", "MenuText": "", "settingsBoolTrue": "", "settingsBoolFalse": "", "settingsSelMouseOver": "", "settingsSelStandard": "", "settingsSelSelected": "", "backgroundBlur": "", "settingsBackground": "", "settingsBackgroundHighlight": "", "questionRedBackgroundBlur": "", "questionBackground": "", "objectSidebarBlur": "", "ProjectName": "", };
 let setYellow = ["Loop", "Unendlich", "Start", "End"];
 let setPurple = ["Bild anzeigen", "Animationen", "Laden", "Farben", "Pixel"];
@@ -1775,7 +1786,7 @@ function updatefunction(): boolean {
 
 
         //right mouse click
-        if (mouse[2] && (mouseSelectionRight == -1 || mouseSelectionRight == 0) && HoldingEnd == -1) {
+        if ((mouse[2] || (setSettings["Emulierter Rechtsklick"] == "true" && clickTime <= waitClickTime && clickStart != -1 && !mouse[0] && mouseSelectionRight == -1)) && (mouseSelectionRight == -1 || mouseSelectionRight == 0) && HoldingEnd == -1) {
             update = true;
             let c = true;
             for (let ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
@@ -1803,7 +1814,7 @@ function updatefunction(): boolean {
 
 
         //left mouse click
-        if (mouse[0] && mouseSelectionLeft == -1 && HoldingEnd == -1) {
+        if (mouse[0] && mouseSelectionLeft == -1 && HoldingEnd == -1 && (setSettings["Emulierter Rechtsklick"] != "true" || (clickTime >= waitClickTime || mouseSelectionRight != -1))) {
             update = true;
             //if EditMenu closed
             if (mouseSelectionRight == -1) {
@@ -1920,7 +1931,6 @@ function updatefunction(): boolean {
                         }
                     }
                 }
-
 
                 //else
                 if (mouseSelectionLeft == -1) {
@@ -2100,6 +2110,11 @@ function updatefunction(): boolean {
     else {
         update = true;
     }
+
+    if (!mouse[0])
+        clickStart = -1;
+
+
     if (Übergang != -1) { update = true; }
     return update;
 }
