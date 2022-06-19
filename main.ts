@@ -516,13 +516,15 @@ function removeItem(data: any[], index: number) {
 
 let lengthStore: { [key: string]: number } = {};
 let imgStore: { [key: string]: HTMLImageElement } = {};
-
+let preloadedInCycle = 0;
 //let lengthStore = new Map<[string, string[]], number>();
 //let imgStore = new Map<[string, string[]], HTMLImageElement>();
 function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: number) {
     let yOffset = 50
     let l = elementLenght(Element);
     if (imgStore[mapElement(Element)] == undefined) {
+        preloadedInCycle++;
+
         let draw = drawReal;
         let ctx = ctxPreDraw;
 
@@ -1005,8 +1007,10 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*false
                     setTimeout(window.onresize as ((this: GlobalEventHandlers, ev: UIEvent) => any), 100, null);
                     currentColor = colors["dark"];
                 } else {
-                    setTimeout(window.onresize as ((this: GlobalEventHandlers, ev: UIEvent) => any), 100, null);
                     currentColor = colors["light"];
+                    setTimeout(window.onresize as ((this: GlobalEventHandlers, ev: UIEvent) => any), 100, null);
+                    lengthStore = {};
+                    imgStore = {};
                 }
                 return "";
             }
@@ -1030,6 +1034,10 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*false
                             var dK: string[] = Object.keys(d);
                             settingsInfo["Eigenens design"] = dK[seId]
                             currentColor = d[dK[seId]];
+
+                            setTimeout(window.onresize as ((this: GlobalEventHandlers, ev: UIEvent) => any), 100, null);
+                            lengthStore = {};
+                            imgStore = {};
                         }
                         goTo("Settings", 1);
                     }
@@ -1511,47 +1519,47 @@ const specialBlockDropdownRender: { [key: string]: { [key2: number]: (inputNum: 
     "Bild anzeigen": {
         0: function (inputNum: string, posx: number, posy: number) {
             if (setSettings["Bilder Anzeigen"] == "true") {
-                renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2 + 6, posy - 2 - 22, draw, ctxPreDraw);
+                renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2 + 6, posy - 2 - 22, draw, ctx);
             }
         }
     },
     "Füllen": {
         0: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         }
     },
     "Pixel": {
         1: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         }
     },
     "Bewegen": {
         1: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         }
     },
     "Text": {
         2: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         },
         3: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         }
     },
     "Uhrzeit": {
         1: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         },
         2: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         }
     },
     "Farben": {
         0: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         },
         1: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         }
     }
 }
@@ -2528,6 +2536,8 @@ function updateRects() {
     ToDraw = [];
 
     if (editType == "standartEdit") {
+        preloadedInCycle = 0;
+
         toDrawAnimations = [];
         font = "47px msyi";
 
@@ -2615,6 +2625,13 @@ function updateRects() {
                     draw.rect(px - (x * 10) - 4, py + 10 - addit, 8, (-blockheight - 9) + addit, currentColor["YellowBlock"], ctx);
                 }
                 i++;
+
+                //make loading easyer
+                if (preloadedInCycle >= 5) {
+                    setTimeout(updateRects, 1);
+                    draw.text(0 - posx, 100 - posy, "Loading Elements...", "black", "left", font, ctx);
+                    return;
+                }
             }
             pyC = (py + 4);
             draw.polygon(ctx, drawcolor, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]]); //connector
