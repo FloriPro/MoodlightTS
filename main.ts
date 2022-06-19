@@ -32,6 +32,10 @@ let colorPicker = $("#colorpicker") as any;
 let colorPicker2 = $("#colorpicker2") as any;
 let hider = document.getElementById("hider") as HTMLDivElement;
 let ctx: CanvasRenderingContext2D = <CanvasRenderingContext2D>canvas.getContext("2d");
+
+let canvasPreDraw = document.getElementById('PreDraw') as HTMLCanvasElement;
+let ctxPreDraw: CanvasRenderingContext2D = <CanvasRenderingContext2D>canvasPreDraw.getContext("2d");
+
 let ProjectLoader = document.querySelector("#projectLoader") as HTMLInputElement;
 let pageTeller = document.getElementById("pageTeller") as HTMLTitleElement;
 
@@ -510,90 +514,127 @@ function removeItem(data: any[], index: number) {
     return data;
 }
 
+let lengthStore: { [key: string]: number } = {};
+let imgStore: { [key: string]: HTMLImageElement } = {};
+
+//let lengthStore = new Map<[string, string[]], number>();
+//let imgStore = new Map<[string, string[]], HTMLImageElement>();
 function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: number) {
-    setFont(font);
-    let text = Element[0];
-    if (setYellow.indexOf(text) != -1) {
-        drawcolor = currentColor["YellowBlock"];
-        drawcolorAccent = currentColor["YellowBlockAccent"];
-    } else if (setPurple.indexOf(text) != -1) {
-        drawcolor = currentColor["PurpleBlock"];
-        drawcolorAccent = currentColor["PurpleBlockAccent"];
-    } else if (setGray.indexOf(text) != -1) {
-        drawcolor = currentColor["GrayBlock"];
-        drawcolorAccent = currentColor["GrayBlockAccent"];
-    } else {
-        drawcolor = currentColor["blueBlock"];
-        drawcolorAccent = currentColor["blueBlockAccent"];
-    }
-    let l = ctx.measureText(Element[0]).width + 10;
-    //space between options: 5;
-    for (let x = 0; x < Element[1].length; x++) {
-        l += 5;
-        let t = Element[1][x];
-        if (t == "") { t = " "; }
-
-        if (Element[0] in specialRender && x in specialRender[Element[0]]) {
-            l += specialRender[Element[0]][x][0]
-        }
-        else {
-            l += ctx.measureText(t).width
-        }
-        l += 5;
-    }
-
-    if ("End" == text) {
-        blockheight /= 2
-    }
-    draw.roundedRect(plx, ply, l, -(blockheight - 10), drawcolorAccent, 10, ctx) //body outline
-    if ("Start" == text) {
-        draw.circle(plx + 23, ply - 22, 30 - 3, drawcolorAccent, ctx);
-        draw.circle(plx + 23, ply - 22, 29 - 3, drawcolor, ctx);
-    }
-    draw.roundedRect(plx + 1, ply - 1, l - 2, -blockheight + 12, drawcolor, 10, ctx) //body
+    let yOffset = 50
+    let l = elementLenght(Element);
+    if (imgStore[mapElement(Element)] == undefined) {
+        let draw = drawReal;
+        let ctx = ctxPreDraw;
 
 
-    if ("End" != text) {
-        draw.text(plx, ply, text, currentColor["NormalText"], "left", font, ctx);
-    } else {
-        blockheight *= 2
-    }
-    l = ctx.measureText(text).width + 7;
-    for (let x = 0; x < Element[1].length; x++) {
-        let t = Element[1][x];
-        if (t == "") { t = " "; }
-        l += 5;
+        canvasPreDraw.width = l + 50;
+        canvasPreDraw.height = 100;
 
-        if (Element[0] in specialRender && x in specialRender[Element[0]]) {
-            try { specialRender[Element[0]][x][1](Element[1][x], plx + l - 5, ply - 22 - 5); } catch { }
-            l += specialRender[Element[0]][x][0]
+        ctx.clearRect(0, 0, canvasPreDraw.width, canvasPreDraw.height);
+
+        setFont(font, ctx);
+        let text = Element[0];
+        if (setYellow.indexOf(text) != -1) {
+            drawcolor = currentColor["YellowBlock"];
+            drawcolorAccent = currentColor["YellowBlockAccent"];
+        } else if (setPurple.indexOf(text) != -1) {
+            drawcolor = currentColor["PurpleBlock"];
+            drawcolorAccent = currentColor["PurpleBlockAccent"];
+        } else if (setGray.indexOf(text) != -1) {
+            drawcolor = currentColor["GrayBlock"];
+            drawcolorAccent = currentColor["GrayBlockAccent"];
         } else {
-            draw.roundedRect(plx + l + 2, ply - 5, ctx.measureText(t).width - 4, -(blockheight - 10) + 10, currentColor["blockArgBackground"], 10, ctx) //body outline
-            draw.text(plx + l, ply, t, currentColor["NormalText"], "left", font, ctx);
-            l += ctx.measureText(t).width;
+            drawcolor = currentColor["blueBlock"];
+            drawcolorAccent = currentColor["blueBlockAccent"];
         }
-        l += 5;
+        l = ctx.measureText(Element[0]).width + 10;
+        //space between options: 5;
+        for (let x = 0; x < Element[1].length; x++) {
+            l += 5;
+            let t = Element[1][x];
+            if (t == "") { t = " "; }
+
+            if (Element[0] in specialRender && x in specialRender[Element[0]]) {
+                l += specialRender[Element[0]][x][0]
+            }
+            else {
+                l += ctx.measureText(t).width
+            }
+            l += 5;
+        }
+
+        if ("End" == text) {
+            blockheight /= 2
+        }
+        draw.roundedRect(20, yOffset, l, -(blockheight - 10), drawcolorAccent, 10, ctx) //body outline
+        if ("Start" == text) {
+            draw.circle(20 + 23, yOffset - 22, 30 - 3, drawcolorAccent, ctx);
+            draw.circle(20 + 23, yOffset - 22, 29 - 3, drawcolor, ctx);
+        }
+        draw.roundedRect(20 + 1, yOffset - 1, l - 2, -blockheight + 12, drawcolor, 10, ctx) //body
+
+
+        if ("End" != text) {
+            draw.text(20, yOffset, text, currentColor["NormalText"], "left", font, ctx);
+        } else {
+            blockheight *= 2
+        }
+        l = ctx.measureText(text).width + 7;
+        for (let x = 0; x < Element[1].length; x++) {
+            let t = Element[1][x];
+            if (t == "") { t = " "; }
+            l += 5;
+
+            if (Element[0] in specialRender && x in specialRender[Element[0]]) {
+                try { specialRender[Element[0]][x][1](Element[1][x], 20 + l - 5, yOffset - 22 - 5); } catch { }
+                l += specialRender[Element[0]][x][0]
+            } else {
+                draw.roundedRect(20 + l + 2, yOffset - 5, ctx.measureText(t).width - 4, -(blockheight - 10) + 10, currentColor["blockArgBackground"], 10, ctx) //body outline
+                draw.text(20 + l, yOffset, t, currentColor["NormalText"], "left", font, ctx);
+                l += ctx.measureText(t).width;
+            }
+            l += 5;
+        }
+
+        var i = new Image;
+        i.src = canvasPreDraw.toDataURL("image/png");
+        imgStore[mapElement(Element)] = i;
     }
+    if (Element[0] in allwaysRedo) {
+        if (allwaysRedo[Element[0]].includes(0)) {
+            try { specialRender[Element[0]][0][1](Element[1][0], l + plx - 20 * 6 - 10, 22 - 5 + ply - yOffset + 6); } catch { }
+        }
+    }
+    draw.image(imgStore[mapElement(Element)] as HTMLImageElement, plx - 20, ply - yOffset)
     return l;
 }
+function mapElement(Element: [string, string[]]) {
+    var out = Element[0] + "|!|!" + Element[1].join("|!|!");
+    return out;
+}
+
 function elementLenght(Element: [string, string[]]) {
-    setFont(font);
-    let text = Element[0];
+    let l = 0;
+    if (lengthStore[mapElement(Element)] != undefined) {
+        l = lengthStore[mapElement(Element)] as number;
+    } else {
+        setFont(font, ctx);
+        l = ctx.measureText(Element[0]).width + 10;
+        //space between options: 5;
+        for (let x = 0; x < Element[1].length; x++) {
+            l += 5;
+            let t = Element[1][x];
+            if (t == "") { t = " "; }
 
-    let l = ctx.measureText(Element[0]).width + 10;
-    //space between options: 5;
-    for (let x = 0; x < Element[1].length; x++) {
-        l += 5;
-        let t = Element[1][x];
-        if (t == "") { t = " "; }
-
-        if (Element[0] in specialRender && x in specialRender[Element[0]]) {
-            l += specialRender[Element[0]][x][0]
+            if (Element[0] in specialRender && x in specialRender[Element[0]]) {
+                l += specialRender[Element[0]][x][0]
+            }
+            else {
+                l += ctx.measureText(t).width
+            }
+            l += 5;
         }
-        else {
-            l += ctx.measureText(t).width
-        }
-        l += 5;
+        lengthStore[mapElement(Element)] = l;
     }
 
     return l;
@@ -1059,6 +1100,16 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*false
                 return "";
             }
         },
+        " ": function () {
+            return "info";
+        },
+        "FPS anzeigen": function (callType) {
+            if (!callType) {
+                return "bool";
+            } else {
+                return "";
+            }
+        }
 
         //"test": function (callType) { if (!callType) { return "str"; } else { return ""; } },
     },
@@ -1204,7 +1255,7 @@ let settingsOnLoad: any = {
 }
 let staticElementsData: any = { "Anmelde Status": undefined, "Verbindung": undefined };
 let settingsInfo: { [einstellung: string]: string } = { "Passives Warten": "Es wird darauf gewartet, dass das MoodLight daten sendet. Geschieht durch [Custom <&>]", "Schedules in [Start <0>] mitsenden": "=> Man könnte die Banken als art Moods Ansehen mit eigenen Schedules", "Emulierter Rechtsklick": "Viele Fehler! Normale Linksklicks müssen min 200ms gehalten werden!", "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" }
-let setSettings: { [einstellung: string]: string } = { "Hintergrund Grid": "true", "Passives Warten": "false", "Emulierter Rechtsklick": "false", "Schedules in [Start <0>] mitsenden": "true",/*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
+let setSettings: { [einstellung: string]: string } = { "FPS anzeigen": "false", "Hintergrund Grid": "true", "Passives Warten": "false", "Emulierter Rechtsklick": "false", "Schedules in [Start <0>] mitsenden": "true",/*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
 let settingsSelLeft = 0;
 function UpdateStaticSettingsIfInSettings() {
     if (editType == "Settings") {
@@ -1301,11 +1352,12 @@ const dropdownMenuButtons = {
         }
     }
 }//TODO
+const allwaysRedo: { [key: string]: [number] } = { "Animationen": [0] };
 const specialRender: { [key: string]: { [key2: number]: [number, (inputNum: string, posx: number, posy: number) => void] } } = {
     "Bild anzeigen": {
         0: [24, function (inputNum: string, posx: number, posy: number) {
             if (setSettings["Bilder Anzeigen"] == "true") {
-                renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2, posy - 2, draw);
+                renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2, posy - 2, drawReal, ctxPreDraw);
             }
         }]
     },
@@ -1316,41 +1368,41 @@ const specialRender: { [key: string]: { [key2: number]: [number, (inputNum: stri
     },
     "Text": {
         2: [24, function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }],
         3: [24, function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }]
     },
     "Uhrzeit": {
         1: [24, function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }],
         2: [24, function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }]
     },
     "Farben": {
         0: [24, function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }],
         1: [24, function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }]
     },
     "Füllen": {
         0: [24, function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }]
     },
     "Pixel": {
         1: [24, function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }]
     },
     "Bewegen": {
         1: [24, function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }]
     }
 };
@@ -1459,51 +1511,51 @@ const specialBlockDropdownRender: { [key: string]: { [key2: number]: (inputNum: 
     "Bild anzeigen": {
         0: function (inputNum: string, posx: number, posy: number) {
             if (setSettings["Bilder Anzeigen"] == "true") {
-                renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2 + 6, posy - 2 - 22, draw);
+                renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2 + 6, posy - 2 - 22, draw, ctxPreDraw);
             }
         }
     },
     "Füllen": {
         0: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }
     },
     "Pixel": {
         1: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }
     },
     "Bewegen": {
         1: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }
     },
     "Text": {
         2: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         },
         3: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }
     },
     "Uhrzeit": {
         1: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         },
         2: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }
     },
     "Farben": {
         0: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         },
         1: function (inputNum: string, posx: number, posy: number) {
-            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx);
+            drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
         }
     }
 }
-function drawColerRect(posx: number, posy: number, sizeX: number, sizeY: number, colorStr: string, ctx: any) {
+function drawColerRect(posx: number, posy: number, sizeX: number, sizeY: number, colorStr: string, ctx: any, draw: any) {
     if (colorStr == "#R") {
         draw.roundedRect(posx + 5, posy + 5, 25 - 5 * 2, 30 - 5 * 2, "#ffffff", 15, ctx);
         draw.text(posx, posy + 28, "R", "#ff0000", "left", font, ctx);
@@ -1594,7 +1646,7 @@ function UpdateSizeMoodlightSize() {
 UpdateSizeMoodlightSize();
 
 
-function setFont(font: string) {
+function setFont(font: string, ctx: CanvasRenderingContext2D) {
     if (ctx.font != font) { ctx.font = font; }
 }
 
@@ -1603,7 +1655,7 @@ function loadAnim() {
     pictureValues = [];
     for (var i = 0; i < imgDat.length; i++) { pictureValues.push(pictureString2Value(imgDat[i])) }
 }
-function renderPicture(picString: string, sizeX: number, sizeY: number, posx: number, posy: number, drawer: any) {
+function renderPicture(picString: string, sizeX: number, sizeY: number, posx: number, posy: number, drawer: any, ctx: CanvasRenderingContext2D) {
     posx = Math.floor(posx);
     posy = Math.floor(posy);
 
@@ -1879,13 +1931,13 @@ function drawScreen() {
         else if (key == "image") {
             var i = value[key] as any;
             ctx.globalAlpha = i[i.length - 1]
-            drawReal.image(i[0], i[1], i[2]);
+            drawReal.image(i[0], i[1] + px, i[2] + py);
         }
         drawActions++;
     });
     harddraw();
     if (cursorMessage != "" && cursorMessage != undefined) {
-        setFont(font);
+        setFont(font, ctx);
         drawReal.rect(mouseX - 1, mouseY - 1, ctx.measureText(cursorMessage).width + 2, 35 + 2, "#bebebe", ctx);//outline
         drawReal.rect(mouseX, mouseY, ctx.measureText(cursorMessage).width, 35, "#d9d9d9", ctx);//background
         drawReal.text(mouseX, mouseY + 30, cursorMessage, currentColor["NormalText"], "left", font, ctx);
@@ -1893,6 +1945,7 @@ function drawScreen() {
 }
 
 function updateScreen() {
+    updates++;
     var update = updatefunction();
     ctx.globalAlpha = 1;
     if (update) {
@@ -2272,9 +2325,9 @@ function harddraw() {
                     if (isNaN(animationProgression[inputNum])) {
                         animationProgression[inputNum] = 0;
                     }
-                    renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 30, 30, pox - 2 + posx, poy - 2 + posy, drawReal);
+                    renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 30, 30, pox - 2 + posx, poy - 2 + posy, drawReal, ctx);
                 } else {
-                    renderPicture(getErrorIMG(), 30, 30, pox - 2 + posx, poy - 2 + posy, drawReal);
+                    renderPicture(getErrorIMG(), 30, 30, pox - 2 + posx, poy - 2 + posy, drawReal, ctx);
                 }
             }
             for (var x = 0; x < animationProgression.length; x++) {
@@ -2376,6 +2429,10 @@ function harddraw() {
                 }
             }
         }
+    }
+
+    if (setSettings["FPS anzeigen"] == "true") {
+        drawReal.text(0, 40, "FPS: " + fps, "black", "left", "47px msyi", ctx);
     }
 
     /*//keysDown debug
@@ -2606,7 +2663,7 @@ function updateRects() {
             draw.polygon(ctx, currentColor["EditMenu"], [[px, py + 20], [px + 20, py + 20], [px + 30, py + 5], [px + 40, py + 20], [px + 250, py + 20], [px + 250, py + (hei * blockheight) + 20], [px, py + (hei * blockheight) + 20]]) //dropdownMenu
             draw.polygonOutline(ctx, currentColor["EditMenuAccent"], [[px, py + 20], [px + 20, py + 20], [px + 30, py + 5], [px + 40, py + 20], [px + 250, py + 20], [px + 250, py + (hei * blockheight) + 20], [px, py + (hei * blockheight) + 20], [px, py + 20]], 1) //dropdownMenu
             font = "35px msyi";
-            setFont(font)
+            setFont(font, ctx)
             for (let x = 0; x < hei; x++) {
                 if (specialBlockDropdownRender[Elements[mouseDataRight[0]][mouseDataRight[1]][0]] != undefined) {
                     if (specialBlockDropdownRender[Elements[mouseDataRight[0]][mouseDataRight[1]][0]][x] != undefined) {
@@ -2683,9 +2740,9 @@ function updateRects() {
         font = "47px msyi"
         for (let x = 0; x < q1.length; x++) {
             if (q1[x].startsWith("_P")) {
-                renderPicture(pictures[parseInt(q1[x].substring(2, 100))], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw);
+                renderPicture(pictures[parseInt(q1[x].substring(2, 100))], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw, ctx);
             } else if (q1[x].startsWith("_p")) {
-                renderPicture(q1[x].substring(3, 500), 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw);
+                renderPicture(q1[x].substring(3, 500), 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw, ctx);
             } else if (q1[x].startsWith("_A")) {
                 var inputNum = x;
                 //function (inputNum: string, posx: number, posy: number) {
@@ -2696,7 +2753,7 @@ function updateRects() {
                     if (isNaN(animationProgression[inputNum])) {
                         animationProgression[inputNum] = 0;
                     }
-                    renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw);
+                    renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw, ctx);
                 }
             }
             else {
@@ -3032,3 +3089,10 @@ function firstTry3() {
         },
     }]
 }
+
+let updates = 0;
+let fps = 0;
+setInterval(function () {
+    fps = updates;
+    updates = 0;
+}, 1000)
