@@ -2755,9 +2755,9 @@ function updateRects() {
                 }
                 i++;
                 //make loading easyer
-                if (preloadedInCycle >= 5) {
+                if (preloadedInCycle >= 20) {
                     setTimeout(updateRects, 1);
-                    draw.text(0 - posx, 100 - posy, "Loading Elements...", "black", "left", font, ctx);
+                    draw.text(0 - posx, 100 - posy, "Loading Elements... (" + Object.keys(imgStore).length + ")", "black", "left", font, ctx);
                     return;
                 }
             }
