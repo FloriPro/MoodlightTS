@@ -81,6 +81,12 @@ async function compileProject() {
         var T_time = -1;
         rawCommands[savePos] = ["*"];//commmand initializer
 
+        //schedules in start 0
+        if (savePos == 0 && setSettings["Schedules in [Start <0>] mitsenden"] == "true") {
+            rawCommands[savePos].push("@C");
+            rawCommands[savePos].push(genCompiledScheduler());
+        }
+
         //for every Element under(because 0="Start *") Start
         for (var command = 1; command < Elements[loadPos].length; command++) {
 
@@ -316,19 +322,23 @@ async function compileProject() {
         output[loadPos] = parsedCommands[loadPos].join(";") + ";";
     }
 
-    console.log(output)
-    console.log("SENDING...")
-    var d = parseInt(setSettings["Upload Delay"]);
     if (output.length > 100) {
         aalert("Projekt zu Groß! Da dieses Projekt zurzeit keine Banken benutzt, kannst du maximal 100 Bilder + Starts haben.");
         return;
     }
+
+    console.log(output)
+    console.log("SENDING...")
+    var d = parseInt(setSettings["Upload Delay"]);
+
+    //send data
     for (var i = 0; i < output.length; i++) {
         setInformation(output.length, i);
         send("S" + addZero(i, 2) + output[i]);
 
         await delay(d)
     }
+
     if (setSettings["Projekt namen anzeigen bei senden"] == "true") {
         send('*;T07;I000000000000;O0,35;Iffffff000000;"' + projectName + ' ";W;L00;');
     } else {
@@ -347,25 +357,12 @@ async function setInformation(maxFrames: number, currentFrame: number) {
 function finishedUpload() {
     var up: HTMLDivElement = document.querySelector("#Uploading") as HTMLDivElement;
     up.style.display = "none";
+    addMessage("Gesendet")
 }
 
+
 function uploadShedules() {
-    if (setSettings['Vor dem Hochladen alte Schedules löschen'] == 'true') {
-        send('@C');
-    }
-
-    //gen schedules
-    //@xx:yy,zzz,f
-    var toSend = []
-    var allElements: NodeListOf<Element> = document.querySelectorAll(".schedule") as NodeListOf<Element>;
-    for (var elem of allElements) {
-        var id = elem.querySelector(".id") as HTMLInputElement;
-        var time = elem.querySelector(".time") as HTMLInputElement;
-        toSend.push("@" + time.value + ",A" + id.value + ",f");
-    }
-
-    for (var t of toSend) {
+    for (var t of genCompiledScheduler().split(";")) {
         send(t);
     }
-    scheduleChanged = false;
 }

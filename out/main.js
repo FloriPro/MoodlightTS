@@ -54,7 +54,7 @@ function loadProject(jsonLoad, lastUsed) {
     var animationsSave = animations;
     var projectNameSave = projectName;
     var sizeXSave = moodLightSizeX;
-    var scheduleSave = schedulerList.innerHTML;
+    var scheduleSave = schedulerList;
     try {
         Elements = jsonLoad.Elements;
         pictures = jsonLoad.pictures;
@@ -72,23 +72,23 @@ function loadProject(jsonLoad, lastUsed) {
         else {
             projectName = sprompt("projekt name: ");
         }
-        if (jsonLoad.Scheduler != undefined) {
-            loadSchedule(jsonLoad.Scheduler);
+        if (jsonLoad.Scheduler == undefined) {
+            schedulerList = [];
         }
         else {
-            schedulerList.innerHTML = "";
+            schedulerList = jsonLoad.Scheduler;
         }
-        if (setSettings["Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern"] == "true" && !lastUsed) {
+        loadSchedules();
+        /*if (setSettings["Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern"] == "true" && !lastUsed) {
             if (client.isConnected()) {
                 send('@C');
-                addMessage("Schedules geladen");
+                addMessage("Schedules geladen")
                 uploadShedules();
-            }
-            else {
+            } else {
                 addMessageT("Schedules nicht geladen! Laden: <button onclick=\"send('@C');addMessage('Schedules geladen');uploadShedules();moveAwayEffect(this.parentNode);\">Load</button>", 10000);
             }
         }
-        scheduleChanged = false;
+        scheduleChanged = false;*/
     }
     catch (e) {
         Elements = ElementsSave;
@@ -99,7 +99,7 @@ function loadProject(jsonLoad, lastUsed) {
         projectName = projectNameSave;
         moodLightSizeX = sizeXSave;
         moodLightSizeY = sizeXSave;
-        schedulerList.innerHTML = scheduleSave;
+        schedulerList = scheduleSave;
         aalert("load failed");
         console.error(e);
     }
@@ -199,6 +199,21 @@ function createUserEvents() {
         }
     }
     function resize() {
+        //draw new Grid and save as Image
+        //set to new size
+        var wo = canvas.width;
+        var ho = canvas.height;
+        canvas.width = window.innerWidth + 50;
+        canvas.height = window.innerHeight + 50;
+        //draw
+        drawReal.fill(currentColor["background"], ctx);
+        drawBoard();
+        //save
+        backgroundGridStr = canvas.toDataURL("image/png");
+        backgroundGrid.src = backgroundGridStr;
+        //reset size
+        canvas.width = wo;
+        canvas.height = ho;
         sizeChange = true;
     }
 }
@@ -262,8 +277,9 @@ function onMessageArrived(message) {
     var text = document.createTextNode(message.payloadString);
     tag.appendChild(text);
     var objDiv = document.querySelector("#consoleOut");
+    var objDiv2 = document.querySelector("#consoleOut2");
     objDiv.appendChild(tag);
-    objDiv.scrollTop = objDiv.scrollHeight;
+    objDiv2.scrollTop = objDiv2.scrollHeight;
     if (message.payloadString.substring(1, 0) == ";" && waitingForMQTTPic) {
         console.log("load");
         pictureValues[page] = pictureString2Value(message.payloadString.substring(1));
@@ -873,6 +889,58 @@ let settings = {
         else {
             return "";
         } },
+        "": function (callType) {
+            return "info";
+        },
+        "Alles löschen": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                Question = ["Wirklich alles löschen", {
+                        "Ja": function (seId) {
+                            //Cookies
+                            setCookie("lastUsed", "", 0);
+                            setCookie("setSettings", "", 0);
+                            setCookie("AutoSendIMG", "true", 0);
+                            setCookie("myUser", "", 0);
+                            setCookie("myPass", "", 0);
+                            setCookie("myTopic", "", 0);
+                            setCookie("host", "", 0);
+                            setCookie("FirstTry", "", 0);
+                            //localStorage
+                            var locKeys = Object.keys(localStorage);
+                            for (var key of locKeys) {
+                                localStorage.removeItem(key);
+                            }
+                            goTo("reload", 0);
+                        },
+                        "Nur Cookies": function (seId) {
+                            setCookie("lastUsed", "", 0);
+                            setCookie("setSettings", "", 0);
+                            setCookie("AutoSendIMG", "true", 0);
+                            setCookie("myUser", "", 0);
+                            setCookie("myPass", "", 0);
+                            setCookie("myTopic", "", 0);
+                            setCookie("host", "", 0);
+                            setCookie("FirstTry", "", 0);
+                            goTo("reload", 0);
+                        },
+                        "Nur Projekte": function (seId) {
+                            var locKeys = Object.keys(localStorage);
+                            for (var key of locKeys) {
+                                localStorage.removeItem(key);
+                            }
+                            goTo("reload", 0);
+                        },
+                        "Nein": function (seId) {
+                            goTo("Settings", 1);
+                        }
+                    }];
+                goTo("Question", 1);
+                return "";
+            }
+        }
     },
     "MQTT": {
         "Verbindung": function (callType) {
@@ -962,7 +1030,7 @@ let settings = {
                 return "button";
             }
             else {
-                host = sprompt("Host (" + host + ")");
+                host = sprompt("Server/Host/SRV (" + host + ")");
                 setStorage();
                 reconnect();
                 return "";
@@ -994,17 +1062,27 @@ let settings = {
         else {
             return "";
         } },
-        "Darkmode": function (callType) { if (!callType) {
+        "Darkmode": function (callType) {
+            if (!callType) {
+                return "bool";
+            }
+            else {
+                settingsInfo["Eigenens design"] = "BETA!";
+                if (setSettings["Darkmode"] == "true") {
+                    setTimeout(window.onresize, 100, null);
+                    currentColor = colors["dark"];
+                }
+                else {
+                    setTimeout(window.onresize, 100, null);
+                    currentColor = colors["light"];
+                }
+                return "";
+            }
+        },
+        "Hintergrund Grid": function (callType) { if (!callType) {
             return "bool";
         }
         else {
-            settingsInfo["Eigenens design"] = "BETA!";
-            if (setSettings["Darkmode"] == "true") {
-                currentColor = colors["dark"];
-            }
-            else {
-                currentColor = colors["light"];
-            }
             return "";
         } },
         "": function (callType) { if (!callType) {
@@ -1078,14 +1156,6 @@ let settings = {
                 return "";
             }
         },
-        //"Design Durchstöbern": function (callType) {
-        //    if (!callType) { return "button"; } else {
-        //        window.open("/Designs/");
-        //        return "";
-        //    }
-        //},
-        //" ": function (callType) { if (!callType) { return "info"; } else { return ""; } },
-        //"Dev:": function (callType) { if (!callType) { return "info"; } else { return ""; } },
         "Design JSON Hinzufügen": function (callType) {
             if (!callType) {
                 return "button";
@@ -1185,6 +1255,30 @@ let settings = {
             }
         },
     },
+    "Scheduler": {
+        "Schedules in [Start <0>] mitsenden": function (callType) {
+            if (!callType) {
+                return "bool";
+            }
+            else {
+                return "";
+            }
+        },
+        /*"Vor dem Hochladen alte Schedules löschen": function (callType) {
+            if (!callType) {
+                return "bool";
+            } else {
+                return "";
+            }
+        },
+        "Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": function (callType) {
+            if (!callType) {
+                return "bool";
+            } else {
+                return "";
+            }
+        }*/
+    },
     "Über": {
         "Einfaches Code Bearbeitungsprogramm für HOTTIs MoodLight": function (callType) { if (!callType) {
             return "info";
@@ -1216,24 +1310,6 @@ let settings = {
         else {
             return "";
         } },
-    },
-    "Scheduler": {
-        "Vor dem Hochladen alte Schedules löschen": function (callType) {
-            if (!callType) {
-                return "bool";
-            }
-            else {
-                return "";
-            }
-        },
-        "Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": function (callType) {
-            if (!callType) {
-                return "bool";
-            }
-            else {
-                return "";
-            }
-        }
     }
 };
 let settingsOnLoad = {
@@ -1290,8 +1366,8 @@ let settingsOnLoad = {
     },
 };
 let staticElementsData = { "Anmelde Status": undefined, "Verbindung": undefined };
-let settingsInfo = { "Passives Warten": "Es wird darauf gewartet, dass das MoodLight daten sendet. Geschieht durch [Custom <&>]", "Emulierter Rechtsklick": "Viele Fehler! Normale Linksklicks müssen min 200ms gehalten werden!", "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" };
-let setSettings = { "Passives Warten": "false", "Emulierter Rechtsklick": "false", "Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true", "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
+let settingsInfo = { "Passives Warten": "Es wird darauf gewartet, dass das MoodLight daten sendet. Geschieht durch [Custom <&>]", "Schedules in [Start <0>] mitsenden": "=> Man könnte die Banken als art Moods Ansehen mit eigenen Schedules", "Emulierter Rechtsklick": "Viele Fehler! Normale Linksklicks müssen min 200ms gehalten werden!", "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" };
+let setSettings = { "Hintergrund Grid": "true", "Passives Warten": "false", "Emulierter Rechtsklick": "false", "Schedules in [Start <0>] mitsenden": "true", /*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
 let settingsSelLeft = 0;
 function UpdateStaticSettingsIfInSettings() {
     if (editType == "Settings") {
@@ -1301,6 +1377,7 @@ function UpdateStaticSettingsIfInSettings() {
         }
     }
 }
+let schedulerList = [];
 let pictureId = -1;
 let animationId = -1;
 /**
@@ -1594,8 +1671,8 @@ function drawColerRect(posx, posy, sizeX, sizeY, colorStr, ctx) {
     }
 }
 let tempData;
-let colors = { "light": { "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#fcfcfc", "backgroundPoints": "#646464", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" }, "dark": { "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#030303", "backgroundPoints": "#9b9b9b", "blockArgBackground": "#000000", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#4f4f4f", "EditMenu": "#2f0816", "EditMenuAccent": "#843653", "NormalText": "#ffffff", "MenuButtons": "#ffffff", "MenuBackground": "#ffffff", "MenuText": "#000000", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#2d2d2d", "settingsSelStandard": "#232323", "settingsSelSelected": "#373737", "backgroundBlur": "#ffffff", "settingsBackground": "#000000", "settingsBackgroundHighlight": "#0f0f0f", "questionRedBackgroundBlur": "#69ffff", "questionBackground": "#555555", "objectSidebarBlur": "#3f3f3f", "ProjectName": "#4287f5" } };
-let currentColor = { "GrayBlock": "", "GrayBlockAccent": "", "background": "", "backgroundPoints": "", "blueBlock": "", "blockArgBackground": "", "blueBlockAccent": "", "YellowBlock": "", "YellowBlockAccent": "", "PurpleBlock": "", "PurpleBlockAccent": "", "MoveBlockShaddow": "", "EditMenu": "", "EditMenuAccent": "", "NormalText": "", "MenuButtons": "", "MenuBackground": "", "MenuText": "", "settingsBoolTrue": "", "settingsBoolFalse": "", "settingsSelMouseOver": "", "settingsSelStandard": "", "settingsSelSelected": "", "backgroundBlur": "", "settingsBackground": "", "settingsBackgroundHighlight": "", "questionRedBackgroundBlur": "", "questionBackground": "", "objectSidebarBlur": "", "ProjectName": "", };
+let colors = { "light": { "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#fcfcfc", "backgroundGrid": "#dbdbdb", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" }, "dark": { "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#030303", "backgroundGrid": "#9b9b9b", "blockArgBackground": "#000000", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#4f4f4f", "EditMenu": "#2f0816", "EditMenuAccent": "#843653", "NormalText": "#ffffff", "MenuButtons": "#ffffff", "MenuBackground": "#ffffff", "MenuText": "#000000", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#2d2d2d", "settingsSelStandard": "#232323", "settingsSelSelected": "#373737", "backgroundBlur": "#ffffff", "settingsBackground": "#000000", "settingsBackgroundHighlight": "#0f0f0f", "questionRedBackgroundBlur": "#69ffff", "questionBackground": "#555555", "objectSidebarBlur": "#3f3f3f", "ProjectName": "#4287f5" } };
+let currentColor = { "GrayBlock": "", "GrayBlockAccent": "", "background": "", "backgroundGrid": "", "blueBlock": "", "blockArgBackground": "", "blueBlockAccent": "", "YellowBlock": "", "YellowBlockAccent": "", "PurpleBlock": "", "PurpleBlockAccent": "", "MoveBlockShaddow": "", "EditMenu": "", "EditMenuAccent": "", "NormalText": "", "MenuButtons": "", "MenuBackground": "", "MenuText": "", "settingsBoolTrue": "", "settingsBoolFalse": "", "settingsSelMouseOver": "", "settingsSelStandard": "", "settingsSelSelected": "", "backgroundBlur": "", "settingsBackground": "", "settingsBackgroundHighlight": "", "questionRedBackgroundBlur": "", "questionBackground": "", "objectSidebarBlur": "", "ProjectName": "", };
 let setYellow = ["Loop", "Unendlich", "Start", "End"];
 let setPurple = ["Bild anzeigen", "Animationen", "Laden", "Farben", "Pixel"];
 let setGray = ["//"];
@@ -1610,7 +1687,6 @@ let drawcolor = "";
 let drawcolorAccent = "";
 let drawcolorO = "";
 let drawcolorAccentO = "";
-let backgroundPointSize = 50;
 let cursorMessage = "";
 let offsetX = 0;
 let offsetY = 0;
@@ -1621,6 +1697,9 @@ let py = 0;
 let pyC = 0;
 let maxOutsideBounds = 500;
 let blockheight = 38;
+let backgroundGridStr;
+let backgroundGrid = new Image;
+setTimeout(window.onresize, 100, null);
 //end of variables
 getStorage();
 setStorage();
@@ -1845,6 +1924,26 @@ function download(content, mimeType, filename) {
     a.click();
 }
 let drawActions = -1;
+function drawBoard() {
+    ctx.globalAlpha = 1;
+    var bw = ctx.canvas.width;
+    var bh = ctx.canvas.height;
+    var p = 0;
+    var s = 50;
+    var px = 0; // posx - (Math.floor(posx / s) * s);
+    var py = 0; // posy - (Math.floor(posy / s) * s);
+    ctx.lineWidth = 3;
+    for (var x = 0; x <= bw; x += s) {
+        ctx.moveTo(0.5 + x + p + px, py + p - s);
+        ctx.lineTo(0.5 + x + p + px, py + bh + p + s);
+    }
+    for (var x = 0; x <= bh; x += s) {
+        ctx.moveTo(p + px - s, py + 0.5 + x + p);
+        ctx.lineTo(bw + p + px + s, py + 0.5 + x + p);
+    }
+    ctx.strokeStyle = currentColor["backgroundGrid"];
+    ctx.stroke();
+}
 function drawScreen() {
     var px = 0;
     if (editType == "standartEdit") {
@@ -1855,6 +1954,16 @@ function drawScreen() {
         py = posy;
     }
     drawActions = 0;
+    if (editType == "standartEdit") {
+        //background
+        drawReal.fill(currentColor["background"], ctx);
+        if (setSettings["Hintergrund Grid"] == "true") {
+            var x = posx - (Math.floor(posx / 50) * 50) - 50;
+            var y = posy - (Math.floor(posy / 50) * 50) - 50;
+            drawReal.image(backgroundGrid, x, y);
+            //drawBoard();
+        }
+    }
     ToDraw.forEach(value => {
         var key = Object.keys(value)[0];
         if (key == "rect") {
@@ -2118,7 +2227,7 @@ function updatefunction() {
                                 //console.log(mouseY-20-py);
                                 mouseSelectionLeft = -2;
                             }
-                            else {
+                            else if (EditMenuEdeting >= 0) {
                                 mouse[0] = false;
                                 //mouseSelectionLeft = -1;
                                 var r = pprompt("", Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting]);
@@ -2422,7 +2531,6 @@ function harddraw() {
 }
 function LiveMoodLightUpdate(data) {
     var values = pictureString2Value(data);
-    console.log(values);
     for (var x = 0; x < moodLightSizeX; x++) {
         for (var y = 0; y < moodLightSizeY; y++) {
             document.getElementById("2_y" + y + "x" + x).style.background = "#" + values[y * moodLightSizeX + x];
@@ -2505,25 +2613,9 @@ function updateRects() {
     if (editType == "standartEdit") {
         toDrawAnimations = [];
         font = "47px msyi";
-        //updatefunction();
         //////////
         // draw //
         //////////
-        //random error removal
-        if (mouseSelectionRight != -1) {
-            elementLenghtAndDraw(["-", ["-"]], -100, -100);
-        }
-        //background
-        draw.fill(currentColor["background"], ctx);
-        /*for (let x = 0; x < (canvas.width) / backgroundPointSize; x++) {
-            for (let y = 0; y < (canvas.height) / backgroundPointSize; y++) {
-                let px = x * backgroundPointSize;
-                px = util.normalize(px, 0, canvas.width)
-                let py = y * backgroundPointSize;
-                py = util.normalize(py, 0, canvas.height)
-                draw.rect(px - 5, py - 5, 2, 2, colors["backgroundPoints"], ctx);
-            }
-        }*/
         //Elements
         for (let ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
             let i = 0;
@@ -2899,6 +2991,12 @@ function updateRects() {
     }
     else if (editType == "ColorPicker") {
         draw.image(latestCanvasPic, 0, 0);
+        ctx.globalAlpha = 0.3921;
+        draw.fill(currentColor["backgroundBlur"], ctx);
+        ctx.globalAlpha = 0.9;
+    }
+    else if (editType == "reload") {
+        location.reload();
     }
     if (!document.hasFocus()) {
         isFocused = false;
@@ -3051,7 +3149,7 @@ setTimeout(() => {
         goTo("Question", 1);
         Question = ["Wilkommen. Willst du dich mit deinem Moodlight Verbinden?", {
                 "Ja": function () {
-                    host = sprompt("Server/Host");
+                    host = sprompt("Server/Host/SRV");
                     myTopic = sprompt("Topic");
                     myUser = sprompt("User");
                     myPass = sprompt("Pass");

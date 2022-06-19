@@ -2,6 +2,7 @@
 <html lang="de">
 
 <head>
+    <meta name="color-scheme" content="dark light">
     <meta charset="utf-8" />
 
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=.25" />
@@ -235,7 +236,7 @@
                     <input type="checkbox" name="autoUptade" id="autoUptade"
                         onchange='setCookie("AutoSendIMG",document.querySelector("#autoUptade").checked.toString(),10)'
                         onload='if (getCookie("AutoSendIMG")=="true"){document.querySelector("#autoUptade").checked=true;}else{document.querySelector("#autoUptade").checked=false;}'>
-                    <label for="autoUptade">Automatisch Bild Senden</label><br>
+                    <label style="color: gray;" for="autoUptade">Automatisch Bild Senden</label><br>
                     <button onclick="waitingForMQTTPic=true;send('&');">Bild von Moodlight Laden</button><br>
 
                     <br>
@@ -304,7 +305,7 @@
         </div>
     </div>
 
-    <div id="MoodLightDisplay">
+    <div id="MoodLightDisplay" style="display: none;">
         <div style="
             background: white;
             position: fixed;
@@ -324,14 +325,10 @@
             <h1>Scheduler (Work in Progress)</h1><br>
             <button onclick="send('@D');addMessage('Deaktiviert');">Deaktivieren</button>
             <button onclick="send('@E');addMessage('Aktiviert');">Aktivieren</button>
-            <div id="SchedulerList">
-
-            </div>
+            <div id="SchedulerList"></div>
 
             <br><button onclick="addShedule()">Hinzufügen</button>
-            <br><br><br><br><button
-                onclick="if(scheduleChanged==true){if (window.confirm('Du hast nicht hochgeladene Änderungen. Möchtest du diese Hochladen')){uploadShedules();addMessage('Hochgeladen');}} goTo('standartEdit',0)">Fertig</button>
-            <button onclick="uploadShedules();addMessage('Hochgeladen');">Hochladen</button>
+            <br><br><br><br><button onclick="finishShedule()">Fertig</button>
         </div>
     </div>
 
