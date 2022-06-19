@@ -1,9 +1,15 @@
 import json
-dat = {"sizeX": "6", "Elements": [[["Start", ["0"]]]], "pictures": [], "ElementPositions": [
-    [0, 0]], "FreeElements": [], "animations": [], "projectName": "unset"}
+dat = {"sizeX": "6", "Elements": [], "pictures": [], "ElementPositions": [
+], "FreeElements": [], "animations": [], "projectName": "big"}
 
-for x in range(10000):
-    dat["Elements"][0] += [["Text", ["T: "+str(x)]]]
+sy = 20
+sx = 500
+
+for y in range(sy):
+    dat["Elements"] += [[["Start", [str(y)]]]]
+    dat["ElementPositions"] += [[y*300, 0]]
+    for x in range(sx):
+        dat["Elements"][y] += [["Text", ["T: "+str(x*sy+y)]]]
 f = open("./fun/out.moproj", "w")
 f.write(json.dumps(dat))
 f.close()

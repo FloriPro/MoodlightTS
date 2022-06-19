@@ -116,6 +116,8 @@ function loadProject(jsonLoad: {
         aalert("load failed");
         console.error(e);
     }
+
+    setTimeout(updateRects, 10);
 }
 let clickStart = -1
 let clickTime = -1;
@@ -1117,6 +1119,9 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*false
             } else {
                 return "";
             }
+        },
+        "Async ElementLoading": function (callType) {
+            return "bool";
         }
 
         //"test": function (callType) { if (!callType) { return "str"; } else { return ""; } },
@@ -1263,7 +1268,7 @@ let settingsOnLoad: any = {
 }
 let staticElementsData: any = { "Anmelde Status": undefined, "Verbindung": undefined };
 let settingsInfo: { [einstellung: string]: string } = { "Passives Warten": "Es wird darauf gewartet, dass das MoodLight daten sendet. Geschieht durch [Custom <&>]", "Schedules in [Start <0>] mitsenden": "=> Man könnte die Banken als art Moods Ansehen mit eigenen Schedules", "Emulierter Rechtsklick": "Viele Fehler! Normale Linksklicks müssen min 200ms gehalten werden!", "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" }
-let setSettings: { [einstellung: string]: string } = { "FPS anzeigen": "false", "Hintergrund Grid": "true", "Passives Warten": "false", "Emulierter Rechtsklick": "false", "Schedules in [Start <0>] mitsenden": "true",/*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
+let setSettings: { [einstellung: string]: string } = { "Async ElementLoading": "true", "FPS anzeigen": "false", "Hintergrund Grid": "true", "Passives Warten": "false", "Emulierter Rechtsklick": "false", "Schedules in [Start <0>] mitsenden": "true",/*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
 let settingsSelLeft = 0;
 function UpdateStaticSettingsIfInSettings() {
     if (editType == "Settings") {
@@ -2627,7 +2632,7 @@ function updateRects() {
                 i++;
 
                 //make loading easyer
-                if (preloadedInCycle >= 20) {
+                if (preloadedInCycle >= 20 && setSettings["Async ElementLoading"]) {
                     setTimeout(updateRects, 1);
                     draw.text(0 - posx, 100 - posy, "Loading Elements... (" + Object.keys(imgStore).length + ")", "black", "left", font, ctx);
                     return;
