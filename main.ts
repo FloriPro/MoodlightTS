@@ -93,6 +93,9 @@ function loadProject(jsonLoad: {
         }
         loadSchedules();
 
+        posx = 300;
+        posy = 100;
+
         /*if (setSettings["Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern"] == "true" && !lastUsed) {
             if (client.isConnected()) {
                 send('@C');
@@ -113,6 +116,7 @@ function loadProject(jsonLoad: {
         moodLightSizeX = sizeXSave;
         moodLightSizeY = sizeXSave;
         schedulerList = scheduleSave;
+        loadSchedules();
         aalert("load failed");
         console.error(e);
     }
@@ -528,15 +532,14 @@ function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: num
         preloadedInCycle++;
 
         let draw = drawReal;
-        let ctx = ctxPreDraw;
 
 
         canvasPreDraw.width = l + 50;
         canvasPreDraw.height = 100;
 
-        ctx.clearRect(0, 0, canvasPreDraw.width, canvasPreDraw.height);
+        ctxPreDraw.clearRect(0, 0, canvasPreDraw.width, canvasPreDraw.height);
 
-        setFont(font, ctx);
+        setFont(font, ctxPreDraw);
         let text = Element[0];
         if (setYellow.indexOf(text) != -1) {
             drawcolor = currentColor["YellowBlock"];
@@ -551,7 +554,7 @@ function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: num
             drawcolor = currentColor["blueBlock"];
             drawcolorAccent = currentColor["blueBlockAccent"];
         }
-        l = ctx.measureText(Element[0]).width + 10;
+        l = ctxPreDraw.measureText(Element[0]).width + 10;
         //space between options: 5;
         for (let x = 0; x < Element[1].length; x++) {
             l += 5;
@@ -562,7 +565,7 @@ function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: num
                 l += specialRender[Element[0]][x][0]
             }
             else {
-                l += ctx.measureText(t).width
+                l += ctxPreDraw.measureText(t).width
             }
             l += 5;
         }
@@ -570,20 +573,20 @@ function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: num
         if ("End" == text) {
             blockheight /= 2
         }
-        draw.roundedRect(20, yOffset, l, -(blockheight - 10), drawcolorAccent, 10, ctx) //body outline
+        draw.roundedRect(20, yOffset, l, -(blockheight - 10), drawcolorAccent, 10, ctxPreDraw) //body outline
         if ("Start" == text) {
-            draw.circle(20 + 23, yOffset - 22, 30 - 3, drawcolorAccent, ctx);
-            draw.circle(20 + 23, yOffset - 22, 29 - 3, drawcolor, ctx);
+            draw.circle(20 + 23, yOffset - 22, 30 - 3, drawcolorAccent, ctxPreDraw);
+            draw.circle(20 + 23, yOffset - 22, 29 - 3, drawcolor, ctxPreDraw);
         }
-        draw.roundedRect(20 + 1, yOffset - 1, l - 2, -blockheight + 12, drawcolor, 10, ctx) //body
+        draw.roundedRect(20 + 1, yOffset - 1, l - 2, -blockheight + 12, drawcolor, 10, ctxPreDraw) //body
 
 
         if ("End" != text) {
-            draw.text(20, yOffset, text, currentColor["NormalText"], "left", font, ctx);
+            draw.text(20, yOffset, text, currentColor["NormalText"], "left", font, ctxPreDraw);
         } else {
             blockheight *= 2
         }
-        l = ctx.measureText(text).width + 7;
+        l = ctxPreDraw.measureText(text).width + 7;
         for (let x = 0; x < Element[1].length; x++) {
             let t = Element[1][x];
             if (t == "") { t = " "; }
@@ -593,13 +596,20 @@ function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: num
                 try { specialRender[Element[0]][x][1](Element[1][x], 20 + l - 5, yOffset - 22 - 5); } catch { }
                 l += specialRender[Element[0]][x][0]
             } else {
-                draw.roundedRect(20 + l + 2, yOffset - 5, ctx.measureText(t).width - 4, -(blockheight - 10) + 10, currentColor["blockArgBackground"], 10, ctx) //body outline
-                draw.text(20 + l, yOffset, t, currentColor["NormalText"], "left", font, ctx);
-                l += ctx.measureText(t).width;
+                draw.roundedRect(20 + l + 2, yOffset - 5, ctxPreDraw.measureText(t).width - 4, -(blockheight - 10) + 10, currentColor["blockArgBackground"], 10, ctxPreDraw) //body outline
+                draw.text(20 + l, yOffset, t, currentColor["NormalText"], "left", font, ctxPreDraw);
+                l += ctxPreDraw.measureText(t).width;
             }
             l += 5;
         }
 
+        if (ctx.globalAlpha != 1) {
+            pyC = -posy + 54;//(py + 4);
+            var pxC = -posx + 20;
+            draw.polygon(ctxPreDraw, drawcolor, [[pxC + 0, pyC + 0], [pxC + 5, pyC + 7], [pxC + 15, pyC + 7], [pxC + 20, pyC + 0]]); //connector
+            draw.polygonOutline(ctxPreDraw, drawcolorAccent, [[pxC + 0, pyC + 0], [pxC + 5, pyC + 7], [pxC + 15, pyC + 7], [pxC + 20, pyC + 0]], 1); //connector outline
+        }
+        //save
         var i = new Image;
         i.src = canvasPreDraw.toDataURL("image/png");
         imgStore[mapElement(Element)] = i;
@@ -613,7 +623,7 @@ function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: num
     return l;
 }
 function mapElement(Element: [string, string[]]) {
-    var out = Element[0] + "|!|!" + Element[1].join("|!|!");
+    var out = Element[0] + "|!|!" + Element[1].join("|!|!") + "__" + ctx.globalAlpha;
     return out;
 }
 
@@ -731,7 +741,7 @@ let actionElements = [
 let menuOpen = 0;
 let menuButtons: { [name: string]: () => void } = {
     "Speichern": saveProject,
-    "Laden": function () {
+    "Laden": () => {
         goTo("Question", 1);
         var a: { [ind: string]: (seId: number) => void; } = {}
         var lK = Object.keys(localStorage);
@@ -748,7 +758,7 @@ let menuButtons: { [name: string]: () => void } = {
         }
         Question = ["Welches Projekt willst du laden?", a];
     },
-    "Hinzufügen": function () {
+    "Hinzufügen": () => {
         goTo("Question", 1);
         Question = ["Was willst du hinzufügen", {
             "Start": function (seId) { ElementPositions.push([Elements.length * 400, 0]); Elements.push([["Start", [String(Elements.length)]]]); goTo(comesFrom, 1); },
@@ -756,7 +766,7 @@ let menuButtons: { [name: string]: () => void } = {
             "Animation": function (seId) { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); animationId = animations.length; animations.push(["000000".repeat(32)]); pictureEditType = 1; },
         }]
     },
-    "Bearbeiten": function () {
+    "Bearbeiten": () => {
         goTo("Question", 1);
         Question = ["", {
             "Bild": function () {
@@ -792,23 +802,26 @@ let menuButtons: { [name: string]: () => void } = {
         }]
 
     },
-    "Einstellungen": function () { goTo("Settings", 1); },
-    "Senden": function () { compileProject() },
-    "Neues Projekt": function () {
+    "Einstellungen": () => { goTo("Settings", 1); },
+    "Senden": () => { compileProject() },
+    "Neues Projekt": () => {
         var empt = JSON.parse(empty);
         empt.projectName = pprompt("Name");
         loadProject(empt)
         setCookie("lastUsed", projectName, 0.5);
     },
     "Zu Datei Speichern": downloadProject,
-    "Von Datei Laden": function () { console.log("clickedLoad"); ProjectLoader.click(); },
-    "": function () { },
-    "Experimental:": function () { },
-    "Sheduler": function () {
+    "Von Datei Laden": () => { console.log("clickedLoad"); ProjectLoader.click(); },
+    "": () => { },
+    "Experimental:": () => { },
+    "Sheduler": () => {
         goTo("Sheduler", 0)
     },
-    "Console": function () {
+    "Console": () => {
         goTo("Console", 0)
+    },
+    "Bilder neu Laden": () => {
+        updateCach()
     }
     //"actions": function () { openWindow("/action"); },
 }
@@ -850,6 +863,12 @@ async function asyncStuff(stuff: string) {
         await delay(100);
         updateRects();
     }
+}
+
+function updateCach() {
+    setTimeout(window.onresize as ((this: GlobalEventHandlers, ev: UIEvent) => any), 100, null);
+    lengthStore = {};
+    imgStore = {};
 }
 
 const alphabet: string[] = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
@@ -1001,23 +1020,29 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*false
     "Aussehen": {
         "Animationen Anzeigen": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
         "Bilder Anzeigen": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
+        "Hintergrund Grid": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
+        "Vollbild": function (callType) {
+            if (!callType) {
+                return "bool";
+            } else {
+                updateFullscreen()
+                return "";
+            }
+        },
         "  ": function (callType) { if (!callType) { return "info"; } else { return ""; } },
         "Farben:": function (callType) { if (!callType) { return "info"; } else { return ""; } },
         "Darkmode": function (callType) {
             if (!callType) { return "bool"; } else {
-                settingsInfo["Eigenens design"] = "BETA!"; if (setSettings["Darkmode"] == "true") {
-                    setTimeout(window.onresize as ((this: GlobalEventHandlers, ev: UIEvent) => any), 100, null);
+                settingsInfo["Eigenens design"] = "BETA!";
+                if (setSettings["Darkmode"] == "true") {
                     currentColor = colors["dark"];
                 } else {
                     currentColor = colors["light"];
-                    setTimeout(window.onresize as ((this: GlobalEventHandlers, ev: UIEvent) => any), 100, null);
-                    lengthStore = {};
-                    imgStore = {};
                 }
+                updateCach();
                 return "";
             }
         },
-        "Hintergrund Grid": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
         "": function (callType) { if (!callType) { return "info"; } else { return ""; } },
         "Eigenens design": function (callType) {
             if (!callType) { return "button"; } else {
@@ -1037,9 +1062,7 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*false
                             settingsInfo["Eigenens design"] = dK[seId]
                             currentColor = d[dK[seId]];
 
-                            setTimeout(window.onresize as ((this: GlobalEventHandlers, ev: UIEvent) => any), 100, null);
-                            lengthStore = {};
-                            imgStore = {};
+                            updateCach();
                         }
                         goTo("Settings", 1);
                     }
@@ -1268,7 +1291,7 @@ let settingsOnLoad: any = {
 }
 let staticElementsData: any = { "Anmelde Status": undefined, "Verbindung": undefined };
 let settingsInfo: { [einstellung: string]: string } = { "Passives Warten": "Es wird darauf gewartet, dass das MoodLight daten sendet. Geschieht durch [Custom <&>]", "Schedules in [Start <0>] mitsenden": "=> Man könnte die Banken als art Moods Ansehen mit eigenen Schedules", "Emulierter Rechtsklick": "Viele Fehler! Normale Linksklicks müssen min 200ms gehalten werden!", "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" }
-let setSettings: { [einstellung: string]: string } = { "Async ElementLoading": "true", "FPS anzeigen": "false", "Hintergrund Grid": "true", "Passives Warten": "false", "Emulierter Rechtsklick": "false", "Schedules in [Start <0>] mitsenden": "true",/*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
+let setSettings: { [einstellung: string]: string } = { "Vollbild": "false", "Async ElementLoading": "true", "FPS anzeigen": "false", "Hintergrund Grid": "true", "Passives Warten": "false", "Emulierter Rechtsklick": "false", "Schedules in [Start <0>] mitsenden": "true",/*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
 let settingsSelLeft = 0;
 function UpdateStaticSettingsIfInSettings() {
     if (editType == "Settings") {
@@ -1623,6 +1646,8 @@ setTimeout(window.onresize as ((this: GlobalEventHandlers, ev: UIEvent) => any),
 //end of variables
 getStorage();
 setStorage();
+
+setTimeout(updateFullscreen, 100);
 
 mqttConstructor();
 
@@ -2445,7 +2470,11 @@ function harddraw() {
     }
 
     if (setSettings["FPS anzeigen"] == "true") {
+        setFont("47px msyi", ctx)
+        ctx.globalAlpha = 0.6
+        drawReal.rect(0, 45, ctx.measureText("FPS: " + fps).width, -45, "white", ctx);
         drawReal.text(0, 40, "FPS: " + fps, "black", "left", "47px msyi", ctx);
+        ctx.globalAlpha = 1
     }
 
     /*//keysDown debug
@@ -2632,7 +2661,7 @@ function updateRects() {
                 i++;
 
                 //make loading easyer
-                if (preloadedInCycle >= 20 && setSettings["Async ElementLoading"]) {
+                if (preloadedInCycle >= 20 && setSettings["Async ElementLoading"] != "false") {
                     setTimeout(updateRects, 1);
                     draw.text(0 - posx, 100 - posy, "Loading Elements... (" + Object.keys(imgStore).length + ")", "black", "left", font, ctx);
                     return;
@@ -2668,10 +2697,6 @@ function updateRects() {
 
             //draw.roundedRect(px, py, textLength, -(blockheight - 10), drawcolorAccent, 10, ctx) //body outline
             //draw.roundedRect(px + 1, py - 1, textLength - 2, -blockheight + 12, drawcolor, 10, ctx) //body
-
-            pyC = (py + 4);
-            draw.polygon(ctx, drawcolor, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]]); //connector
-            draw.polygonOutline(ctx, drawcolorAccent, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]], 1); //connector outline
 
             //draw.text(px, py, text, colors["NormalText"], "left", ctx);
         }
@@ -2805,6 +2830,7 @@ function updateRects() {
                         }
                     } else {
                         colorPicker.spectrum("set", a.style.backgroundColor);
+                        colorPicker.spectrum('show');
                     }
                 }
             }

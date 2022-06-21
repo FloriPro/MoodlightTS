@@ -90,8 +90,13 @@
             height: 0;
         }
 
-        /* The alert message box */
+        input {
+            border: none;
+            font-size: 150%;
+            margin: 5px
+        }
 
+        /* The alert message box */
         .alert {
             padding: 20px;
             background-color: #36f43f;
@@ -102,9 +107,7 @@
             font-size: 45px;
         }
 
-
         /* The close button */
-
         .closebtn {
             margin-left: 15px;
             color: rgb(0, 0, 0);
@@ -114,9 +117,7 @@
             cursor: pointer;
         }
 
-
         /* When moving the mouse over the close button */
-
         .closebtn:hover {
             color: rgb(255, 255, 255);
             transition: 1s;
@@ -208,13 +209,13 @@
             <div>
                 <!--Colorpicker-->
                 <div>
-                    <input onclick="return true;" type="text" value="#ff0000" id="color" placeholder="HEX Farbe"
-                        onchange='colorPicker.spectrum("set", this.value);'><br>
+                    <input onclick="return true;" type="text" value="#ffffff" id="color" placeholder="HEX Farbe"
+                        onchange='colorPicker.spectrum("set", this.value);colorPicker.spectrum("show");'><br>
 
                     <input id='colorpicker' />
                     <script>
                         $("#colorpicker").spectrum({
-                            color: "#ff0000",
+                            color: "#ffffff",
                             preferredFormat: "hex",
                             showInitial: true,
                             showAlpha: false,
@@ -336,7 +337,7 @@
         <p>Jo, dein Browser is echt schei*e</p>
     </canvas>
     <div id="hider"
-        style="position:absolute;z-index:100;left:0%;top:0;background: white;width: 100%;height: 100%; opacity: 0%;pointer-events: none">
+        style="position:absolute;z-index:100;left:0%;top:0;background: white;width: 100%;height: 100%; opacity: 1%;pointer-events: none">
     </div>
 
     <canvas style="display: none;" id="PreDraw"></canvas>

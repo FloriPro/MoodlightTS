@@ -17,3 +17,37 @@ function getMS(): number {
     var d = new Date();
     return d.getTime()
 }
+
+let body = document.querySelector("body") as HTMLBodyElement;
+function updateFullscreen() {
+    if (setSettings["Vollbild"] == "true") {
+        if (document.fullscreenElement == null) {
+            body.requestFullscreen({ navigationUI: "show" }).catch(() => {
+                setTimeout(function () {
+                    if (document.fullscreenElement == null) {
+                        drawReal.fill("black", ctx);
+                        let latestCanvasPicStr = canvas.toDataURL("image/png");
+                        latestCanvasPic.src = latestCanvasPicStr;
+
+                        latestCanvasPic = new Image;
+                        goTo("Question", 1)
+                        Question = ["", {
+                            "Hier Drücken": function (seId) {
+                                body.requestFullscreen({ navigationUI: "show" })
+                                goTo("standartEdit", 1);
+                            }
+                        }]
+                    }
+                }, 100)
+            })
+        }
+    } else {
+        if (document.fullscreenElement != null) {
+            document.exitFullscreen();
+        }
+    }
+}
+
+setInterval(() => {
+    updateFullscreen()
+}, 500)
