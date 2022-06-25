@@ -1470,6 +1470,7 @@ let settings = {
             return "info";
         }
         else {
+            openWindow("https://floripro.github.io/?page=Home");
             return "";
         } },
     }

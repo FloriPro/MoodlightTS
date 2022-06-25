@@ -1312,7 +1312,7 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*false
         "": function (callType) { if (!callType) { return "info"; } else { return ""; } },
         " ": function (callType) { if (!callType) { return "info"; } else { return ""; } },
         "  ": function (callType) { if (!callType) { return "info"; } else { return ""; } },
-        "©Florian Lohner": function (callType) { if (!callType) { return "info"; } else { return ""; } },
+        "©Florian Lohner": function (callType) { if (!callType) { return "info"; } else { openWindow("https://floripro.github.io/?page=Home"); return ""; } },
     }
 }
 let settingsOnLoad: any = {
