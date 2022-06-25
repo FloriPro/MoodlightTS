@@ -30,26 +30,40 @@ function getMS() {
     return d.getTime();
 }
 let body = document.querySelector("body");
+let oldEditType;
 function updateFullscreen() {
     if (setSettings["Vollbild"] == "true") {
         if (document.fullscreenElement == null) {
             body.requestFullscreen({ navigationUI: "show" }).catch(() => {
                 setTimeout(function () {
                     if (document.fullscreenElement == null) {
-                        drawReal.fill("black", ctx);
+                        drawReal.fill(currentColor["background"], ctx);
                         let latestCanvasPicStr = canvas.toDataURL("image/png");
                         latestCanvasPic.src = latestCanvasPicStr;
-                        latestCanvasPic = new Image;
-                        goTo("Question", 1);
-                        Question = ["", {
+                        //latestCanvasPic = new Image;
+                        if (editType != "Question") {
+                            oldEditType = editType;
+                            goTo("Question", 1);
+                        }
+                        updateRects();
+                        drawScreen();
+                        Question = ["Vollbild benötigt!", {
                                 "Hier Drücken": function (seId) {
                                     body.requestFullscreen({ navigationUI: "show" });
-                                    goTo("standartEdit", 1);
+                                    goTo(oldEditType, 1);
                                 }
-                            }];
+                            }, oldEditType];
                     }
                 }, 100);
             });
+        }
+        else if (editType == "Question") {
+            if (Question[0] != "Vollbild benötigt!")
+                return;
+            if (Object.keys(Question[1])[0] != "Hier Drücken")
+                return;
+            goTo(oldEditType, 1);
+            setTimeout(updateRects, 50);
         }
     }
     else {
@@ -61,4 +75,16 @@ function updateFullscreen() {
 setInterval(() => {
     updateFullscreen();
 }, 500);
+function savePictureEdit() {
+    if (pictureEditType == 0) {
+        download(JSON.stringify([pictureValue2String(pictureValues[0])]), "JSON", "picture.mopic");
+    }
+    else {
+        var anim = [];
+        for (var i = 0; i < pictureValues.length; i++) {
+            anim.push(pictureValue2String(pictureValues[i]));
+        }
+        download(JSON.stringify(anim), "JSON", "animation.mopic");
+    }
+}
 //# sourceMappingURL=utilitys.js.map

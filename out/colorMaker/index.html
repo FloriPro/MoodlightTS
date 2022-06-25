@@ -14,6 +14,16 @@
         .grayed {
             color: lightgray;
         }
+
+        .menuSelect {
+            font-size: 200%;
+            cursor: pointer;
+            margin: 1px;
+        }
+
+        .menuSelect:hover {
+            background-color: rgb(247, 247, 247);
+        }
     </style>
 
     <!--jquery-->
@@ -35,10 +45,15 @@
         </div>
     </div>
     <div id="edit" style="display:none">
-        <button
-            onclick="setElem();document.getElementById('edit').style.display='none';document.getElementById('menu').style.display='';">Menu</button>
-        <button onclick="load(JSON.parse(prompt('colorJson')));">import</button>
-        <button onclick="save();">Save</button>
+        <div style="position: fixed;background: #000000ba;padding: 5px;">
+            <button
+                onclick="setElem();document.getElementById('edit').style.display='none';document.getElementById('menu').style.display='';">Menu</button>
+            <button onclick="load(JSON.parse(prompt('colorJson')));">import</button>
+            <button onclick="save();">Save</button>
+        </div>
+
+        <br>
+        <br>
         <div style="display: flex;">
             <table>
                 <tbody id="colors">
@@ -48,12 +63,24 @@
                 <textarea id="out" rows="30" cols="100">loading... I hope :)</textarea>
             </div>
         </div>
+        <br>
+        <br>
+        <br>
+        <br>
+        
+        <div class="color diesenHintergrund">
+            <h3>Dieser Hintergrund</h3>
+            <input onchange="
+                document.querySelector('body').style.backgroundColor=this.value;
+                document.querySelector('#out').style.backgroundColor=this.value;
+                " oninput="this.onchange()" type="color" value="ffffff" />
+        </div>
     </div>
 </body>
 
 <script>
     let unused = [];
-    let colors = { "background": "#fcfcfc", "backgroundGrid": "#646464", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "GrayBlock": "#b0b0b0", "GrayBlockAccent": "#4d4d4d", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" };
+    let colors = { "QuestionTitleBackground": "#ffffff", "background": "#fcfcfc", "backgroundGrid": "#646464", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "GrayBlock": "#b0b0b0", "GrayBlockAccent": "#4d4d4d", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsBoolUndefined": "#5e5e5e", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" };
     let colorsK = Object.keys(colors);
     load(colors);
 
@@ -77,7 +104,13 @@
 
         var j = { ...colors };
         for (var x = 0; x < colorsK.length; x++) {
-            j[colorsK[x]] = document.getElementById(x).value;
+            var val;
+            if (document.getElementById(x) == undefined) {
+                val = colors[colorsK[x]];
+            } else {
+                val = document.getElementById(x).value;
+            }
+            j[colorsK[x]] = val;
         }
 
         var l = localStorage.getItem("!designs");
@@ -113,10 +146,16 @@
         }
         update()
     }
+
     function update() {
         var out = { ...colors };
         for (var x = 0; x < colorsK.length; x++) {
-            out[colorsK[x]] = document.getElementById(x).value;
+            if (document.getElementById(x) == undefined) {
+                alert(x + " ist nicht definiert")
+                out[colorsK[x]] = colors[colorsK[x]];
+            } else {
+                out[colorsK[x]] = document.getElementById(x).value;
+            }
         }
         document.getElementById("out").value = JSON.stringify(out);
     }
@@ -136,7 +175,7 @@
 
         document.getElementById("menuElements").innerHTML = "";
         for (var x = 0; x < dK.length; x++) {
-            document.getElementById("menuElements").innerHTML += `<p onclick="loadS('` + dK[x] + `')">` + dK[x] + `</p>`;
+            document.getElementById("menuElements").innerHTML += `<p class="menuSelect" onclick="loadS('` + dK[x] + `')">` + dK[x] + `</p>`;
         }
     }
     setElem();

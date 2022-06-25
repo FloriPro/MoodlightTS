@@ -36,8 +36,11 @@ let colorPicker2 = $("#colorpicker2");
 let hider = document.getElementById("hider");
 let ctx = canvas.getContext("2d");
 let canvasPreDraw = document.getElementById('PreDraw');
+let canvasPreDraw2 = document.getElementById('PreDraw2');
 let ctxPreDraw = canvasPreDraw.getContext("2d");
+let ctxPreDraw2 = canvasPreDraw2.getContext("2d");
 let ProjectLoader = document.querySelector("#projectLoader");
+let PictureLoader = document.querySelector("#pictureLoader");
 let pageTeller = document.getElementById("pageTeller");
 let colorSelTable = document.getElementById('colorSelTable');
 let LiveMoodLight = document.getElementById('LiveMoodLight');
@@ -81,8 +84,8 @@ function loadProject(jsonLoad, lastUsed) {
             schedulerList = jsonLoad.Scheduler;
         }
         loadSchedules();
-        posx = 300;
-        posy = 100;
+        posx = 275;
+        posy = 75;
         /*if (setSettings["Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern"] == "true" && !lastUsed) {
             if (client.isConnected()) {
                 send('@C');
@@ -135,6 +138,34 @@ function createUserEvents() {
             ProjectLoader.value = '';
             setCookie("lastUsed", projectName, 0.5);
             localStorage.setItem(projectName, genProjectJson());
+        });
+    });
+    PictureLoader.addEventListener('change', function (e) {
+        var fileList = PictureLoader.files;
+        console.log(fileList);
+        const reader = new FileReader();
+        reader.readAsText(fileList[0]);
+        reader.addEventListener('load', (event) => {
+            var vals = JSON.parse(event.target.result);
+            if (vals.length == 1) {
+                pictureValues[page] = pictureString2Value(vals[0]);
+            }
+            else {
+                if (pictureEditType == 1) {
+                    if (confirm("Animation überschreiben")) {
+                        pictureValues = [];
+                        for (var i = 0; i < vals.length; i++) {
+                            pictureValues[i] = pictureString2Value(vals[i]);
+                        }
+                        loadPictureVal(pictureValues[0]);
+                        page = 0;
+                    }
+                }
+                else {
+                    aalert("Du kannst keine Animation in ein Bild laden!");
+                }
+            }
+            loadPictureVal(pictureValues[0]);
         });
     });
     window.onresize = resize;
@@ -201,6 +232,9 @@ function createUserEvents() {
                         pictureEditKeyEvents[e.key.toLowerCase()]();
                     }
                 }
+                if (e.key.toLowerCase() in globalKeyEvents) {
+                    globalKeyEvents[e.key.toLowerCase()]();
+                }
             }
         }
     }
@@ -243,10 +277,14 @@ function mqttConstructor() {
         client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
     }
     catch (e) {
-        settingsInfo["Verbindung"] = e.message;
+        if (e.message == "Failed to construct 'WebSocket': The URL 'wss://:10833/mqtt' is invalid.") {
+            settingsInfo["Verbindung"] = "Es wird ein Host für eine Verbindung benötigt.";
+        }
+        else {
+            settingsInfo["Verbindung"] = e.message;
+        }
         staticElementsData["Verbindung"] = false;
         console.error(e);
-        settings;
         //console.error("empty data!")
     }
 }
@@ -307,7 +345,7 @@ function connect() {
     //client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
 }
 class drawApp {
-    image(image, posx, posy) {
+    image(image, posx, posy, ctx) {
         ctx.drawImage(image, posx, posy);
     }
     rect(posx, posy, width, height, color, ctx) {
@@ -741,6 +779,20 @@ let pictureEditKeyEvents = {
         }
     }
 };
+let globalKeyEvents = {
+    "r": function () {
+        if ((setSettings["Eigenens design"] != undefined || setSettings["Eigenens design"] != "") && setSettings["Darkmode"] == "undefined") {
+            var l = localStorage.getItem("!designs");
+            if (l != undefined) {
+                var d = JSON.parse(l);
+                if (d[setSettings["Eigenens design"]] != undefined) {
+                    currentColor = d[setSettings["Eigenens design"]];
+                }
+                updateCach();
+            }
+        }
+    }
+};
 var Question = ["ERROR", { "ERROR": function () { console.warn("Question without defenition"); } }];
 var Übergang = -1;
 var ÜbergangZu = "Question";
@@ -784,7 +836,7 @@ let menuButtons = {
     },
     "Bearbeiten": () => {
         goTo("Question", 1);
-        Question = ["", {
+        Question = ["Was möchtest du bearbeiten", {
                 "Bild": function () {
                     mouse[0] = false;
                     goTo("Question", 1);
@@ -880,10 +932,27 @@ function asyncStuff(stuff) {
         }
     });
 }
+function updateSettingsBackground() {
+    window.onresize(null); //grid
+    //update complete background
+    setTimeout(() => {
+        var editTypeSave = editType;
+        var mXS = mouseX;
+        mouseX = 500;
+        editType = "standartEdit";
+        updateRects();
+        drawScreen();
+        latestCanvasPicStr = canvas.toDataURL("image/png");
+        latestCanvasPic.src = latestCanvasPicStr;
+        editType = editTypeSave;
+        mouseX = mXS;
+    }, 1);
+}
 function updateCach() {
-    setTimeout(window.onresize, 100, null);
+    updateSettingsBackground();
     lengthStore = {};
     imgStore = {};
+    pictureSave = {};
 }
 const alphabet = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
 /**type: bool, staticBool, showingBool, str, num, button, info */
@@ -895,6 +964,13 @@ let settings = {
         else {
             return "";
         } },
+        "Beim Bilder/Animationen Bearbeiten Automatisch speichern": function (callType) { if (!callType) {
+            return "bool";
+        }
+        else {
+            return "";
+        } },
+        " ": function (callType) { return "info"; },
         "Bestimmtes Projekt löschen": function (callType) {
             if (!callType) {
                 return "button";
@@ -946,9 +1022,7 @@ let settings = {
         else {
             return "";
         } },
-        "": function (callType) {
-            return "info";
-        },
+        "": function (callType) { return "info"; },
         "Alles löschen": function (callType) {
             if (!callType) {
                 return "button";
@@ -1105,12 +1179,14 @@ let settings = {
             return "bool";
         }
         else {
+            updateCach();
             return "";
         } },
         "Hintergrund Grid": function (callType) { if (!callType) {
             return "bool";
         }
         else {
+            updateSettingsBackground();
             return "";
         } },
         "Vollbild": function (callType) {
@@ -1140,6 +1216,7 @@ let settings = {
             }
             else {
                 settingsInfo["Eigenens design"] = "BETA!";
+                setSettings["Eigenens design"] = "";
                 if (setSettings["Darkmode"] == "true") {
                     currentColor = colors["dark"];
                 }
@@ -1181,8 +1258,10 @@ let settings = {
                             var d = JSON.parse(l);
                             var dK = Object.keys(d);
                             settingsInfo["Eigenens design"] = dK[seId];
+                            setSettings["Eigenens design"] = dK[seId];
                             currentColor = d[dK[seId]];
                             updateCach();
+                            setStorage();
                         }
                         goTo("Settings", 1);
                     };
@@ -1262,6 +1341,9 @@ let settings = {
         " ": function () {
             return "info";
         },
+        "FPS": function (callType) { if (!callType) {
+            return "num";
+        } return ""; },
         "FPS anzeigen": function (callType) {
             if (!callType) {
                 return "bool";
@@ -1446,8 +1528,8 @@ let settingsOnLoad = {
     },
 };
 let staticElementsData = { "Anmelde Status": undefined, "Verbindung": undefined };
-let settingsInfo = { "Passives Warten": "Es wird darauf gewartet, dass das MoodLight daten sendet. Geschieht durch [Custom <&>]", "Schedules in [Start <0>] mitsenden": "=> Man könnte die Banken als art Moods Ansehen mit eigenen Schedules", "Emulierter Rechtsklick": "Viele Fehler! Normale Linksklicks müssen min 200ms gehalten werden!", "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" };
-let setSettings = { "Vollbild": "false", "Async ElementLoading": "true", "FPS anzeigen": "false", "Hintergrund Grid": "true", "Passives Warten": "false", "Emulierter Rechtsklick": "false", "Schedules in [Start <0>] mitsenden": "true", /*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
+let settingsInfo = { "FPS": "Benötigt neuladen", "Beim Bilder/Animationen Bearbeiten Automatisch speichern": "Wird nur komplett gespeichert, wenn auch Automatisches speichern aktiviert ist", "Passives Warten": "Es wird darauf gewartet, dass das MoodLight daten sendet. Geschieht durch [Custom <&>]", "Schedules in [Start <0>] mitsenden": "=> Man könnte die Banken als art Moods Ansehen mit eigenen Schedules", "Emulierter Rechtsklick": "Viele Fehler! Normale Linksklicks müssen min 200ms gehalten werden!", "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" };
+let setSettings = { "FPS": "60", "Beim Bilder/Animationen Bearbeiten Automatisch speichern": "true", "Vollbild": "false", "Async ElementLoading": "true", "FPS anzeigen": "false", "Hintergrund Grid": "true", "Passives Warten": "false", "Emulierter Rechtsklick": "false", "Schedules in [Start <0>] mitsenden": "true", /*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
 let settingsSelLeft = 0;
 function UpdateStaticSettingsIfInSettings() {
     if (editType == "Settings") {
@@ -1752,8 +1834,8 @@ function drawColerRect(posx, posy, sizeX, sizeY, colorStr, ctx, draw) {
     }
 }
 let tempData;
-let colors = { "light": { "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#fcfcfc", "backgroundGrid": "#dbdbdb", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" }, "dark": { "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#030303", "backgroundGrid": "#9b9b9b", "blockArgBackground": "#000000", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#4f4f4f", "EditMenu": "#2f0816", "EditMenuAccent": "#843653", "NormalText": "#ffffff", "MenuButtons": "#ffffff", "MenuBackground": "#ffffff", "MenuText": "#000000", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#2d2d2d", "settingsSelStandard": "#232323", "settingsSelSelected": "#373737", "backgroundBlur": "#ffffff", "settingsBackground": "#000000", "settingsBackgroundHighlight": "#0f0f0f", "questionRedBackgroundBlur": "#69ffff", "questionBackground": "#555555", "objectSidebarBlur": "#3f3f3f", "ProjectName": "#4287f5" } };
-let currentColor = { "GrayBlock": "", "GrayBlockAccent": "", "background": "", "backgroundGrid": "", "blueBlock": "", "blockArgBackground": "", "blueBlockAccent": "", "YellowBlock": "", "YellowBlockAccent": "", "PurpleBlock": "", "PurpleBlockAccent": "", "MoveBlockShaddow": "", "EditMenu": "", "EditMenuAccent": "", "NormalText": "", "MenuButtons": "", "MenuBackground": "", "MenuText": "", "settingsBoolTrue": "", "settingsBoolFalse": "", "settingsSelMouseOver": "", "settingsSelStandard": "", "settingsSelSelected": "", "backgroundBlur": "", "settingsBackground": "", "settingsBackgroundHighlight": "", "questionRedBackgroundBlur": "", "questionBackground": "", "objectSidebarBlur": "", "ProjectName": "", };
+let colors = { "light": { "settingsBoolUndefined": "#5e5e5e", "QuestionTitleBackground": "#ffffff", "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#fcfcfc", "backgroundGrid": "#dbdbdb", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" }, "dark": { "settingsBoolUndefined": "#5e5e5e", "QuestionTitleBackground": "#000000", "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#030303", "backgroundGrid": "#9b9b9b", "blockArgBackground": "#000000", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#4f4f4f", "EditMenu": "#2f0816", "EditMenuAccent": "#843653", "NormalText": "#ffffff", "MenuButtons": "#ffffff", "MenuBackground": "#ffffff", "MenuText": "#000000", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#2d2d2d", "settingsSelStandard": "#232323", "settingsSelSelected": "#373737", "backgroundBlur": "#ffffff", "settingsBackground": "#000000", "settingsBackgroundHighlight": "#0f0f0f", "questionRedBackgroundBlur": "#69ffff", "questionBackground": "#555555", "objectSidebarBlur": "#3f3f3f", "ProjectName": "#4287f5" } };
+let currentColor = { "settingsBoolUndefined": "", "QuestionTitleBackground": "", "GrayBlock": "", "GrayBlockAccent": "", "background": "", "backgroundGrid": "", "blueBlock": "", "blockArgBackground": "", "blueBlockAccent": "", "YellowBlock": "", "YellowBlockAccent": "", "PurpleBlock": "", "PurpleBlockAccent": "", "MoveBlockShaddow": "", "EditMenu": "", "EditMenuAccent": "", "NormalText": "", "MenuButtons": "", "MenuBackground": "", "MenuText": "", "settingsBoolTrue": "", "settingsBoolFalse": "", "settingsSelMouseOver": "", "settingsSelStandard": "", "settingsSelSelected": "", "backgroundBlur": "", "settingsBackground": "", "settingsBackgroundHighlight": "", "questionRedBackgroundBlur": "", "questionBackground": "", "objectSidebarBlur": "", "ProjectName": "", };
 let setYellow = ["Loop", "Unendlich", "Start", "End"];
 let setPurple = ["Bild anzeigen", "Animationen", "Laden", "Farben", "Pixel"];
 let setGray = ["//"];
@@ -1771,8 +1853,8 @@ let drawcolorAccentO = "";
 let cursorMessage = "";
 let offsetX = 0;
 let offsetY = 0;
-let posx = 300;
-let posy = 100;
+let posx = 275;
+let posy = 75;
 let px = 0;
 let py = 0;
 let pyC = 0;
@@ -1786,11 +1868,30 @@ getStorage();
 setStorage();
 setTimeout(updateFullscreen, 100);
 mqttConstructor();
-if (setSettings["Darkmode"] == "true") {
-    currentColor = colors["dark"];
+if (setSettings["Eigenens design"] == "" || setSettings["Eigenens design"] == undefined) {
+    if (setSettings["Darkmode"] == "true") {
+        currentColor = colors["dark"];
+    }
+    else {
+        currentColor = colors["light"];
+    }
 }
 else {
-    currentColor = colors["light"];
+    var l = localStorage.getItem("!designs");
+    if (l != undefined) {
+        var d = JSON.parse(l);
+        if (d[setSettings["Eigenens design"]] != undefined) {
+            currentColor = d[setSettings["Eigenens design"]];
+        }
+        else {
+            aalert("Eigenes Design nicht vorhande!");
+            currentColor = colors["light"];
+        }
+    }
+    else {
+        aalert("Eigenes Design nicht vorhande!");
+        currentColor = colors["light"];
+    }
 }
 let moodLightSizeX = 6;
 let moodLightSizeY = 6;
@@ -1827,15 +1928,29 @@ function loadAnim() {
         pictureValues.push(pictureString2Value(imgDat[i]));
     }
 }
+let pictureSave = {};
 function renderPicture(picString, sizeX, sizeY, posx, posy, drawer, ctx) {
     posx = Math.floor(posx);
     posy = Math.floor(posy);
-    var dat = pictureString2Value(picString);
-    for (var i = 0; i < moodLightSizeY; i++) {
-        for (var ii = 0; ii < moodLightSizeX; ii++) {
-            drawer.rect(posx + i * (sizeX / moodLightSizeY), posy + ii * (sizeY / moodLightSizeX), sizeX / moodLightSizeY, sizeY / moodLightSizeX, "#" + dat[ii * moodLightSizeY + i], ctx);
+    if (pictureSave[picString + "_" + sizeX + "_" + sizeY] == undefined) {
+        canvasPreDraw2.width = sizeX;
+        canvasPreDraw2.height = sizeY;
+        ctxPreDraw2.clearRect(0, 0, sizeX, sizeY);
+        var py = 0;
+        var px = 0;
+        var dat = pictureString2Value(picString);
+        for (var i = 0; i < moodLightSizeY; i++) {
+            for (var ii = 0; ii < moodLightSizeX; ii++) {
+                drawReal.rect(px + i * (sizeX / moodLightSizeY), py + ii * (sizeY / moodLightSizeX), sizeX / moodLightSizeY, sizeY / moodLightSizeX, "#" + dat[ii * moodLightSizeY + i], ctxPreDraw2);
+                drawer.rect(posx + i * (sizeX / moodLightSizeY), posy + ii * (sizeY / moodLightSizeX), sizeX / moodLightSizeY, sizeY / moodLightSizeX, "#" + dat[ii * moodLightSizeY + i], ctx);
+            }
         }
+        //save
+        var img = new Image;
+        img.src = canvasPreDraw2.toDataURL("image/png");
+        pictureSave[picString + "_" + sizeX + "_" + sizeY] = img;
     }
+    drawer.image(pictureSave[picString + "_" + sizeX + "_" + sizeY], posx, posy, ctx);
 }
 function pictureString2Value(input) {
     try {
@@ -1913,10 +2028,15 @@ function downloadProject() {
         filename = "Unnamed";
     }
     filename = filename + ".moproj";
-    download(genProjectJson(), "text", filename);
+    download(genProjectJson(), "json", filename);
 }
 function saveProject() {
-    localStorage.setItem(projectName, genProjectJson());
+    try {
+        localStorage.setItem(projectName, genProjectJson());
+    }
+    catch (_a) {
+        console.error("Counld not save!");
+    }
 }
 function getErrorIMG() {
     if (errorImg[moodLightSizeX] == undefined) {
@@ -1934,8 +2054,11 @@ function autoSave() {
 * standartEdit, PictureEdit, Question, Settings, Actions, Sheduler, Console
 */
 function goTo(übergangTo, type, settingsSelLef) {
-    latestCanvasPicStr = canvas.toDataURL("image/png");
-    latestCanvasPic.src = latestCanvasPicStr;
+    if (editType != "Question") {
+        latestCanvasPicStr = canvas.toDataURL("image/png");
+        latestCanvasPic.src = latestCanvasPicStr;
+    }
+    cursorMessage = "";
     comesFrom = editType;
     if (type == 0) {
         Übergang = 1;
@@ -1943,6 +2066,7 @@ function goTo(übergangTo, type, settingsSelLef) {
     }
     else if (type == 1) {
         editType = übergangTo;
+        updateRects();
     }
     checkDisplay();
     if (übergangTo == "PictureEdit") {
@@ -2027,12 +2151,18 @@ function drawBoard() {
     ctx.stroke();
 }
 function drawScreen() {
+    var drawStart = performance.now();
     var px = 0;
-    if (editType == "standartEdit") {
-        px = posx;
-    }
     var py = 0;
     if (editType == "standartEdit") {
+        //move cam
+        if (mouse[1] || mouseSelectionLeft == 0) {
+            posx += mouseX - offsetX;
+            posy += mouseY - offsetY;
+            offsetX = mouseX;
+            offsetY = mouseY;
+        }
+        px = posx;
         py = posy;
     }
     drawActions = 0;
@@ -2042,7 +2172,7 @@ function drawScreen() {
         if (setSettings["Hintergrund Grid"] == "true") {
             var x = posx - (Math.floor(posx / 50) * 50) - 50;
             var y = posy - (Math.floor(posy / 50) * 50) - 50;
-            drawReal.image(backgroundGrid, x, y);
+            drawReal.image(backgroundGrid, x, y, ctx);
             //drawBoard();
         }
     }
@@ -2086,7 +2216,7 @@ function drawScreen() {
         else if (key == "image") {
             var i = value[key];
             ctx.globalAlpha = i[i.length - 1];
-            drawReal.image(i[0], i[1] + px, i[2] + py);
+            drawReal.image(i[0], i[1] + px, i[2] + py, ctx);
         }
         drawActions++;
     });
@@ -2097,14 +2227,29 @@ function drawScreen() {
         drawReal.rect(mouseX, mouseY, ctx.measureText(cursorMessage).width, 35, "#d9d9d9", ctx); //background
         drawReal.text(mouseX, mouseY + 30, cursorMessage, currentColor["NormalText"], "left", font, ctx);
     }
+    var drawEnd = performance.now();
+    msPerDrawCach.push(drawEnd - drawStart);
+    //console.log((drawEnd - drawStart) + ' ms.');
 }
-function updateScreen() {
-    updates++;
-    var update = updatefunction();
-    ctx.globalAlpha = 1;
-    if (update) {
-        updateRects();
+function updateScreen(onlyDraw) {
+    var dStartTime = performance.now();
+    if (onlyDraw == undefined) {
+        var update = updatefunction();
+        ctx.globalAlpha = 1;
+        if (preloadedInCycle < 20 || editType != "standartEdit") {
+            if (update) {
+                updateRects();
+            }
+            var dEndTime = performance.now();
+            msPerUpdateCach.push(dEndTime - dStartTime);
+        }
     }
+    else {
+        updateRects();
+        var dEndTime = performance.now();
+        msPerUpdateCach.push(dEndTime - dStartTime);
+    }
+    preloadedInCycle = 0;
 }
 function updatefunction() {
     //size change
@@ -2428,11 +2573,6 @@ function updatefunction() {
                 mouse[0] = true;
             }
         }
-        //move cam
-        if (mouse[1] || mouseSelectionLeft == 0) {
-            posx += mouseX - offsetX;
-            posy += mouseY - offsetY;
-        }
         //move Free Element
         if (mouseSelectionLeft == 1 && !mouse[1]) {
             update = true;
@@ -2449,8 +2589,10 @@ function updatefunction() {
         if (HoldingEnd != -1) {
             FreeElements[FreeElements.length - 1][2][0] = ElementPositions[HoldingEnd][0];
         }
-        offsetX = mouseX;
-        offsetY = mouseY;
+        if (!(mouse[1] || mouseSelectionLeft == 0)) {
+            offsetX = mouseX;
+            offsetY = mouseY;
+        }
         if (mouseSelectionRight == 1) {
             update = true;
         }
@@ -2458,8 +2600,9 @@ function updatefunction() {
     else {
         update = true;
     }
-    if (!mouse[0])
+    if (!mouse[0]) {
         clickStart = -1;
+    }
     if (Übergang != -1) {
         update = true;
     }
@@ -2605,8 +2748,9 @@ function harddraw() {
     if (setSettings["FPS anzeigen"] == "true") {
         setFont("47px msyi", ctx);
         ctx.globalAlpha = 0.6;
-        drawReal.rect(0, 45, ctx.measureText("FPS: " + fps).width, -45, "white", ctx);
-        drawReal.text(0, 40, "FPS: " + fps, "black", "left", "47px msyi", ctx);
+        var text = msPerUpdate + " ms/Update (ups: " + fps + ") | " + msPerDraw + "ms/draw (fps:" + drawFPS + ")";
+        drawReal.rect(0, 45, ctx.measureText(text).width, -45, "white", ctx);
+        drawReal.text(0, 40, text, "black", "left", "47px msyi", ctx);
         ctx.globalAlpha = 1;
     }
     /*//keysDown debug
@@ -2701,7 +2845,6 @@ function checkDisplay() {
 function updateRects() {
     ToDraw = [];
     if (editType == "standartEdit") {
-        preloadedInCycle = 0;
         toDrawAnimations = [];
         font = "47px msyi";
         //////////
@@ -2786,7 +2929,7 @@ function updateRects() {
                 i++;
                 //make loading easyer
                 if (preloadedInCycle >= 20 && setSettings["Async ElementLoading"] != "false") {
-                    setTimeout(updateRects, 1);
+                    setTimeout(updateScreen, 1, true);
                     draw.text(0 - posx, 100 - posy, "Loading Elements... (" + Object.keys(imgStore).length + ")", "black", "left", font, ctx);
                     return;
                 }
@@ -2874,22 +3017,32 @@ function updateRects() {
         //mouseDown
         if (mouse[0] && mouseSelectionLeft == -1) {
             if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight && mouseX > canvas.width / 2 - (mW / 2 + 5) - 15 && mouseX < canvas.width / 2 - (mW / 2 + 5) + mW + 10 + 15) {
+                mouseSelectionLeft = 0;
                 Question[1][q1[Math.ceil((mouseY / blockheight) - (150 / blockheight))]](Math.ceil((mouseY / blockheight) - (150 / blockheight)));
+                setTimeout(updateRects, 1);
                 //Übergang = -1
             }
             else {
+                mouse[0] = false;
+                mouseSelectionLeft = 0;
                 if (comesFrom != "Question") {
                     goTo(comesFrom, 1);
-                    setTimeout(updateRects, 15);
+                    setTimeout(updateRects, 1);
                     mouse[0] = false;
                 }
                 else {
-                    goTo("standartEdit", 1);
+                    if (Question[2] != undefined) {
+                        goTo(Question[2], 1);
+                        if (Question[2] == "Settings") {
+                            mouse[0] = false;
+                        }
+                    }
+                    else {
+                        goTo("standartEdit", 1);
+                    }
                     setTimeout(updateRects, 15);
-                    mouse[0] = false;
                 }
             }
-            mouseSelectionLeft = 0;
         }
         //mouseUp
         if (!mouse[0] && mouseSelectionLeft != -1) {
@@ -2907,6 +3060,9 @@ function updateRects() {
         //box
         draw.roundedRect(canvas.width / 2 - (mW / 2 + 5), 150 - 47 + 3 + 15, mW + 10, q1.length * blockheight + 5, currentColor["questionBackground"], 30, ctx);
         font = "60px msyi";
+        setFont(font, ctx);
+        var textWidth = ctx.measureText(Question[0]).width;
+        draw.rect(canvas.width / 2 - textWidth / 2, 80, textWidth, -50, currentColor["QuestionTitleBackground"], ctx);
         draw.text(canvas.width / 2, 70, Question[0], currentColor["NormalText"], "center", font, ctx);
         font = "47px msyi";
         for (let x = 0; x < q1.length; x++) {
@@ -2944,12 +3100,33 @@ function updateRects() {
                 let a = document.getElementById("y" + x + "x" + y);
                 if (a != null) {
                     if (!keyDown("alt")) {
+                        //pictuer changed
                         if (pictureValues[page][y * moodLightSizeY + x] != rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b)) {
                             pictureValues[page][y * moodLightSizeY + x] = rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b);
                             a.style.backgroundColor = colorPicker.spectrum("get");
+                            //auto upload
                             var au = document.querySelector("#autoUptade");
                             if (au.checked) {
                                 send(pictureValue2String(pictureValues[page]));
+                            }
+                            //autosave
+                            if (setSettings["Beim Bilder/Animationen Bearbeiten Automatisch speichern"] == "true") {
+                                if (pictureId != -1 || animationId != -1) {
+                                    if (pictureEditType == 0) {
+                                        pictures[pictureId] = pictureValue2String(pictureValues[0]); //pictureValues.join("");
+                                    }
+                                    else {
+                                        var anim = [];
+                                        for (var i = 0; i < pictureValues.length; i++) {
+                                            anim.push(pictureValue2String(pictureValues[i]));
+                                        }
+                                        animations[animationId] = anim;
+                                    }
+                                }
+                                else {
+                                    aalert("Something went wrong: No ID!");
+                                }
+                                autoSave();
                             }
                         }
                     }
@@ -3067,7 +3244,7 @@ function updateRects() {
                         draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolTrue"], ctx);
                     }
                     else {
-                        draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, "#5e5e5e", ctx);
+                        draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolUndefined"], ctx);
                     }
                 }
                 if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && (type == "staticBool" || type == "showingBool")) {
@@ -3078,7 +3255,7 @@ function updateRects() {
                         draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolTrue"], ctx);
                     }
                     else if (staticElementsData[settinggruppe[s]] == undefined) {
-                        draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, "#5e5e5e", ctx);
+                        draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolUndefined"], ctx);
                     }
                 }
             }
@@ -3220,7 +3397,10 @@ function cursorUpdate() {
 setInterval(cursorUpdate, 100);
 setInterval(UpdateStaticSettingsIfInSettings, 10000);
 setInterval(checkDisplay, 500);
-setInterval(drawScreen, 10);
+if (isNaN(parseInt(setSettings["FPS"]))) {
+    setSettings["FPS"] = "60";
+}
+setInterval(drawScreen, 1000 / parseInt(setSettings["FPS"]));
 setInterval(function () {
     if (setSettings["Live MoodLight"] == "true" && setSettings["Passives Warten"] != "true") {
         send("&");
@@ -3229,9 +3409,9 @@ setInterval(function () {
 setInterval(updateScreen, 16);
 setTimeout(checkDisplay, 50);
 setTimeout(updateRects, 50);
-setTimeout(updateRects, 100);
-setTimeout(updateRects, 150);
-setTimeout(updateRects, 200);
+//setTimeout(updateRects, 100);
+//setTimeout(updateRects, 150);
+//setTimeout(updateRects, 200);
 //HTML load events
 var a = document.querySelector("#autoUptade");
 var o = a.onload;
@@ -3287,10 +3467,27 @@ function firstTry3() {
             },
         }];
 }
-let updates = 0;
+let msPerDrawCach = [];
+let msPerDraw = -1;
+let msPerUpdateCach = [];
+let msPerUpdate = -1;
+let drawFPS = 0;
 let fps = 0;
 setInterval(function () {
-    fps = updates;
-    updates = 0;
+    msPerDraw = 0;
+    for (var c of msPerDrawCach) {
+        msPerDraw += c;
+    }
+    msPerDraw /= msPerDrawCach.length;
+    drawFPS = msPerDrawCach.length;
+    msPerDrawCach = [];
+    msPerUpdate = 0;
+    for (var c of msPerUpdateCach) {
+        msPerUpdate += c;
+    }
+    msPerUpdate /= msPerUpdateCach.length;
+    fps = msPerUpdateCach.length;
+    msPerUpdateCach = [];
 }, 1000);
+document.fonts.onloadingdone = () => { updateCach(); };
 //# sourceMappingURL=main.js.map
