@@ -12,12 +12,66 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+//////////////////////////////////////////////////////////////////
+// TRANSLATION TESTING                                          //
+//////////////////////////////////////////////////////////////////
+let currentTranslation = {};
+let turnBack = {
+    "Start": "$element.start",
+    "Bild anzeigen": "$element.picture",
+    "Animationen": "$element.animation",
+    "Wait": "$element.wait",
+    "Text": "$element.text",
+    "Uhrzeit": "$element.time",
+    "Füllen": "$element.fill",
+    "Loop": "$element.loop",
+    "Unendlich": "$element.infiniteLoop",
+    "Custom": "$element.custom",
+    "Bewegen": "$element.move",
+    "pixel verschieben nach vorne": "$element.move.pixelverschiebennachvorne",
+    "pixel verschieben nach hinten": "$element.move.pixelverschiebennachhinten",
+    "verschieben links": "$element.move.verschiebenlinks",
+    "verschieben rechts": "$element.move.verschiebenrechts",
+    "verschieben oben": "$element.move.verschiebenoben",
+    "verschieben unten": "$element.move.verschiebenunten",
+    "drehen links": "$element.move.drehenlinks",
+    "drehen rechts": "$element.move.drehenrechts",
+    "drehen oben": "$element.move.drehenoben",
+    "drehen unten": "$element.move.drehenunten",
+    "Farben": "$element.colors",
+    "Laden": "$element.load",
+    "Pixel": "$element.pixel",
+    "End": "$element.end",
+    "//": "$element.comment",
+};
+function loadTranslation(name) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (availTranslations.includes(name)) {
+            currentLanguage = name;
+            var r = yield fetch("translations/" + availTranslationsR[name] + ".json");
+            currentTranslation = JSON.parse(yield r.text());
+            setStorage();
+            updateCach();
+        }
+        else {
+            aalert("$alert.missingLanguage");
+        }
+    });
+}
+//{"af": "afrikaans","sq": "albanian","am": "amharic","ar": "arabic","hy": "armenian","az": "azerbaijani","eu": "basque","be": "belarusian","bn": "bengali","bs": "bosnian","bg": "bulgarian","ca": "catalan","ceb": "cebuano","ny": "chichewa","zh-CN": "chinese (simplified)","zh-TW": "chinese (traditional)","co": "corsican","hr": "croatian","cs": "czech","da": "danish","nl": "dutch","en": "english","eo": "esperanto","et": "estonian","tl": "filipino","fi": "finnish","fr": "french","fy": "frisian","gl": "galician","ka": "georgian","de": "german","el": "greek","gu": "gujarati","ht": "haitian creole","ha": "hausa","haw": "hawaiian","iw": "hebrew","hi": "hindi","hmn": "hmong","hu": "hungarian","is": "icelandic","ig": "igbo","id": "indonesian","ga": "irish","it": "italian","ja": "japanese","jw": "javanese","kn": "kannada","kk": "kazakh","km": "khmer","rw": "kinyarwanda","ko": "korean","ku": "kurdish","ky": "kyrgyz","lo": "lao","la": "latin","lv": "latvian","lt": "lithuanian","lb": "luxembourgish","mk": "macedonian","mg": "malagasy","ms": "malay","ml": "malayalam","mt": "maltese","mi": "maori","mr": "marathi","mn": "mongolian","my": "myanmar","ne": "nepali","no": "norwegian","or": "odia","ps": "pashto","fa": "persian","pl": "polish","pt": "portuguese","pa": "punjabi","ro": "romanian","ru": "russian","sm": "samoan","gd": "scots gaelic","sr": "serbian","st": "sesotho","sn": "shona","sd": "sindhi","si": "sinhala","sk": "slovak","sl": "slovenian","so": "somali","es": "spanish","su": "sundanese","sw": "swahili","sv": "swedish","tg": "tajik","ta": "tamil","tt": "tatar","te": "telugu","th": "thai","tr": "turkish","tk": "turkmen","uk": "ukrainian","ur": "urdu","ug": "uyghur","uz": "uzbek","vi": "vietnamese","cy": "welsh","xh": "xhosa","yi": "yiddish","yo": "yoruba","zu": "zulu"}
+let availTranslationsR = { 'afrikaans': 'af', 'albanian': 'sq', 'amharic': 'am', 'arabic': 'ar', 'armenian': 'hy', 'azerbaijani': 'az', 'basque': 'eu', 'belarusian': 'be', 'bengali': 'bn', 'bosnian': 'bs', 'bulgarian': 'bg', 'catalan': 'ca', 'cebuano': 'ceb', 'chichewa': 'ny', 'chinese (simplified)': 'zh-CN', 'chinese (traditional)': 'zh-TW', 'corsican': 'co', 'croatian': 'hr', 'czech': 'cs', 'danish': 'da', 'dutch': 'nl', 'english': 'en', 'esperanto': 'eo', 'estonian': 'et', 'filipino': 'tl', 'finnish': 'fi', 'french': 'fr', 'frisian': 'fy', 'galician': 'gl', 'georgian': 'ka', 'german': 'de', 'greek': 'el', 'gujarati': 'gu', 'haitian creole': 'ht' }; //{ "Deutsch": "de", "Englisch": "en", "Ukrainisch": "uk", "Greek": "el" }
+let availTranslations = Object.keys(availTranslationsR);
+let currentLanguage = "de";
+loadTranslation("Deutsch");
+//////////////////////////////////////////////////////////////////
+// TRANSLATION TESTING                                          //
+//////////////////////////////////////////////////////////////////
 /*
  * TODO:
  *  -Output
  *  -Einstellungen
  */
-const empty = '{"sizeX":"6","Elements":[[["Start",["0"]]]],"pictures":[],"ElementPositions":[[0,0]],"FreeElements":[],"animations":[],"projectName":"unset"}';
+const empty = '{"sizeX":"6","Elements":[[["$element.start",["0"]]]],"pictures":[],"ElementPositions":[[0,0]],"FreeElements":[],"animations":[],"projectName":"unset"}';
 //utility variables
 let isFocused = false;
 let font = "47px msyi";
@@ -50,6 +104,25 @@ latestCanvasPic.src = latestCanvasPicStr;
 let c = document.getElementById("canvas");
 let sizeChange = true;
 createUserEvents();
+function updateToNewTranslation(Elements) {
+    if (Elements[0][0][0][0] == "$") {
+        return Elements;
+    }
+    aalert("$alert.newTranslation");
+    for (var x = 0; x < Elements.length; x++) {
+        for (var y = 0; y < Elements[x].length; y++) {
+            if (turnBack[Elements[x][y][0]] != undefined) {
+                Elements[x][y][0] = turnBack[Elements[x][y][0]];
+            }
+            if (Elements[x][y][0] == "$element.move") {
+                if (Elements[x][y][1][0][0] != "$") {
+                    Elements[x][y][1][0] = turnBack[Elements[x][y][1][0]];
+                }
+            }
+        }
+    }
+    return Elements;
+}
 function loadProject(jsonLoad, lastUsed) {
     //get save
     var ElementsSave = Elements;
@@ -61,7 +134,7 @@ function loadProject(jsonLoad, lastUsed) {
     var sizeXSave = moodLightSizeX;
     var scheduleSave = schedulerList;
     try {
-        Elements = jsonLoad.Elements;
+        Elements = updateToNewTranslation(jsonLoad.Elements);
         pictures = jsonLoad.pictures;
         ElementPositions = jsonLoad.ElementPositions;
         FreeElements = jsonLoad.FreeElements;
@@ -108,7 +181,7 @@ function loadProject(jsonLoad, lastUsed) {
         moodLightSizeY = sizeXSave;
         schedulerList = scheduleSave;
         loadSchedules();
-        aalert("load failed");
+        aalert("$alert.loadFailed");
         console.error(e);
     }
     setTimeout(updateRects, 10);
@@ -162,7 +235,7 @@ function createUserEvents() {
                     }
                 }
                 else {
-                    aalert("Du kannst keine Animation in ein Bild laden!");
+                    aalert("$alert.animationInPictureError");
                 }
             }
             loadPictureVal(pictureValues[0]);
@@ -278,12 +351,12 @@ function mqttConstructor() {
     }
     catch (e) {
         if (e.message == "Failed to construct 'WebSocket': The URL 'wss://:10833/mqtt' is invalid.") {
-            settingsInfo["Verbindung"] = "Es wird ein Host für eine Verbindung benötigt.";
+            settingsInfo["$settings.mqtt.connection"] = "Es wird ein Host für eine Verbindung benötigt.";
         }
         else {
-            settingsInfo["Verbindung"] = e.message;
+            settingsInfo["$settings.mqtt.connection"] = e.message;
         }
-        staticElementsData["Verbindung"] = false;
+        staticElementsData["$settings.mqtt.connection"] = false;
         console.error(e);
         //console.error("empty data!")
     }
@@ -296,12 +369,12 @@ function onConnect() {
 }
 function onFailure() {
     UpdateStaticSettingsIfInSettings();
-    settingsInfo["Verbindung"] = "Failed: evtl. Passwort/Topic/Username Falsch";
+    settingsInfo["$settings.mqtt.connection"] = "Failed: evtl. Passwort/Topic/Username Falsch";
     console.log("on Failure");
 }
 function onConnectionLost(responseObject) {
     if (responseObject.errorCode != 0) {
-        staticElementsData["Verbindung"] = false;
+        staticElementsData["$settings.mqtt.connection"] = false;
         console.log("onConnectionLost:" + responseObject.errorMessage + "\nreconnecting...");
         connect();
     }
@@ -311,8 +384,8 @@ function reconnect() {
         client.disconnect();
         UpdateStaticSettingsIfInSettings();
     }
-    staticElementsData["Verbindung"] = undefined;
-    settingsInfo["Verbindung"] = "Verbinden...";
+    staticElementsData["$settings.mqtt.connection"] = undefined;
+    settingsInfo["$settings.mqtt.connection"] = "Verbinden...";
     connect();
 }
 function onMessageArrived(message) {
@@ -400,6 +473,9 @@ class drawApp {
         }
         ctx.fillStyle = color;
         ctx.textAlign = align;
+        if (currentTranslation[Text] != undefined) {
+            Text = currentTranslation[Text];
+        }
         ctx.fillText(Text, pox, posy);
     }
     ;
@@ -426,6 +502,12 @@ class drawApp {
         ctx.closePath();
     }
     ;
+}
+function measureText(text, ctx) {
+    if (currentTranslation[text] != undefined) {
+        text = currentTranslation[text];
+    }
+    return ctx.measureText(text);
 }
 let ToDraw = [];
 class drawAdder {
@@ -487,6 +569,7 @@ function setStorage() {
     setCookie("myPass", myPass, 10);
     setCookie("myUser", myUser, 10);
     setCookie("host", host, 10);
+    setCookie("language", currentLanguage, 10);
 }
 function getStorage() {
     try {
@@ -518,6 +601,12 @@ function getStorage() {
     }
     catch (_f) {
         setCookie("host", host, 10);
+    }
+    try {
+        loadTranslation(getCookie("language"));
+    }
+    catch (_h) {
+        setCookie("language", currentLanguage, 10);
     }
 }
 class Utilitys {
@@ -594,7 +683,7 @@ function elementLenghtAndDraw(Element, plx, ply) {
             drawcolor = currentColor["blueBlock"];
             drawcolorAccent = currentColor["blueBlockAccent"];
         }
-        l = ctxPreDraw.measureText(Element[0]).width + 10;
+        l = measureText(Element[0], ctxPreDraw).width + 10;
         //space between options: 5;
         for (let x = 0; x < Element[1].length; x++) {
             l += 5;
@@ -606,26 +695,26 @@ function elementLenghtAndDraw(Element, plx, ply) {
                 l += specialRender[Element[0]][x][0];
             }
             else {
-                l += ctxPreDraw.measureText(t).width;
+                l += measureText(t, ctxPreDraw).width;
             }
             l += 5;
         }
-        if ("End" == text) {
+        if ("$element.end" == text) {
             blockheight /= 2;
         }
         draw.roundedRect(20, yOffset, l, -(blockheight - 10), drawcolorAccent, 10, ctxPreDraw); //body outline
-        if ("Start" == text) {
+        if ("$element.start" == text) {
             draw.circle(20 + 23, yOffset - 22, 30 - 3, drawcolorAccent, ctxPreDraw);
             draw.circle(20 + 23, yOffset - 22, 29 - 3, drawcolor, ctxPreDraw);
         }
         draw.roundedRect(20 + 1, yOffset - 1, l - 2, -blockheight + 12, drawcolor, 10, ctxPreDraw); //body
-        if ("End" != text) {
+        if ("$element.end" != text) {
             draw.text(20, yOffset, text, currentColor["NormalText"], "left", font, ctxPreDraw);
         }
         else {
             blockheight *= 2;
         }
-        l = ctxPreDraw.measureText(text).width + 7;
+        l = measureText(text, ctxPreDraw).width + 7;
         for (let x = 0; x < Element[1].length; x++) {
             let t = Element[1][x];
             if (t == "") {
@@ -640,9 +729,9 @@ function elementLenghtAndDraw(Element, plx, ply) {
                 l += specialRender[Element[0]][x][0];
             }
             else {
-                draw.roundedRect(20 + l + 2, yOffset - 5, ctxPreDraw.measureText(t).width - 4, -(blockheight - 10) + 10, currentColor["blockArgBackground"], 10, ctxPreDraw); //body outline
+                draw.roundedRect(20 + l + 2, yOffset - 5, measureText(t, ctxPreDraw).width - 4, -(blockheight - 10) + 10, currentColor["blockArgBackground"], 10, ctxPreDraw); //body outline
                 draw.text(20 + l, yOffset, t, currentColor["NormalText"], "left", font, ctxPreDraw);
-                l += ctxPreDraw.measureText(t).width;
+                l += measureText(t, ctxPreDraw).width;
             }
             l += 5;
         }
@@ -679,7 +768,7 @@ function elementLenght(Element) {
     }
     else {
         setFont(font, ctx);
-        l = ctx.measureText(Element[0]).width + 10;
+        l = measureText(Element[0], ctx).width + 10;
         //space between options: 5;
         for (let x = 0; x < Element[1].length; x++) {
             l += 5;
@@ -691,7 +780,7 @@ function elementLenght(Element) {
                 l += specialRender[Element[0]][x][0];
             }
             else {
-                l += ctx.measureText(t).width;
+                l += measureText(t, ctx).width;
             }
             l += 5;
         }
@@ -703,6 +792,9 @@ function elementLenght(Element) {
  * only use this/pprompt for prompts
  */
 function sprompt(question, setShit) {
+    if (currentTranslation[question] != undefined) {
+        question = currentTranslation[question];
+    }
     var a = prompt(question, setShit);
     if (a == undefined) {
         a = "";
@@ -714,6 +806,9 @@ function sprompt(question, setShit) {
  * only use this/sprompt for prompts
  */
 function pprompt(question, setShit) {
+    if (currentTranslation[question] != undefined) {
+        question = currentTranslation[question];
+    }
     var a = prompt(question, setShit);
     if (a == null) {
         a = undefined;
@@ -725,6 +820,9 @@ function pprompt(question, setShit) {
  * only use this for alerts
  */
 function aalert(message) {
+    if (currentTranslation[message] != undefined) {
+        message = currentTranslation[message];
+    }
     alert(message);
     mouse[0] = false;
 }
@@ -744,49 +842,47 @@ let pictureEditKeyEvents = {
     }, "x": function () {
         if (navigator.clipboard.readText != undefined) {
             navigator.clipboard.readText().then(clipText => {
-                if (clipText.includes("\n")) {
-                    var d = clipText.split("\n");
-                    for (var i = 0; i < d.length; i++) {
-                        if (pictureValues.length == page + i) {
-                            pictureValues.push();
-                        }
-                        pictureValues[page + i] = pictureString2Value(d[i]);
-                    }
+                if (clipText != undefined) {
+                    loadClipboardText(clipText);
                 }
-                else {
-                    pictureValues[page] = pictureString2Value(clipText);
+            }).catch(() => {
+                var clipText = pprompt("$prompt.pasteNormal");
+                if (clipText != undefined) {
+                    loadClipboardText(clipText);
                 }
-                loadPictureVal(pictureValues[page]);
             });
         }
         else {
-            var clipText = pprompt("please paste:");
+            var clipText = pprompt("$prompt.pasteNormal");
             if (clipText != undefined) {
-                if (clipText.includes("\n")) {
-                    var d = clipText.split("\n");
-                    for (var i = 0; i < d.length; i++) {
-                        if (pictureValues.length == page + i) {
-                            pictureValues.push();
-                        }
-                        pictureValues[page + i] = pictureString2Value(d[i]);
-                    }
-                }
-                else {
-                    pictureValues[page] = pictureString2Value(clipText);
-                }
-                loadPictureVal(pictureValues[page]);
+                loadClipboardText(clipText);
             }
         }
     }
 };
+function loadClipboardText(clipText) {
+    if (clipText.includes("\n")) {
+        var d = clipText.split("\n");
+        for (var i = 0; i < d.length; i++) {
+            if (pictureValues.length == page + i) {
+                pictureValues.push();
+            }
+            pictureValues[page + i] = pictureString2Value(d[i]);
+        }
+    }
+    else {
+        pictureValues[page] = pictureString2Value(clipText);
+    }
+    loadPictureVal(pictureValues[page]);
+}
 let globalKeyEvents = {
     "r": function () {
-        if ((setSettings["Eigenens design"] != undefined || setSettings["Eigenens design"] != "") && setSettings["Darkmode"] == "undefined") {
+        if ((setSettings["$settings.look.ownDesign"] != undefined || setSettings["$settings.look.ownDesign"] != "") && setSettings["$settings.look.darkmode"] == "undefined") {
             var l = localStorage.getItem("!designs");
             if (l != undefined) {
                 var d = JSON.parse(l);
-                if (d[setSettings["Eigenens design"]] != undefined) {
-                    currentColor = d[setSettings["Eigenens design"]];
+                if (d[setSettings["$settings.look.ownDesign"]] != undefined) {
+                    currentColor = d[setSettings["$settings.look.ownDesign"]];
                 }
                 updateCach();
             }
@@ -802,8 +898,8 @@ let actionElements = [
 ];
 let menuOpen = 0;
 let menuButtons = {
-    "Speichern": saveProject,
-    "Laden": () => {
+    "$menu.save": saveProject,
+    "$menu.load": () => {
         goTo("Question", 1);
         var a = {};
         var lK = Object.keys(localStorage);
@@ -824,29 +920,29 @@ let menuButtons = {
                     setCookie("lastUsed", Object.keys(localStorage)[seId], 0.5);
                 };
         }
-        Question = ["Welches Projekt willst du laden?", a];
+        Question = ["$question.loadProject", a];
     },
-    "Hinzufügen": () => {
+    "$menu.add": () => {
         goTo("Question", 1);
-        Question = ["Was willst du hinzufügen", {
-                "Start": function (seId) { ElementPositions.push([Elements.length * 400, 0]); Elements.push([["Start", [String(Elements.length)]]]); goTo(comesFrom, 1); },
-                "Bild": function (seId) { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); pictureId = pictures.length; pictures.push("000000".repeat(32)); pictureEditType = 0; },
-                "Animation": function (seId) { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); animationId = animations.length; animations.push(["000000".repeat(32)]); pictureEditType = 1; },
+        Question = ["$question.add", {
+                "$question.add.answer.start": function (seId) { ElementPositions.push([Elements.length * 400, 0]); Elements.push([["$element.start", [String(Elements.length)]]]); goTo(comesFrom, 1); },
+                "$question.add.answer.picture": function (seId) { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); pictureId = pictures.length; pictures.push("000000".repeat(32)); pictureEditType = 0; },
+                "$question.add.answer.animation": function (seId) { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); animationId = animations.length; animations.push(["000000".repeat(32)]); pictureEditType = 1; },
             }];
     },
-    "Bearbeiten": () => {
+    "$menu.edit": () => {
         goTo("Question", 1);
-        Question = ["Was möchtest du bearbeiten", {
-                "Bild": function () {
+        Question = ["$question.edit", {
+                "$question.edit.answer.picture": function () {
                     mouse[0] = false;
                     goTo("Question", 1);
                     var qAnsw = {};
                     for (var i = 0; i < pictures.length; i++) {
                         qAnsw["_P" + i] = function (selId) { goTo("PictureEdit", 0); mouse[0] = false; pictureId = selId; loadPicture(selId); pictureEditType = 0; };
                     }
-                    Question = ["Was willst du bearbeiten", qAnsw];
+                    Question = ["$question.edit.answer.picture.question", qAnsw];
                 },
-                "Animation": function () {
+                "$question.edit.answer.animation": function () {
                     mouse[0] = false;
                     goTo("Question", 1);
                     var qAnsw = {};
@@ -863,32 +959,32 @@ let menuButtons = {
                             loadPictureVal(pictureValues[0]);
                         };
                     }
-                    Question = ["Was willst du bearbeiten", qAnsw];
+                    Question = ["$question.edit.answer.animation.question", qAnsw];
                 },
                 //"Aktionen": function () {
                 //    goTo("Action", 0);
                 //}
             }];
     },
-    "Einstellungen": () => { goTo("Settings", 1); },
-    "Senden": () => { compileProject(); },
-    "Neues Projekt": () => {
+    "$menu.settings": () => { goTo("Settings", 1); },
+    "$menu.compile": () => { compileProject(); },
+    "$menu.newProject": () => {
         var empt = JSON.parse(empty);
-        empt.projectName = pprompt("Name");
+        empt.projectName = pprompt("$prompt.newProjectName");
         loadProject(empt);
         setCookie("lastUsed", projectName, 0.5);
     },
-    "Zu Datei Speichern": downloadProject,
-    "Von Datei Laden": () => { console.log("clickedLoad"); ProjectLoader.click(); },
+    "$menu.fileSave": downloadProject,
+    "$menu.loadFile": () => { console.log("clickedLoad"); ProjectLoader.click(); },
     "": () => { },
-    "Experimental:": () => { },
-    "Sheduler": () => {
+    "$menu.info.Experimental": () => { },
+    "$menu.sheduler": () => {
         goTo("Sheduler", 0);
     },
-    "Console": () => {
+    "$menu.console": () => {
         goTo("Console", 0);
     },
-    "Bilder neu Laden": () => {
+    "$menu.reloadPictures": () => {
         updateCach();
     }
     //"actions": function () { openWindow("/action"); },
@@ -909,7 +1005,7 @@ function asyncStuff(stuff) {
                 i++;
             }
             if (i >= 20) {
-                aalert("ERROR: Timeout");
+                aalert("$alert.timeoutError");
             }
             else {
                 aalert(latesMQTTMessage);
@@ -939,6 +1035,7 @@ function updateSettingsBackground() {
         var editTypeSave = editType;
         var mXS = mouseX;
         mouseX = 500;
+        oldMouseX = 500;
         editType = "standartEdit";
         updateRects();
         drawScreen();
@@ -946,6 +1043,7 @@ function updateSettingsBackground() {
         latestCanvasPic.src = latestCanvasPicStr;
         editType = editTypeSave;
         mouseX = mXS;
+        oldMouseX = mXS;
     }, 1);
 }
 function updateCach() {
@@ -957,21 +1055,21 @@ function updateCach() {
 const alphabet = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
 /**type: bool, staticBool, showingBool, str, num, button, info */
 let settings = {
-    "Allgemein": {
-        "Automatisch speichert": function (callType) { if (!callType) {
+    "$settings.general": {
+        "$settings.general.autoSave": function (callType) { if (!callType) {
             return "bool";
         }
         else {
             return "";
         } },
-        "Beim Bilder/Animationen Bearbeiten Automatisch speichern": function (callType) { if (!callType) {
+        "$settings.general.autoSaveImage": function (callType) { if (!callType) {
             return "bool";
         }
         else {
             return "";
         } },
         " ": function (callType) { return "info"; },
-        "Bestimmtes Projekt löschen": function (callType) {
+        "$settings.general.deleteProject": function (callType) {
             if (!callType) {
                 return "button";
             }
@@ -997,39 +1095,39 @@ let settings = {
                         };
                     }
                 }
-                Question = ["Welches Projekt willst du löschen?", a];
+                Question = ["$question.projectDelete", a];
                 return "";
             }
         },
-        "Promt als eingabe": function (callType) { if (!callType) {
+        "$settings.general.promptInput": function (callType) { if (!callType) {
             return "bool";
         }
         else {
             return "";
         } },
-        "Farben Informationen": function (callType) {
+        "$settings.general.colorInformation": function (callType) {
             if (!callType) {
                 return "button";
             }
             else {
-                aalert("Bei Farben Wird eine Zufällige Farbe mit 'R' und die Selbe Farbe, welche vorher benutzt wurde mit 'V' gekenzeichnet. Wenn Zwei Farben ausgewählt werden und mindestens eine Random ist, sind beide Farben Random. Das gleiche auch mit dem Vorherigen!");
+                aalert("$alert.colorInformation");
                 return "";
             }
         },
-        "Emulierter Rechtsklick": function (callType) { if (!callType) {
+        "$settings.general.rightclick": function (callType) { if (!callType) {
             return "bool";
         }
         else {
             return "";
         } },
         "": function (callType) { return "info"; },
-        "Alles löschen": function (callType) {
+        "$settings.general.deleteAll": function (callType) {
             if (!callType) {
                 return "button";
             }
             else {
-                Question = ["Wirklich alles löschen", {
-                        "Ja": function (seId) {
+                Question = ["$question.deleteAll", {
+                        "$question.deleteAll.answer.yes": function (seId) {
                             //Cookies
                             setCookie("lastUsed", "", 0);
                             setCookie("setSettings", "", 0);
@@ -1046,7 +1144,7 @@ let settings = {
                             }
                             goTo("reload", 0);
                         },
-                        "Nur Cookies": function (seId) {
+                        "$question.deleteAll.answer.cookies": function (seId) {
                             setCookie("lastUsed", "", 0);
                             setCookie("setSettings", "", 0);
                             setCookie("AutoSendIMG", "true", 0);
@@ -1057,14 +1155,14 @@ let settings = {
                             setCookie("FirstTry", "", 0);
                             goTo("reload", 0);
                         },
-                        "Nur Projekte": function (seId) {
+                        "$question.deleteAll.answer.project": function (seId) {
                             var locKeys = Object.keys(localStorage);
                             for (var key of locKeys) {
                                 localStorage.removeItem(key);
                             }
                             goTo("reload", 0);
                         },
-                        "Nein": function (seId) {
+                        "$question.deleteAll.answer.no": function (seId) {
                             goTo("Settings", 1);
                         }
                     }];
@@ -1073,8 +1171,8 @@ let settings = {
             }
         }
     },
-    "MQTT": {
-        "Verbindung": function (callType) {
+    "$settings.mqtt": {
+        "$settings.mqtt.connection": function (callType) {
             if (!callType) {
                 return "showingBool";
             }
@@ -1084,14 +1182,14 @@ let settings = {
                     UpdateStaticSettingsIfInSettings();
                 }
                 else {
-                    settingsInfo["Verbindung"] = "Verbinden...";
-                    staticElementsData["Verbindung"] = undefined;
+                    settingsInfo["$settings.mqtt.connection"] = "Verbinden...";
+                    staticElementsData["$settings.mqtt.connection"] = undefined;
                     connect();
                 }
                 return "";
             }
         },
-        "Daten ändern": function (callType) {
+        "$settings.mqtt.changeData": function (callType) {
             if (!callType) {
                 return "button";
             }
@@ -1104,7 +1202,7 @@ let settings = {
                 return "";
             }
         },
-        "Daten löschen": function (callType) { if (!callType) {
+        "$settings.mqtt.deleteData": function (callType) { if (!callType) {
             return "button";
         }
         else {
@@ -1117,7 +1215,7 @@ let settings = {
             ;
             return "";
         } },
-        "Daten einsehen": function (callType) { if (!callType) {
+        "$settings.mqtt.viewData": function (callType) { if (!callType) {
             return "button";
         }
         else {
@@ -1144,19 +1242,19 @@ let settings = {
             }
         },*/
         //"Neu Verbinden": function (callType) { if (!callType) { return "button"; } else { reconnect(); return ""; } },
-        "Projekt namen anzeigen bei senden": function (callType) { if (!callType) {
+        "$settings.mqtt.showNameOnSend": function (callType) { if (!callType) {
             return "bool";
         }
         else {
             return "";
         } },
-        "Upload Delay": function (callType) { if (!callType) {
+        "$settings.mqtt.delay": function (callType) { if (!callType) {
             return "num";
         }
         else {
             return "";
         } },
-        "Host Verändern": function (callType) {
+        "$settings.mqtt.hostChange": function (callType) {
             if (!callType) {
                 return "button";
             }
@@ -1168,34 +1266,34 @@ let settings = {
             }
         },
     },
-    "Aussehen": {
-        "Animationen Anzeigen": function (callType) { if (!callType) {
+    "$settings.look": {
+        "$settings.look.showAnimations": function (callType) { if (!callType) {
             return "bool";
         }
         else {
             return "";
         } },
-        "Bilder Anzeigen": function (callType) { if (!callType) {
+        "$settings.look.showPicture": function (callType) { if (!callType) {
             return "bool";
         }
         else {
             updateCach();
             return "";
         } },
-        "Hintergrund Grid": function (callType) { if (!callType) {
+        "$settings.look.backgroundGrid": function (callType) { if (!callType) {
             return "bool";
         }
         else {
             updateSettingsBackground();
             return "";
         } },
-        "Starts am Grid orientieren": function (callType) { if (!callType) {
+        "$settings.look.startGridSnap": function (callType) { if (!callType) {
             return "bool";
         }
         else {
             return "";
         } },
-        "Vollbild": function (callType) {
+        "$settings.look.fullscreen": function (callType) {
             if (!callType) {
                 return "bool";
             }
@@ -1210,20 +1308,20 @@ let settings = {
         else {
             return "";
         } },
-        "Farben:": function (callType) { if (!callType) {
+        "$settings.look.info.colors:": function (callType) { if (!callType) {
             return "info";
         }
         else {
             return "";
         } },
-        "Darkmode": function (callType) {
+        "$settings.look.darkmode": function (callType) {
             if (!callType) {
                 return "bool";
             }
             else {
-                settingsInfo["Eigenens design"] = "BETA!";
-                setSettings["Eigenens design"] = "";
-                if (setSettings["Darkmode"] == "true") {
+                settingsInfo["$settings.look.ownDesign"] = "BETA!";
+                setSettings["$settings.look.ownDesign"] = "";
+                if (setSettings["$settings.look.darkmode"] == "true") {
                     currentColor = colors["dark"];
                 }
                 else {
@@ -1239,7 +1337,7 @@ let settings = {
         else {
             return "";
         } },
-        "Eigenens design": function (callType) {
+        "$settings.look.ownDesign": function (callType) {
             if (!callType) {
                 return "button";
             }
@@ -1249,7 +1347,7 @@ let settings = {
                     var d = JSON.parse(l);
                 }
                 else {
-                    aalert("no custom design");
+                    aalert("$alert.noCustomDesign");
                     return "";
                 } //set JSON parsed var d
                 goTo("Question", 1);
@@ -1257,14 +1355,14 @@ let settings = {
                 var dK = Object.keys(d);
                 for (var x = 0; x < dK.length; x++) {
                     var v = dK[x];
-                    setSettings["Darkmode"] = "undefined";
+                    setSettings["$settings.look.darkmode"] = "undefined";
                     a[v] = function (seId) {
                         var l = localStorage.getItem("!designs");
                         if (l != undefined) {
                             var d = JSON.parse(l);
                             var dK = Object.keys(d);
-                            settingsInfo["Eigenens design"] = dK[seId];
-                            setSettings["Eigenens design"] = dK[seId];
+                            settingsInfo["$settings.look.ownDesign"] = dK[seId];
+                            setSettings["$settings.look.ownDesign"] = dK[seId];
                             currentColor = d[dK[seId]];
                             updateCach();
                             setStorage();
@@ -1276,7 +1374,7 @@ let settings = {
                 return "";
             }
         },
-        "Design löschen": function (callType) {
+        "$settings.look.deleteDesign": function (callType) {
             if (!callType) {
                 return "button";
             }
@@ -1303,11 +1401,11 @@ let settings = {
                         goTo("Settings", 1, false);
                     };
                 }
-                Question = ["Welches design willst du löschen?", a];
+                Question = ["$question.deleteDesign", a];
                 return "";
             }
         },
-        "Design JSON Hinzufügen": function (callType) {
+        "$settings.look.addDesignJson": function (callType) {
             if (!callType) {
                 return "button";
             }
@@ -1324,18 +1422,18 @@ let settings = {
                 //ask override
                 if (d[n] != undefined) {
                     if (window.confirm("override") == undefined) {
-                        aalert("canceled");
+                        aalert("$alert.canceled");
                         return "";
                     }
                 }
                 d[n] = JSON.parse(j);
                 localStorage.setItem("!designs", JSON.stringify(d));
-                settingsInfo["Eigenens design"] = n;
+                settingsInfo["$settings.look.ownDesign"] = n;
                 currentColor = JSON.parse(j);
                 return "";
             }
         },
-        "Eigenens design erstellen": function (callType) {
+        "$settings.look.createOwnDesign": function (callType) {
             if (!callType) {
                 return "button";
             }
@@ -1347,10 +1445,10 @@ let settings = {
         " ": function () {
             return "info";
         },
-        "FPS": function (callType) { if (!callType) {
+        "$settings.look.maxFPS": function (callType) { if (!callType) {
             return "num";
         } return ""; },
-        "FPS anzeigen": function (callType) {
+        "$settings.look.showFPS": function (callType) {
             if (!callType) {
                 return "bool";
             }
@@ -1358,13 +1456,13 @@ let settings = {
                 return "";
             }
         },
-        "Async ElementLoading": function (callType) {
+        "$settings.look.asyncElementLoading": function (callType) {
             return "bool";
         }
         //"test": function (callType) { if (!callType) { return "str"; } else { return ""; } },
     },
-    "MoodLight": {
-        "Firmware": function (callType) {
+    "$settings.moodlight": {
+        "$settings.moodlight.firmware": function (callType) {
             if (!callType) {
                 return "button";
             }
@@ -1373,7 +1471,7 @@ let settings = {
                 return "";
             }
         },
-        "MoodLight Größe": function (callType) {
+        "$settings.moodlight.size": function (callType) {
             if (!callType) {
                 return "button";
             }
@@ -1388,7 +1486,7 @@ let settings = {
                 return "";
             }
         },
-        "Live MoodLight": function (callType) {
+        "$settings.moodlight.live": function (callType) {
             if (!callType) {
                 return "bool";
             }
@@ -1396,7 +1494,7 @@ let settings = {
                 return "";
             }
         },
-        "Passives Warten": function (callType) {
+        "$settings.moodlight.passiveLive": function (callType) {
             if (!callType) {
                 return "bool";
             }
@@ -1404,7 +1502,7 @@ let settings = {
                 return "";
             }
         },
-        "Preset Bank ändern": function (callType) {
+        "$settings.moodlight.setBank": function (callType) {
             if (!callType) {
                 return "button";
             }
@@ -1417,14 +1515,14 @@ let settings = {
                         goTo("Settings", 1);
                     };
                 }
-                Question = ["Welche Bank", a];
+                Question = ["$question.changeBank", a];
                 goTo("Question", 1);
                 return "";
             }
         },
     },
-    "Scheduler": {
-        "Schedules in [Start <0>] mitsenden": function (callType) {
+    "$settings.sheduler": {
+        "$settings.sheduler.send": function (callType) {
             if (!callType) {
                 return "bool";
             }
@@ -1447,8 +1545,42 @@ let settings = {
             }
         }*/
     },
-    "Über": {
-        "Einfaches Code Bearbeitungsprogramm für HOTTIs MoodLight": function (callType) { if (!callType) {
+    "$settings.language": {
+        "$settings.language.change": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                var a = {};
+                for (var x of availTranslations) {
+                    a[x] = function (seId) {
+                        loadTranslation(availTranslations[seId]);
+                        goTo("Settings", 1);
+                    };
+                }
+                Question = ["$settings.language.change.question", a];
+                goTo("Question", 1);
+                return "";
+            }
+        },
+        "$settings.language.update": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                loadTranslation(currentLanguage);
+                return "";
+            }
+        },
+        "$settings.language.byGoogle": function (callType) { if (!callType) {
+            return "info";
+        }
+        else {
+            return "";
+        } },
+    },
+    "$settings.about": {
+        "$settings.about.1": function (callType) { if (!callType) {
             return "info";
         }
         else {
@@ -1472,7 +1604,7 @@ let settings = {
         else {
             return "";
         } },
-        "©Florian Lohner": function (callType) { if (!callType) {
+        "$settings.about.2": function (callType) { if (!callType) {
             return "info";
         }
         else {
@@ -1521,22 +1653,22 @@ let settingsOnLoad = {
             staticElementsData["Anmelde Status"] = undefined;
         });
     },*/
-    "Verbindung": function () {
-        staticElementsData["Verbindung"] = client.isConnected();
+    "$settings.mqtt.connection": function () {
+        staticElementsData["$settings.mqtt.connection"] = client.isConnected();
         if (client.isConnected()) {
-            settingsInfo["Verbindung"] = client.host;
+            settingsInfo["$settings.mqtt.connection"] = client.host;
         }
-        else if (settingsInfo["Verbindung"] != undefined && !settingsInfo["Verbindung"].startsWith("Failed")) {
-            settingsInfo["Verbindung"] = "";
+        else if (settingsInfo["$settings.mqtt.connection"] != undefined && !settingsInfo["$settings.mqtt.connection"].startsWith("Failed")) {
+            settingsInfo["$settings.mqtt.connection"] = "";
         }
-        else if (settingsInfo["Verbindung"] == undefined) {
-            settingsInfo["Verbindung"] = "";
+        else if (settingsInfo["$settings.mqtt.connection"] == undefined) {
+            settingsInfo["$settings.mqtt.connection"] = "";
         }
     },
 };
-let staticElementsData = { "Anmelde Status": undefined, "Verbindung": undefined };
-let settingsInfo = { "©Florian Lohner": "floripro.github.io", "FPS": "Benötigt neuladen", "Beim Bilder/Animationen Bearbeiten Automatisch speichern": "Wird nur komplett gespeichert, wenn auch Automatisches speichern aktiviert ist", "Passives Warten": "Es wird darauf gewartet, dass das MoodLight daten sendet. Geschieht durch [Custom <&>]", "Schedules in [Start <0>] mitsenden": "=> Man könnte die Banken als art Moods Ansehen mit eigenen Schedules", "Emulierter Rechtsklick": "Viele Fehler! Normale Linksklicks müssen min 200ms gehalten werden!", "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" };
-let setSettings = { "Starts am Grid orientieren": "true", "FPS": "60", "Beim Bilder/Animationen Bearbeiten Automatisch speichern": "true", "Vollbild": "false", "Async ElementLoading": "true", "FPS anzeigen": "false", "Hintergrund Grid": "true", "Passives Warten": "false", "Emulierter Rechtsklick": "false", "Schedules in [Start <0>] mitsenden": "true", /*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
+let staticElementsData = { "Anmelde Status": undefined, "$settings.mqtt.connection": undefined };
+let settingsInfo = { "$settings.about.2": "$settings.about.2.info", "$settings.look.maxFPS": "$settings.look.maxFPS.info", "$settings.general.autoSaveImage": "$settings.general.autoSaveImage.info", "$settings.moodlight.passiveLive": "$settings.moodlight.passiveLive.info", "$settings.general.rightclick": "$settings.general.rightclick.info", "$settings.moodlight.live": "$settings.moodlight.live.info", "$settings.look.darkmode": "$settings.look.darkmode.info", "$settings.look.ownDesign": "$settings.look.ownDesign.info", "$settings.look.createOwnDesign": "$settings.look.createOwnDesign.info", "$settings.look.addDesignJson": "$settings.look.addDesignJson.info", "$settings.look.deleteDesign": "$settings.look.deleteDesign.info", "$settings.look.showAnimations": "$settings.look.showAnimations.info" };
+let setSettings = { "$settings.look.startGridSnap": "true", "$settings.look.maxFPS": "60", "$settings.general.autoSaveImage": "true", "$settings.look.fullscreen": "false", "$settings.look.asyncElementLoading": "true", "$settings.look.showFPS": "false", "$settings.look.backgroundGrid": "true", "$settings.moodlight.passiveLive": "false", "$settings.general.rightclick": "false", "$settings.sheduler.send": "true", /*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "$settings.moodlight.live": "false", "$settings.general.autoSave": "true", "$settings.look.darkmode": "false", "$settings.general.promptInput": "false", "$settings.mqtt.showNameOnSend": "false", "$settings.look.showAnimations": "true", "$settings.look.showPicture": "true", "$settings.mqtt.delay": "70" };
 let settingsSelLeft = 0;
 function UpdateStaticSettingsIfInSettings() {
     if (editType == "Settings") {
@@ -1577,68 +1709,68 @@ let drawReal = new drawApp();
 let util = new Utilitys();
 const errorImg = { "MAX": "ff00ff".repeat(100 * 100), "6": "ff00ffff00ffff00ff000000000000000000000000000000000000ff00ffff00ffff00ffff00ffff00ffff00ff000000000000000000ffffffffffffffffff00ff0000ff0000ff0000ff0000ff0000ff00ffffffffffffffffffffffffffffffffffff00ff0000ff0000ff00", "8": "ff00ffff00ffff00ffff00ff000000000000000000000000000000000000000000000000ff00ffff00ffff00ffff00ffff00ffff00ffff00ffff00ff000000000000000000000000000000000000000000000000ff00ffff00ffff00ffff00ff00ff0000ff0000ff0000ff00ffffffffffffffffffffffffffffffffffffffffffffffff00ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff00ffffffffffffffffffffffffffffffffffffffffffffffff00ff0000ff0000ff0000ff00" };
 const available = [
-    ["Bild anzeigen", ["0", "0"]],
-    ["Animationen", ["0", "0", "10"]],
-    ["Wait", ["0.25"]],
-    ["Text", ["Text", "10", "ffffff", "000000"]],
-    ["Uhrzeit", ["10", "ffffff", "000000"]],
-    ["Füllen", ["000000"]],
-    ["Loop", ["2"]],
-    ["Unendlich", []],
-    ["Custom", [""]],
-    ["Bewegen", ["verschieben links", "000000"]],
-    ["Farben", ["ffffff", "000000"]],
-    ["Laden", ["0"]],
-    ["Pixel", ["0", "ff0000"]],
-    ["//", [""]]
+    ["$element.picture", ["0", "0"]],
+    ["$element.animation", ["0", "0", "10"]],
+    ["$element.wait", ["0.25"]],
+    ["$element.text", ["Text", "10", "ffffff", "000000"]],
+    ["$element.time", ["10", "ffffff", "000000"]],
+    ["$element.fill", ["000000"]],
+    ["$element.loop", ["2"]],
+    ["$element.infiniteLoop", []],
+    ["$element.custom", [""]],
+    ["$element.move", ["verschieben links", "000000"]],
+    ["$element.colors", ["ffffff", "000000"]],
+    ["$element.load", ["0"]],
+    ["$element.pixel", ["0", "ff0000"]],
+    ["$element.comment", [""]]
 ];
 const description = {
-    "Wait": ["Sekunden"],
-    "Laden": ["Nummer"],
-    "Text": ["Text", "Geschwindigkeit", "Vordergrund Farbe", "Hintergrund Farbe"],
-    "Uhrzeit": ["Geschwindigkeit", "Vordergrund Farbe", "Hintergrund Farbe"],
-    "Bild anzeigen": ["Bild", "Übergangszeit"],
-    "Animationen": ["Animation", "Übergangszeit", "Wartezeit (Sekunden X 100)"],
-    "Füllen": ["Farbe"],
-    "Loop": ["Wiederholungen"],
-    "Custom": ["Code"],
-    "Farben": ["Vordergrund", "Hintergrund"],
-    "Bewegen": ["Richtung", "Hintergrund"],
-    "Pixel": ["Pixel Position (R für zufällige Position)", "Farbe"],
-    "//": ["Information"]
+    "$element.wait": ["$element.wait.seconds"],
+    "$element.load": ["$element.load.number"],
+    "$element.text": ["$element.text.text", "$element.text.speed", "$element.text.foregroundColor", "$element.text.backgroundColor"],
+    "$element.time": ["$element.time.speed", "$element.time.foregroundColor", "$element.time.backgroundColor"],
+    "$element.picture": ["$element.picture.picture", "$element.picture.transitionTime"],
+    "$element.animation": ["$element.animation.animation", "$element.animation.transitionTime", "$element.animation.waitingTime"],
+    "$element.fill": ["$element.fill.color"],
+    "$element.loop": ["$element.loop.loops"],
+    "$element.custom": ["$element.custom.code"],
+    "$element.colors": ["$element.colors.foregroundColor", "$element.colors.backgroundColor"],
+    "$element.move": ["$element.move.direction", "$element.move.backgroundColor"],
+    "$element.pixel": ["$element.pixel.position", "$element.pixel.color"],
+    "$element.comment": ["$element.comment.information"]
 };
-const joggAvailLookup = { "pixel verschieben nach vorne": 0, "pixel verschieben nach hinten": 1, "verschieben links": 9, "verschieben rechts": 7, "verschieben oben": 6, "verschieben unten": 8, "drehen links": 5, "drehen rechts": 3, "drehen oben": 2, "drehen unten": 4 };
+const joggAvailLookup = { "$element.move.pixelverschiebennachvorne": 0, "$element.move.pixelverschiebennachhinten": 1, "$element.move.verschiebenlinks": 9, "$element.move.verschiebenrechts": 7, "$element.move.verschiebenoben": 6, "$element.move.verschiebenunten": 8, "$element.move.drehenlinks": 5, "$element.move.drehenrechts": 3, "$element.move.drehenoben": 2, "$element.move.drehenunten": 4 };
 const joggAvail = Object.keys(joggAvailLookup);
-const notDragable = ["Start"];
+const notDragable = ["$element.start"];
 const dropdownMenuButtons = {
-    "Bild anzeigen": {
+    "$element.picture": {
         "Bearbeiten": function () {
             console.log("Bearbeiten");
         },
         "Anzeigen": function () {
             console.log("Anzeigen");
         }
-    }, "Animationen": {
+    }, "$element.animation": {
         "Bearbeiten": function () {
             console.log("Bearbeiten");
         }
     }
 }; //TODO
-const allwaysRedo = { "Animationen": [0] };
+const allwaysRedo = { "$element.animation": [0] };
 const specialRender = {
-    "Bild anzeigen": {
+    "$element.picture": {
         0: [24, function (inputNum, posx, posy) {
-                if (setSettings["Bilder Anzeigen"] == "true") {
+                if (setSettings["$settings.look.showPicture"] == "true") {
                     renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2, posy - 2, drawReal, ctxPreDraw);
                 }
             }]
     },
-    "Animationen": {
+    "$element.animation": {
         0: [24, function (inputNum, posx, posy) {
                 toDrawAnimations.push([inputNum, posx, posy]);
             }]
     },
-    "Text": {
+    "$element.text": {
         2: [24, function (inputNum, posx, posy) {
                 drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
             }],
@@ -1646,7 +1778,7 @@ const specialRender = {
                 drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
             }]
     },
-    "Uhrzeit": {
+    "$element.time": {
         1: [24, function (inputNum, posx, posy) {
                 drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
             }],
@@ -1654,7 +1786,7 @@ const specialRender = {
                 drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
             }]
     },
-    "Farben": {
+    "$element.colors": {
         0: [24, function (inputNum, posx, posy) {
                 drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
             }],
@@ -1662,24 +1794,24 @@ const specialRender = {
                 drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
             }]
     },
-    "Füllen": {
+    "$element.fill": {
         0: [24, function (inputNum, posx, posy) {
                 drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
             }]
     },
-    "Pixel": {
+    "$element.pixel": {
         1: [24, function (inputNum, posx, posy) {
                 drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
             }]
     },
-    "Bewegen": {
+    "$element.move": {
         1: [24, function (inputNum, posx, posy) {
                 drawColerRect(posx + 2, posy - 2, 30, 30, "#" + inputNum, ctxPreDraw, drawReal);
             }]
     }
 };
 const specialBlockEditClick = {
-    "Bild anzeigen": {
+    "$element.picture": {
         0: function () {
             tempData = [mouseDataRight[0], mouseDataRight[1], EditMenuEdeting];
             var qAnsw = {};
@@ -1690,12 +1822,12 @@ const specialBlockEditClick = {
                 };
             }
             mouse[0] = false;
-            Question = ["welches Bild?", qAnsw];
+            Question = ["$question.blockPictureChange", qAnsw];
             cursorMessage = "";
             goTo("Question", 1);
         }
     },
-    "Animationen": {
+    "$element.animation": {
         0: function () {
             tempData = [mouseDataRight[0], mouseDataRight[1], EditMenuEdeting];
             var qAnsw = {};
@@ -1706,12 +1838,12 @@ const specialBlockEditClick = {
                 };
             }
             mouse[0] = false;
-            Question = ["Welche Art von Bewegung?", qAnsw];
+            Question = ["$question.blockAnimationChange", qAnsw];
             cursorMessage = "";
             goTo("Question", 1);
         }
     },
-    "Text": {
+    "$element.text": {
         2: function () {
             goTo("ColorPicker", 1);
             asyncStuff("colorPickerOfElement");
@@ -1721,7 +1853,7 @@ const specialBlockEditClick = {
             asyncStuff("colorPickerOfElement");
         }
     },
-    "Uhrzeit": {
+    "$element.time": {
         1: function () {
             goTo("ColorPicker", 1);
             asyncStuff("colorPickerOfElement");
@@ -1731,7 +1863,7 @@ const specialBlockEditClick = {
             asyncStuff("colorPickerOfElement");
         }
     },
-    "Farben": {
+    "$element.colors": {
         0: function () {
             goTo("ColorPicker", 1);
             asyncStuff("colorPickerOfElement");
@@ -1741,19 +1873,19 @@ const specialBlockEditClick = {
             asyncStuff("colorPickerOfElement");
         }
     },
-    "Füllen": {
+    "$element.fill": {
         0: function () {
             goTo("ColorPicker", 1);
             asyncStuff("colorPickerOfElement");
         }
     },
-    "Pixel": {
+    "$element.pixel": {
         1: function () {
             goTo("ColorPicker", 1);
             asyncStuff("colorPickerOfElement");
         }
     },
-    "Bewegen": {
+    "$element.move": {
         0: function () {
             tempData = [mouseDataRight[0], mouseDataRight[1], EditMenuEdeting];
             var qAnsw = {};
@@ -1764,7 +1896,7 @@ const specialBlockEditClick = {
                 };
             }
             mouse[0] = false;
-            Question = ["welche Bewegung?", qAnsw];
+            Question = ["$question.blockMoveChange", qAnsw];
             cursorMessage = "";
             goTo("Question", 1);
         },
@@ -1775,34 +1907,34 @@ const specialBlockEditClick = {
     }
 };
 const specialBlockDropdownRender = {
-    "Animationen": {
+    "$element.animation": {
         0: function (inputNum, posx, posy) {
             toDrawAnimations.push([inputNum, posx + 6, posy - 24 + 2]);
         }
     },
-    "Bild anzeigen": {
+    "$element.picture": {
         0: function (inputNum, posx, posy) {
-            if (setSettings["Bilder Anzeigen"] == "true") {
+            if (setSettings["$settings.look.showPicture"] == "true") {
                 renderPicture(pictures[parseInt(inputNum)], 30, 30, posx - 2 + 6, posy - 2 - 22, draw, ctx);
             }
         }
     },
-    "Füllen": {
+    "$element.fill": {
         0: function (inputNum, posx, posy) {
             drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         }
     },
-    "Pixel": {
+    "$element.pixel": {
         1: function (inputNum, posx, posy) {
             drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         }
     },
-    "Bewegen": {
+    "$element.move": {
         1: function (inputNum, posx, posy) {
             drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         }
     },
-    "Text": {
+    "$element.text": {
         2: function (inputNum, posx, posy) {
             drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         },
@@ -1810,7 +1942,7 @@ const specialBlockDropdownRender = {
             drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         }
     },
-    "Uhrzeit": {
+    "$element.time": {
         1: function (inputNum, posx, posy) {
             drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         },
@@ -1818,7 +1950,7 @@ const specialBlockDropdownRender = {
             drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         }
     },
-    "Farben": {
+    "$element.colors": {
         0: function (inputNum, posx, posy) {
             drawColerRect(posx + 4, posy - 24, 30, 30, "#" + inputNum, ctx, draw);
         },
@@ -1843,14 +1975,14 @@ function drawColerRect(posx, posy, sizeX, sizeY, colorStr, ctx, draw) {
 let tempData;
 let colors = { "light": { "settingsBoolUndefined": "#5e5e5e", "QuestionTitleBackground": "#ffffff", "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#fcfcfc", "backgroundGrid": "#dbdbdb", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" }, "dark": { "settingsBoolUndefined": "#5e5e5e", "QuestionTitleBackground": "#000000", "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#030303", "backgroundGrid": "#9b9b9b", "blockArgBackground": "#000000", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#4f4f4f", "EditMenu": "#2f0816", "EditMenuAccent": "#843653", "NormalText": "#ffffff", "MenuButtons": "#ffffff", "MenuBackground": "#ffffff", "MenuText": "#000000", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#2d2d2d", "settingsSelStandard": "#232323", "settingsSelSelected": "#373737", "backgroundBlur": "#ffffff", "settingsBackground": "#000000", "settingsBackgroundHighlight": "#0f0f0f", "questionRedBackgroundBlur": "#69ffff", "questionBackground": "#555555", "objectSidebarBlur": "#3f3f3f", "ProjectName": "#4287f5" } };
 let currentColor = { "settingsBoolUndefined": "", "QuestionTitleBackground": "", "GrayBlock": "", "GrayBlockAccent": "", "background": "", "backgroundGrid": "", "blueBlock": "", "blockArgBackground": "", "blueBlockAccent": "", "YellowBlock": "", "YellowBlockAccent": "", "PurpleBlock": "", "PurpleBlockAccent": "", "MoveBlockShaddow": "", "EditMenu": "", "EditMenuAccent": "", "NormalText": "", "MenuButtons": "", "MenuBackground": "", "MenuText": "", "settingsBoolTrue": "", "settingsBoolFalse": "", "settingsSelMouseOver": "", "settingsSelStandard": "", "settingsSelSelected": "", "backgroundBlur": "", "settingsBackground": "", "settingsBackgroundHighlight": "", "questionRedBackgroundBlur": "", "questionBackground": "", "objectSidebarBlur": "", "ProjectName": "", };
-let setYellow = ["Loop", "Unendlich", "Start", "End"];
-let setPurple = ["Bild anzeigen", "Animationen", "Laden", "Farben", "Pixel"];
-let setGray = ["//"];
+let setYellow = ["$element.loop", "$element.infiniteLoop", "$element.start", "$element.end"];
+let setPurple = ["$element.picture", "$element.animation", "$element.load", "$element.colors", "$element.pixel"];
+let setGray = ["$element.comment"];
 let pictures = [];
 let animations = [];
 let animationProgression = [];
 let toDrawAnimations = [];
-let Elements = [[["Start", ["0"]]]];
+let Elements = [[["$element.start", ["0"]]]];
 let ElementPositions = [[0, 0]];
 let ElementPositionEdit = [0, 0];
 let FreeElements = [];
@@ -1876,8 +2008,8 @@ getStorage();
 setStorage();
 setTimeout(updateFullscreen, 100);
 mqttConstructor();
-if (setSettings["Eigenens design"] == "" || setSettings["Eigenens design"] == undefined) {
-    if (setSettings["Darkmode"] == "true") {
+if (setSettings["$settings.look.ownDesign"] == "" || setSettings["$settings.look.ownDesign"] == undefined) {
+    if (setSettings["$settings.look.darkmode"] == "true") {
         currentColor = colors["dark"];
     }
     else {
@@ -1888,16 +2020,16 @@ else {
     var l = localStorage.getItem("!designs");
     if (l != undefined) {
         var d = JSON.parse(l);
-        if (d[setSettings["Eigenens design"]] != undefined) {
-            currentColor = d[setSettings["Eigenens design"]];
+        if (d[setSettings["$settings.look.ownDesign"]] != undefined) {
+            currentColor = d[setSettings["$settings.look.ownDesign"]];
         }
         else {
-            aalert("Eigenes Design nicht vorhande!");
+            aalert("$alert.customDesignError");
             currentColor = colors["light"];
         }
     }
     else {
-        aalert("Eigenes Design nicht vorhande!");
+        aalert("Eigenes Design nicht vorhanden!");
         currentColor = colors["light"];
     }
 }
@@ -2023,7 +2155,7 @@ function finishPicture() {
         goTo("standartEdit", 0);
     }
     else {
-        aalert("Something went wrong: No ID!");
+        aalert("$alert.pictureNoIdError");
     }
     autoSave();
 }
@@ -2053,7 +2185,7 @@ function getErrorIMG() {
     return errorImg[moodLightSizeX];
 }
 function autoSave() {
-    if (setSettings["Automatisch speichert"] == "true") {
+    if (setSettings["$settings.general.autoSave"] == "true") {
         saveProject();
     }
 }
@@ -2177,7 +2309,7 @@ function drawScreen() {
     if (editType == "standartEdit") {
         //background
         drawReal.fill(currentColor["background"], ctx);
-        if (setSettings["Hintergrund Grid"] == "true") {
+        if (setSettings["$settings.look.backgroundGrid"] == "true") {
             var x = posx - (Math.floor(posx / backgroundGridSize) * backgroundGridSize) - backgroundGridSize;
             var y = posy - (Math.floor(posy / backgroundGridSize) * backgroundGridSize) - backgroundGridSize;
             drawReal.image(backgroundGrid, x, y, ctx);
@@ -2231,8 +2363,8 @@ function drawScreen() {
     harddraw();
     if (cursorMessage != "" && cursorMessage != undefined) {
         setFont(font, ctx);
-        drawReal.rect(mouseX - 1, mouseY - 1, ctx.measureText(cursorMessage).width + 2, 35 + 2, "#bebebe", ctx); //outline
-        drawReal.rect(mouseX, mouseY, ctx.measureText(cursorMessage).width, 35, "#d9d9d9", ctx); //background
+        drawReal.rect(mouseX - 1, mouseY - 1, measureText(cursorMessage, ctx).width + 2, 35 + 2, "#bebebe", ctx); //outline
+        drawReal.rect(mouseX, mouseY, measureText(cursorMessage, ctx).width, 35, "#d9d9d9", ctx); //background
         drawReal.text(mouseX, mouseY + 30, cursorMessage, currentColor["NormalText"], "left", font, ctx);
     }
     var drawEnd = performance.now();
@@ -2280,7 +2412,7 @@ function updatefunction() {
         ////////////
         // mouseSelectionLeft types: 0=move Screen; 1=move Elements; 2=move Start; -2=none;
         //right mouse click
-        if ((mouse[2] || (setSettings["Emulierter Rechtsklick"] == "true" && clickTime <= waitClickTime && clickStart != -1 && !mouse[0] && mouseSelectionRight == -1)) && (mouseSelectionRight == -1 || mouseSelectionRight == 0) && HoldingEnd == -1) {
+        if ((mouse[2] || (setSettings["$settings.general.rightclick"] == "true" && clickTime <= waitClickTime && clickStart != -1 && !mouse[0] && mouseSelectionRight == -1)) && (mouseSelectionRight == -1 || mouseSelectionRight == 0) && HoldingEnd == -1) {
             update = true;
             let c = true;
             for (let ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
@@ -2306,7 +2438,7 @@ function updatefunction() {
             mouseSelectionRight = 0;
         }
         //left mouse click
-        if (mouse[0] && mouseSelectionLeft == -1 && HoldingEnd == -1 && (setSettings["Emulierter Rechtsklick"] != "true" || (clickTime >= waitClickTime || mouseSelectionRight != -1))) {
+        if (mouse[0] && mouseSelectionLeft == -1 && HoldingEnd == -1 && (setSettings["$settings.general.rightclick"] != "true" || (clickTime >= waitClickTime || mouseSelectionRight != -1))) {
             update = true;
             //if EditMenu closed
             if (mouseSelectionRight == -1) {
@@ -2325,7 +2457,7 @@ function updatefunction() {
                 }
                 //change name
                 if (mouseSelectionLeft == -1) {
-                    if (menuOpen == 1 && mouseY < 40 && mouseX < canvas.width - 60 && mouseX > canvas.width - 60 - ctx.measureText(projectName).width) {
+                    if (menuOpen == 1 && mouseY < 40 && mouseX < canvas.width - 60 && mouseX > canvas.width - 60 - measureText(projectName, ctx).width) {
                         var r = pprompt("", projectName);
                         if (r != undefined) {
                             localStorage.removeItem(projectName);
@@ -2381,13 +2513,13 @@ function updatefunction() {
                             textLength = elementLenght(Elements[ElementLoadPos][ElementList]);
                             if (mouseX > px && mouseX < px + textLength && mouseY < py && mouseY > py - blockheight) {
                                 if (notDragable.indexOf(Elements[ElementLoadPos][ElementList][0]) == -1) {
-                                    if (Elements[ElementLoadPos][ElementList][0] == "End") {
+                                    if (Elements[ElementLoadPos][ElementList][0] == "$element.end") {
                                         Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList);
                                         HoldingEnd = ElementLoadPos;
                                         oldMouseX = mouseX - 10 + mouseX;
                                         oldMouseY = mouseY - (blockheight / 2);
                                         mouseDataLeft = FreeElements.length;
-                                        FreeElements.push(["End", [], [mouseX - posx, mouseY - posy]]);
+                                        FreeElements.push(["$element.end", [], [mouseX - posx, mouseY - posy]]);
                                         mouseSelectionLeft = 1;
                                     }
                                     else {
@@ -2399,15 +2531,15 @@ function updatefunction() {
                                         FreeElements.push([[...Elements[ElementLoadPos][ElementList][0]].join(""), [...Elements[ElementLoadPos][ElementList][1]], [mouseX - posx, mouseY - posy]]);
                                         if (!keyDown("alt")) {
                                             //search End
-                                            if (["Loop", "Unendlich"].includes(Elements[ElementLoadPos][ElementList][0])) {
+                                            if (["$element.loop", "$element.infiniteLoop"].includes(Elements[ElementLoadPos][ElementList][0])) {
                                                 let it = ElementList;
                                                 let indentation = 1;
                                                 while (indentation > 0) {
                                                     it++;
-                                                    if (["Loop", "Unendlich"].includes(Elements[ElementLoadPos][it][0])) {
+                                                    if (["$element.loop", "$element.infiniteLoop"].includes(Elements[ElementLoadPos][it][0])) {
                                                         indentation++;
                                                     }
-                                                    if ("End" == Elements[ElementLoadPos][it][0]) {
+                                                    if ("$element.end" == Elements[ElementLoadPos][it][0]) {
                                                         indentation--;
                                                     }
                                                 }
@@ -2424,10 +2556,9 @@ function updatefunction() {
                                     }
                                     break;
                                 }
-                                else if (Elements[ElementLoadPos][ElementList][0] == "Start") {
+                                else if (Elements[ElementLoadPos][ElementList][0] == "$element.start") {
                                     mouseSelectionLeft = 2;
                                     mouseDataLeft = ElementLoadPos;
-                                    console.log("move Start");
                                     ElementPositionEdit = [ElementPositions[mouseDataLeft][0], ElementPositions[mouseDataLeft][1]];
                                 }
                             }
@@ -2460,7 +2591,7 @@ function updatefunction() {
                             }
                         }
                         if (!edited) {
-                            if (setSettings["Promt als eingabe"] == "false") {
+                            if (setSettings["$settings.general.promptInput"] == "false") {
                                 mouseSelectionRight = 1;
                                 //console.log(mouseY-20-py);
                                 mouseSelectionLeft = -2;
@@ -2506,7 +2637,7 @@ function updatefunction() {
                         if (FreeElements[mouseDataLeft][2][1] > ElementPositions[ElementList][1] + (blockheight - 20) && FreeElements[mouseDataLeft][2][1] < ElementPositions[ElementList][1] + blockheight * (Elements[ElementList].length + 1)) {
                             //Elements[ElementList].push()
                             let insertY = 0;
-                            if (["Loop", "Unendlich"].includes(FreeElements[mouseDataLeft][0])) {
+                            if (["$element.loop", "$element.infiniteLoop"].includes(FreeElements[mouseDataLeft][0])) {
                                 insertY = Math.round((FreeElements[mouseDataLeft][2][1] - ElementPositions[ElementList][1]) / blockheight);
                                 Elements[ElementList].splice(insertY, 0, [FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]]);
                                 //Elements[ElementList]=insertArrayAt([FreeElements[mouseDataLeft][0], FreeElements[mouseSelectionLeft][1]],0,Elements[ElementList])
@@ -2517,7 +2648,7 @@ function updatefunction() {
                                 mouseSelectionLeft = 500;
                                 mouse[0] = true;
                                 mouseDataLeft = FreeElements.length;
-                                FreeElements.push(["End", [], [mouseX - posx, mouseY - posy]]);
+                                FreeElements.push(["$element.end", [], [mouseX - posx, mouseY - posy]]);
                             }
                             else {
                                 insertY = Math.round((FreeElements[mouseDataLeft][2][1] - ElementPositions[ElementList][1]) / blockheight);
@@ -2554,10 +2685,10 @@ function updatefunction() {
                             break;
                         }
                         if (Elements[HoldingEnd][i] != undefined) {
-                            if (Elements[HoldingEnd][i][0] == "End") {
+                            if (Elements[HoldingEnd][i][0] == "$element.end") {
                                 indentation--;
                             }
-                            if (["Loop", "Unendlich"].includes(Elements[HoldingEnd][i][0])) {
+                            if (["$element.loop", "$element.infiniteLoop"].includes(Elements[HoldingEnd][i][0])) {
                                 indentation++;
                             }
                         }
@@ -2592,7 +2723,7 @@ function updatefunction() {
         //move Start
         if (mouseSelectionLeft == 2) {
             update = true;
-            if (setSettings["Starts am Grid orientieren"] != "true") {
+            if (setSettings["$settings.look.startGridSnap"] != "true") {
                 ElementPositions[mouseDataLeft][0] += mouseX - oldMouseX;
                 ElementPositions[mouseDataLeft][1] += mouseY - oldMouseY;
             }
@@ -2629,7 +2760,7 @@ function updatefunction() {
 function harddraw() {
     if (editType == "standartEdit") {
         //Animations
-        if (setSettings["Animationen Anzeigen"] == "true") {
+        if (setSettings["$settings.look.showAnimations"] == "true") {
             ctx.globalAlpha = 1;
             for (var x = 0; x < toDrawAnimations.length; x++) {
                 var inputNum = parseInt(toDrawAnimations[x][0]);
@@ -2676,7 +2807,7 @@ function harddraw() {
             ctx.globalAlpha = sidebarFadeInTimer;
             for (let i = 0; i < available.length; i++) {
                 let text = available[i][0];
-                textLength = ctx.measureText(text).width;
+                textLength = measureText(text, ctx).width;
                 px = 10;
                 py = i * (blockheight + 10) + blockheight;
                 if (setYellow.indexOf(text) != -1) {
@@ -2763,11 +2894,11 @@ function harddraw() {
             }
         }
     }
-    if (setSettings["FPS anzeigen"] == "true") {
+    if (setSettings["$settings.look.showFPS"] == "true") {
         setFont("47px msyi", ctx);
         ctx.globalAlpha = 0.6;
         var text = msPerUpdate + " ms/Update (ups: " + fps + ") | " + msPerDraw + "ms/draw (fps:" + drawFPS + ")";
-        drawReal.rect(0, 45, ctx.measureText(text).width, -45, "white", ctx);
+        drawReal.rect(0, 45, measureText(text, ctx).width, -45, "white", ctx);
         drawReal.text(0, 40, text, "black", "left", "47px msyi", ctx);
         ctx.globalAlpha = 1;
     }
@@ -2849,7 +2980,7 @@ function checkDisplay() {
     else {
     }
     //made this here, because of slow Update cycle
-    if (setSettings["Live MoodLight"] == "true") {
+    if (setSettings["$settings.moodlight.live"] == "true") {
         if (((_o = document.getElementById("MoodLightDisplay")) === null || _o === void 0 ? void 0 : _o.style.display) != "") {
             $("#MoodLightDisplay").css("display", "");
         }
@@ -2889,7 +3020,7 @@ function updateRects() {
                         }
                     }
                 }
-                if ("End" == Elements[ElementLoadPos][ElementList][0]) {
+                if ("$element.end" == Elements[ElementLoadPos][ElementList][0]) {
                     indentation--;
                 }
                 px = ElementPositions[ElementLoadPos][0] + (indentation * 10);
@@ -2919,12 +3050,12 @@ function updateRects() {
                         pyC -= blockheight;
                         lastDragElement = false;
                     }
-                    if ("End" == Elements[ElementLoadPos][ElementList][0]) {
+                    if ("$element.end" == Elements[ElementLoadPos][ElementList][0]) {
                         px += 10;
                     }
                     draw.polygon(ctx, drawcolorO, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]]); //connector
                     draw.polygonOutline(ctx, drawcolorAccentO, [[px + 0, pyC + 0], [px + 5, pyC + 7], [px + 15, pyC + 7], [px + 20, pyC + 0]], 1); //connector outline
-                    if ("End" == Elements[ElementLoadPos][ElementList][0]) {
+                    if ("$element.end" == Elements[ElementLoadPos][ElementList][0]) {
                         px -= 10;
                     }
                 }
@@ -2935,10 +3066,10 @@ function updateRects() {
                     draw.rect(px - (x * 10) - 5, py + 10, 10, -blockheight - 9, currentColor["YellowBlockAccent"], ctx);
                     draw.rect(px - (x * 10) - 4, py + 10, 8, -blockheight - 9, currentColor["YellowBlock"], ctx);
                 }
-                if (["Loop", "Unendlich"].includes(Elements[ElementLoadPos][ElementList][0])) {
+                if (["$element.loop", "$element.infiniteLoop"].includes(Elements[ElementLoadPos][ElementList][0])) {
                     indentation++;
                 }
-                if ("End" == Elements[ElementLoadPos][ElementList][0]) {
+                if ("$element.end" == Elements[ElementLoadPos][ElementList][0]) {
                     x = 0;
                     var addit = 20;
                     draw.rect(px - (x * 10) - 5, py + 10 - addit, 10, (-blockheight - 9) + addit, currentColor["YellowBlockAccent"], ctx);
@@ -2946,7 +3077,7 @@ function updateRects() {
                 }
                 i++;
                 //make loading easyer
-                if (preloadedInCycle >= 20 && setSettings["Async ElementLoading"] != "false") {
+                if (preloadedInCycle >= 20 && setSettings["$settings.look.asyncElementLoading"] != "false") {
                     setTimeout(updateScreen, 1, true);
                     draw.text(0 - posx, 100 - posy, "Loading Elements... (" + Object.keys(imgStore).length + ")", "black", "left", font, ctx);
                     return;
@@ -3002,7 +3133,7 @@ function updateRects() {
                     draw.text(px, py + x * blockheight + blockheight + 10, Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], currentColor["NormalText"], "left", font, ctx);
                 }
                 if (x == EditMenuEdeting) {
-                    draw.rect(px + ctx.measureText(Elements[mouseDataRight[0]][mouseDataRight[1]][1][x]).width, py + x * blockheight + blockheight + 15, 0.75, -30, currentColor["NormalText"], ctx);
+                    draw.rect(px + measureText(Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], ctx).width, py + x * blockheight + blockheight + 15, 0.75, -30, currentColor["NormalText"], ctx);
                 }
                 if (x != hei - 1) {
                     draw.rect(px, py + x * blockheight + blockheight + 20, 250, 1, currentColor["EditMenuAccent"], ctx);
@@ -3027,8 +3158,8 @@ function updateRects() {
                 }
             }
             else {
-                if (ctx.measureText(q1[x]).width > mW) {
-                    mW = ctx.measureText(q1[x]).width;
+                if (measureText(q1[x], ctx).width > mW) {
+                    mW = measureText(q1[x], ctx).width;
                 }
             }
         }
@@ -3079,7 +3210,7 @@ function updateRects() {
         draw.roundedRect(canvas.width / 2 - (mW / 2 + 5), 150 - 47 + 3 + 15, mW + 10, q1.length * blockheight + 5, currentColor["questionBackground"], 30, ctx);
         font = "60px msyi";
         setFont(font, ctx);
-        var textWidth = ctx.measureText(Question[0]).width;
+        var textWidth = measureText(Question[0], ctx).width;
         draw.rect(canvas.width / 2 - textWidth / 2, 80, textWidth, -50, currentColor["QuestionTitleBackground"], ctx);
         draw.text(canvas.width / 2, 70, Question[0], currentColor["NormalText"], "center", font, ctx);
         font = "47px msyi";
@@ -3128,7 +3259,7 @@ function updateRects() {
                                 send(pictureValue2String(pictureValues[page]));
                             }
                             //autosave
-                            if (setSettings["Beim Bilder/Animationen Bearbeiten Automatisch speichern"] == "true") {
+                            if (setSettings["$settings.general.autoSaveImage"] == "true") {
                                 if (pictureId != -1 || animationId != -1) {
                                     if (pictureEditType == 0) {
                                         pictures[pictureId] = pictureValue2String(pictureValues[0]); //pictureValues.join("");
@@ -3222,7 +3353,7 @@ function updateRects() {
             mouseSelectionLeft = -1;
         }
         font = '47px msyi';
-        draw.text(canvas.width / 2, 60, "EINSTELLUNGEN", currentColor["NormalText"], "center", font, ctx);
+        draw.text(canvas.width / 2, 60, "$settings.title", currentColor["NormalText"], "center", font, ctx);
         //draw left
         font = '35px msyi';
         var hauptgruppe = Object.keys(settings);
@@ -3331,7 +3462,7 @@ function cursorUpdate() {
             c.style.cursor = "pointer";
             normal = false;
         }
-        if (menuOpen == 1 && mouseY < 40 && mouseX < canvas.width - 60 && mouseX > canvas.width - 60 - ctx.measureText(projectName).width) {
+        if (menuOpen == 1 && mouseY < 40 && mouseX < canvas.width - 60 && mouseX > canvas.width - 60 - measureText(projectName, ctx).width) {
             c.style.cursor = "text";
             normal = false;
         }
@@ -3381,8 +3512,8 @@ function cursorUpdate() {
                 }
             }
             else {
-                if (ctx.measureText(q1[x]).width > mW) {
-                    mW = ctx.measureText(q1[x]).width;
+                if (measureText(q1[x], ctx).width > mW) {
+                    mW = measureText(q1[x], ctx).width;
                 }
             }
         }
@@ -3415,12 +3546,12 @@ function cursorUpdate() {
 setInterval(cursorUpdate, 100);
 setInterval(UpdateStaticSettingsIfInSettings, 10000);
 setInterval(checkDisplay, 500);
-if (isNaN(parseInt(setSettings["FPS"]))) {
-    setSettings["FPS"] = "60";
+if (isNaN(parseInt(setSettings["$settings.look.maxFPS"]))) {
+    setSettings["$settings.look.maxFPS"] = "60";
 }
-setInterval(drawScreen, 1000 / parseInt(setSettings["FPS"]));
+setInterval(drawScreen, 1000 / parseInt(setSettings["$settings.look.maxFPS"]));
 setInterval(function () {
-    if (setSettings["Live MoodLight"] == "true" && setSettings["Passives Warten"] != "true") {
+    if (setSettings["$settings.moodlight.live"] == "true" && setSettings["$settings.moodlight.passiveLive"] != "true") {
         send("&");
     }
 }, 250);
@@ -3440,8 +3571,8 @@ setTimeout(() => {
     if (firstTry == "") {
         setCookie("FirstTry", "No", 10);
         goTo("Question", 1);
-        Question = ["Wilkommen. Willst du dich mit deinem Moodlight Verbinden?", {
-                "Ja": function () {
+        Question = ["$question.firstTry.1", {
+                "$question.firstTry.1.answer.yes": function () {
                     host = sprompt("Server/Host/SRV");
                     myTopic = sprompt("Topic");
                     myUser = sprompt("User");
@@ -3451,7 +3582,7 @@ setTimeout(() => {
                     firstTry2();
                     goTo("Question", 1);
                 },
-                "Nein": function () {
+                "$question.firstTry.1.answer.no": function () {
                     firstTry2();
                     goTo("Question", 1);
                 }
@@ -3462,8 +3593,8 @@ function firstTry2() {
     ctx.globalAlpha = 0.8;
     drawReal.fill("#ffffff", ctx);
     ctx.globalAlpha = 1;
-    Question = ["Du kannst diese Daten in den Einstellungen under 'MQTT' verändern", {
-            "OK": function () {
+    Question = ["$question.firstTry.2", {
+            "$question.firstTry.2.answer.ok": function () {
                 firstTry3();
                 goTo("Question", 1);
             }
@@ -3473,14 +3604,14 @@ function firstTry3() {
     ctx.globalAlpha = 0.8;
     drawReal.fill("#ffffff", ctx);
     ctx.globalAlpha = 1;
-    Question = ["Willst du eine Kurze Liste an informationen?", {
-            "Ja": function () {
+    Question = ["$question.firstTry.3", {
+            "$question.firstTry.3.answer.yes": function () {
                 goTo("standartEdit", 0);
                 aalert("Von Links kannst du elemente in das Bearbeitungs Feld Ziehen. Häfte diese hintereinander unter [Start <0>]. Die Paramenter kannst du nun von den hineingezogenen Elementen mit einem Rechtsklick auf diese verändern.");
                 aalert("Wenn du Animationen/Bilder hinzufügen willst, klicken oben rechts auf den Menü Knopf. Dort kannst du unter 'Hinzufügen' Bilder und Animationen hinzufügen. Wenn du diese Wieder bearbeiten willst, kannst du auf 'Bearbeiten' klicken.");
                 aalert("Zudem kannst du 'Start' hinzufügen. Dort kannst du andere Elemente hinzufügen. [Start <0>] wird beim Hochfahren des Moodlights geladen. Mit [Laden <id>] kannst du andere Starts laden.");
             },
-            "Nein": function () {
+            "$question.firstTry.3.answer.no": function () {
                 goTo("standartEdit", 0);
             },
         }];

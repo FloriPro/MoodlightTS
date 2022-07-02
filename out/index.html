@@ -126,6 +126,7 @@
     <script>
         //Fade out Messages
         function moveAwayEffect(moveAwayTarget) {
+            if (moveAwayTarget == undefined) return;
             let moveAwayTargetStyleMarginTopI = 0
             moveAwayTarget.style.marginTop = "0px";
             let moveAwayEffect = setInterval(function () {
@@ -144,6 +145,9 @@
         }
 
         function addMessage(text) {
+            if (currentTranslation[text] != undefined) {
+                text = currentTranslation[text];
+            }
             addMessageT(text, 800);
         }
         function addMessageT(text, time) {

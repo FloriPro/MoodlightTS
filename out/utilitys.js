@@ -32,7 +32,10 @@ function getMS() {
 let body = document.querySelector("body");
 let oldEditType;
 function updateFullscreen() {
-    if (setSettings["Vollbild"] == "true") {
+    if (typeof setSettings === 'undefined') {
+        return;
+    }
+    if (setSettings["$settings.look.fullscreen"] == "true") {
         if (document.fullscreenElement == null) {
             body.requestFullscreen({ navigationUI: "show" }).catch(() => {
                 setTimeout(function () {
@@ -47,8 +50,8 @@ function updateFullscreen() {
                         }
                         updateRects();
                         drawScreen();
-                        Question = ["Vollbild benötigt!", {
-                                "Hier Drücken": function (seId) {
+                        Question = ["$question.needFullscreen", {
+                                "$question.needFullscreen.answer": function (seId) {
                                     body.requestFullscreen({ navigationUI: "show" });
                                     goTo(oldEditType, 1);
                                 }
@@ -58,9 +61,9 @@ function updateFullscreen() {
             });
         }
         else if (editType == "Question") {
-            if (Question[0] != "Vollbild benötigt!")
+            if (Question[0] != "$question.needFullscreen")
                 return;
-            if (Object.keys(Question[1])[0] != "Hier Drücken")
+            if (Object.keys(Question[1])[0] != "$question.needFullscreen.answer")
                 return;
             goTo(oldEditType, 1);
             setTimeout(updateRects, 50);

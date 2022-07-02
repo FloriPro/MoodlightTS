@@ -50,7 +50,7 @@ function compileAnimation(animationData, wait, morph) {
             dat.push(pictureValue2String(animationData[i]));
         }
         for (var i = 0; i < dat.length; i++) {
-            yield delay(parseInt(setSettings["Upload Delay"]));
+            yield delay(parseInt(setSettings["$settings.mqtt.delay"]));
             send("S" + addZero(i, 2) + dat[i]);
             setInformation(dat.length, i);
         }
@@ -75,6 +75,7 @@ function compileProject() {
                 }];
             return "";
         }
+        var error = false;
         var pics = []; //[...pictures];
         //make commands
         var rawCommands = [];
@@ -84,7 +85,7 @@ function compileProject() {
             var T_time = -1;
             rawCommands[savePos] = ["*"]; //commmand initializer
             //schedules in start 0
-            if (savePos == 0 && setSettings["Schedules in [Start <0>] mitsenden"] == "true") {
+            if (savePos == 0 && setSettings["$settings.sheduler.send"] == "true") {
                 rawCommands[savePos].push("@C");
                 rawCommands[savePos].push(genCompiledScheduler());
             }
@@ -92,10 +93,10 @@ function compileProject() {
             for (var command = 1; command < Elements[loadPos].length; command++) {
                 var params = Elements[loadPos][command][1];
                 switch (Elements[loadPos][command][0]) {
-                    case "Wait":
+                    case "$element.wait":
                         rawCommands[savePos].push("W" + addZero(Math.round(parseFloat(params[0]) * 100), 4));
                         break;
-                    case "Bewegen":
+                    case "$element.move":
                         if (params[1] == "R") {
                             rawCommands[savePos].push("I" + params[1]);
                         }
@@ -105,9 +106,13 @@ function compileProject() {
                         else {
                             rawCommands[savePos].push("I000000" + params[1]);
                         }
+                        if (joggAvailLookup["" + params[0]] == undefined) {
+                            addMessageT("Start " + loadPos + " Element " + command + ": Bewegungs Art nicht vorhanden!", 5000);
+                            error = true;
+                        }
                         rawCommands[savePos].push("J" + joggAvailLookup["" + params[0]]);
                         break;
-                    case "Uhrzeit":
+                    case "$element.time":
                         if (T_time != parseInt(params[0])) {
                             T_time = parseInt(params[0]);
                             rawCommands[savePos].push("T" + addZero(T_time, 2));
@@ -124,7 +129,7 @@ function compileProject() {
                         rawCommands[savePos].push("\"\"");
                         rawCommands[savePos].push("W");
                         break;
-                    case "Text":
+                    case "$element.text":
                         if (T_time != parseInt(params[1])) {
                             T_time = parseInt(params[1]);
                             rawCommands[savePos].push("T" + addZero(T_time, 2));
@@ -141,21 +146,25 @@ function compileProject() {
                         rawCommands[savePos].push("\"" + params[0] + "\"");
                         rawCommands[savePos].push("W");
                         break;
-                    case "Unendlich":
-                    case "Loop":
+                    case "$element.infiniteLoop":
+                    case "$element.loop":
                         if (params[0] == undefined || parseInt(params[0]) > 1) {
                             rawCommands[savePos].push("D");
                         }
                         break;
-                    case "Füllen":
+                    case "$element.fill":
                         //rawCommands[savePos].push("I" + rgb2hex(parseInt(params[0]), parseInt(params[1]), parseInt(params[2])));
                         if (params[0] != "V") {
                             rawCommands[savePos].push("I" + params[0]);
                         }
                         rawCommands[savePos].push("O00," + ((moodLightSizeX * moodLightSizeY) - 1).toString());
                         break;
-                    case "Bild anzeigen":
+                    case "$element.picture":
                         var picIdd = pics.length.toString();
+                        if (pictures[parseInt(params[0])] == undefined) {
+                            addMessageT("Start " + loadPos + " Element " + command + ": Bild nicht vorhanden", 5000);
+                            return;
+                        }
                         pics.push(pictures[parseInt(params[0])]);
                         if (parseInt(params[1]) != 0) {
                             if (T_time != parseInt(params[1])) {
@@ -169,14 +178,18 @@ function compileProject() {
                             rawCommands[savePos].push("__Pic" + picIdd);
                         }
                         break;
-                    case "Custom":
+                    case "$element.custom":
                         rawCommands[savePos].push(params[0]);
                         break;
-                    case "Laden":
+                    case "$element.load":
                         rawCommands[savePos].push("L" + addZero(params[0], 2)); //replace with "__Load" if idk
                         break;
-                    case "Animationen":
+                    case "$element.animation":
                         var anim = animations[parseInt(params[0])];
+                        if (anim == undefined) {
+                            addMessageT("Start " + loadPos + " Element " + command + ": Animation nicht vorhanden", 5000);
+                            return;
+                        }
                         if (parseInt(params[1]) != 0 && T_time != parseInt(params[1])) {
                             T_time = parseInt(params[1]);
                             rawCommands[savePos].push("T" + addZero(T_time, 2));
@@ -195,15 +208,15 @@ function compileProject() {
                             }
                         }
                         break;
-                    case "End":
+                    case "$element.end":
                         //get Coresponding Loop for loop Count
                         var indents = 0;
                         var pos = command;
                         do {
-                            if (Elements[loadPos][pos][0] == "End") {
+                            if (Elements[loadPos][pos][0] == "$element.end") {
                                 indents += 1;
                             }
-                            if (Elements[loadPos][pos][0] == "Loop" || Elements[loadPos][pos][0] == "Unendlich") {
+                            if (Elements[loadPos][pos][0] == "$element.loop" || Elements[loadPos][pos][0] == "$element.infiniteLoop") {
                                 indents -= 1;
                             }
                             pos--;
@@ -217,7 +230,7 @@ function compileProject() {
                             }
                         }
                         break;
-                    case "Farben":
+                    case "$element.colors":
                         if (params[0] == "R" || params[1] == "R") {
                             rawCommands[savePos].push("IR");
                         }
@@ -228,20 +241,24 @@ function compileProject() {
                             rawCommands[savePos].push("I" + params[0] + params[1]);
                         }
                         break;
-                    case "Pixel":
+                    case "$element.pixel":
                         if (params[1] != "V") {
                             rawCommands[savePos].push("I" + params[1]);
                         }
                         rawCommands[savePos].push("O" + params[0]);
                         break;
-                    case "//":
+                    case "$element.comment":
                         break;
                     default:
-                        alert("Konnte Nicht Compilen! Element nicht gefunden! (" + Elements[loadPos][command][0] + ")");
+                        addMessageT("Konnte Nicht Compilen! Element nicht gefunden! (" + Elements[loadPos][command][0] + ")", 5000);
+                        error = true;
                         break;
                 }
             }
             savePos++;
+        }
+        if (error) {
+            return;
         }
         /*
         * TODO:
@@ -316,14 +333,14 @@ function compileProject() {
         }
         console.log(output);
         console.log("SENDING...");
-        var d = parseInt(setSettings["Upload Delay"]);
+        var d = parseInt(setSettings["$settings.mqtt.delay"]);
         //send data
         for (var i = 0; i < output.length; i++) {
             setInformation(output.length, i);
             send("S" + addZero(i, 2) + output[i]);
             yield delay(d);
         }
-        if (setSettings["Projekt namen anzeigen bei senden"] == "true") {
+        if (setSettings["$settings.mqtt.showNameOnSend"] == "true") {
             send('*;T07;I000000000000;O0,35;Iffffff000000;"' + projectName + ' ";W;L00;');
         }
         else {
@@ -344,7 +361,7 @@ function setInformation(maxFrames, currentFrame) {
 function finishedUpload() {
     var up = document.querySelector("#Uploading");
     up.style.display = "none";
-    addMessage("Gesendet");
+    addMessage("$message.send");
 }
 function uploadShedules() {
     for (var t of genCompiledScheduler().split(";")) {
