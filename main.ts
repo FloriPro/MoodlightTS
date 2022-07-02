@@ -39,6 +39,9 @@ let turnBack: { [key: string]: string } = {
 };
 
 async function loadTranslation(name: string) {
+    if (name == "") {
+        return;
+    }
     if (availTranslations.includes(name)) {
         currentLanguage = name;
         var r = await fetch("translations/" + availTranslationsR[name] + ".json");
@@ -50,10 +53,10 @@ async function loadTranslation(name: string) {
     }
 }
 //{"af": "afrikaans","sq": "albanian","am": "amharic","ar": "arabic","hy": "armenian","az": "azerbaijani","eu": "basque","be": "belarusian","bn": "bengali","bs": "bosnian","bg": "bulgarian","ca": "catalan","ceb": "cebuano","ny": "chichewa","zh-CN": "chinese (simplified)","zh-TW": "chinese (traditional)","co": "corsican","hr": "croatian","cs": "czech","da": "danish","nl": "dutch","en": "english","eo": "esperanto","et": "estonian","tl": "filipino","fi": "finnish","fr": "french","fy": "frisian","gl": "galician","ka": "georgian","de": "german","el": "greek","gu": "gujarati","ht": "haitian creole","ha": "hausa","haw": "hawaiian","iw": "hebrew","hi": "hindi","hmn": "hmong","hu": "hungarian","is": "icelandic","ig": "igbo","id": "indonesian","ga": "irish","it": "italian","ja": "japanese","jw": "javanese","kn": "kannada","kk": "kazakh","km": "khmer","rw": "kinyarwanda","ko": "korean","ku": "kurdish","ky": "kyrgyz","lo": "lao","la": "latin","lv": "latvian","lt": "lithuanian","lb": "luxembourgish","mk": "macedonian","mg": "malagasy","ms": "malay","ml": "malayalam","mt": "maltese","mi": "maori","mr": "marathi","mn": "mongolian","my": "myanmar","ne": "nepali","no": "norwegian","or": "odia","ps": "pashto","fa": "persian","pl": "polish","pt": "portuguese","pa": "punjabi","ro": "romanian","ru": "russian","sm": "samoan","gd": "scots gaelic","sr": "serbian","st": "sesotho","sn": "shona","sd": "sindhi","si": "sinhala","sk": "slovak","sl": "slovenian","so": "somali","es": "spanish","su": "sundanese","sw": "swahili","sv": "swedish","tg": "tajik","ta": "tamil","tt": "tatar","te": "telugu","th": "thai","tr": "turkish","tk": "turkmen","uk": "ukrainian","ur": "urdu","ug": "uyghur","uz": "uzbek","vi": "vietnamese","cy": "welsh","xh": "xhosa","yi": "yiddish","yo": "yoruba","zu": "zulu"}
-let availTranslationsR: { [key: string]: string } = { 'afrikaans': 'af', 'albanian': 'sq', 'amharic': 'am', 'arabic': 'ar', 'armenian': 'hy', 'azerbaijani': 'az', 'basque': 'eu', 'belarusian': 'be', 'bengali': 'bn', 'bosnian': 'bs', 'bulgarian': 'bg', 'catalan': 'ca', 'cebuano': 'ceb', 'chichewa': 'ny', 'chinese (simplified)': 'zh-CN', 'chinese (traditional)': 'zh-TW', 'corsican': 'co', 'croatian': 'hr', 'czech': 'cs', 'danish': 'da', 'dutch': 'nl', 'english': 'en', 'esperanto': 'eo', 'estonian': 'et', 'filipino': 'tl', 'finnish': 'fi', 'french': 'fr', 'frisian': 'fy', 'galician': 'gl', 'georgian': 'ka', 'german': 'de', 'greek': 'el', 'gujarati': 'gu', 'haitian creole': 'ht' }//{ "Deutsch": "de", "Englisch": "en", "Ukrainisch": "uk", "Greek": "el" }
+let availTranslationsR: { [key: string]: string } = { 'Deutsch': 'de', 'English': 'en', 'afrikaans': 'af', 'albanian': 'sq', 'amharic': 'am', 'arabic': 'ar', 'armenian': 'hy', 'azerbaijani': 'az', 'basque': 'eu', 'belarusian': 'be', 'bengali': 'bn', 'bosnian': 'bs', 'bulgarian': 'bg', 'catalan': 'ca', 'cebuano': 'ceb', 'chichewa': 'ny', 'chinese (simplified)': 'zh-CN', 'chinese (traditional)': 'zh-TW', 'corsican': 'co', 'croatian': 'hr', 'czech': 'cs', 'danish': 'da', 'dutch': 'nl', 'esperanto': 'eo', 'estonian': 'et', 'filipino': 'tl', 'finnish': 'fi', 'french': 'fr', 'frisian': 'fy', 'galician': 'gl', 'georgian': 'ka', 'greek': 'el', 'gujarati': 'gu', 'haitian creole': 'ht' }//{ "Deutsch": "de", "Englisch": "en", "Ukrainisch": "uk", "Greek": "el" }
 let availTranslations: string[] = Object.keys(availTranslationsR)
-let currentLanguage = "de";
-loadTranslation("Deutsch");
+let currentLanguage = "Deutsch";
+
 //////////////////////////////////////////////////////////////////
 // TRANSLATION TESTING                                          //
 //////////////////////////////////////////////////////////////////
@@ -221,6 +224,15 @@ function createUserEvents() {
     document.addEventListener("keydown", keyEvent);
     document.addEventListener("keyup", keyEvent);
     window.addEventListener("focus", windowfocus);
+    window.addEventListener("wheel", (e: WheelEvent) => {
+        var mul = 0.1
+        if (pressedKeys["alt"] == true) {
+            mul *= 5;
+        } if (pressedKeys["shift"] == true) {
+            mul *= 2;
+        }
+        questionScroll += e.deltaY * mul;
+    });
 
     ProjectLoader.addEventListener('change', function (e) {
         var fileList = ProjectLoader.files as any;
@@ -882,6 +894,8 @@ let globalKeyEvents: { [key: string]: () => void } = {
 }
 
 var Question: [string, { [name: string]: (seId: number) => void }, string?] = ["ERROR", { "ERROR": function () { console.warn("Question without defenition"); } }]
+var questionScroll = 0;
+
 var Übergang = -1;
 var ÜbergangZu = "Question";
 
@@ -1097,7 +1111,8 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*false
                         setCookie("myPass", "", 0)
                         setCookie("myTopic", "", 0)
                         setCookie("host", "", 0)
-                        setCookie("FirstTry", "", 0)
+                        setCookie("FirstTry", "", 0);
+                        setCookie("language", "", 0);
 
                         //localStorage
                         var locKeys = Object.keys(localStorage);
@@ -1115,7 +1130,8 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*false
                         setCookie("myPass", "", 0)
                         setCookie("myTopic", "", 0)
                         setCookie("host", "", 0)
-                        setCookie("FirstTry", "", 0)
+                        setCookie("FirstTry", "", 0);
+                        setCookie("language", "", 0);
 
                         goTo("reload", 0);
                     },
@@ -2055,6 +2071,8 @@ function goTo(übergangTo: string, type: number, settingsSelLef?: boolean) {
     if (editType != "Question") {
         latestCanvasPicStr = canvas.toDataURL("image/png");
         latestCanvasPic.src = latestCanvasPicStr;
+    } else {
+        questionScroll = 0;
     }
     cursorMessage = "";
 
@@ -2666,6 +2684,8 @@ function harddraw() {
         font = "47px msyi";
         //Object sidebar
         if (mouseX < (sidebarSize + sidebarFadeIn) || sidebarFadeInTimer >= 0.05) {
+            if (sidebarFadeInTimer < 0) { sidebarFadeInTimer = 0 }
+
             let mul = ((sidebarFadeIn - (mouseX - sidebarSize)) / sidebarFadeIn);
             if (mul > 1) { mul = 1; }
             if (mul > sidebarFadeInTimer) { sidebarFadeInTimer += 0.05; }
@@ -3034,10 +3054,10 @@ function updateRects() {
 
         //mouseDown
         if (mouse[0] && mouseSelectionLeft == -1) {
-            if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight && mouseX > canvas.width / 2 - (mW / 2 + 5) - 15 && mouseX < canvas.width / 2 - (mW / 2 + 5) + mW + 10 + 15) {
+            if ((mouseY + questionScroll) > 150 - blockheight && (mouseY + questionScroll) < 150 + q1.length * blockheight - blockheight && mouseX > canvas.width / 2 - (mW / 2 + 5) - 15 && mouseX < canvas.width / 2 - (mW / 2 + 5) + mW + 10 + 15) {
                 mouseSelectionLeft = 0
 
-                Question[1][q1[Math.ceil((mouseY / blockheight) - (150 / blockheight))]](Math.ceil((mouseY / blockheight) - (150 / blockheight)));
+                Question[1][q1[Math.ceil(((mouseY + questionScroll) / blockheight) - (150 / blockheight))]](Math.ceil(((mouseY + questionScroll) / blockheight) - (150 / blockheight)));
                 setTimeout(updateRects, 1);
                 //Übergang = -1
             } else {
@@ -3066,29 +3086,38 @@ function updateRects() {
         if (!mouse[0] && mouseSelectionLeft != -1) {
             mouseSelectionLeft = -1;
         }
+
+        //background
         draw.image(latestCanvasPic, 0, 0);
         ctx.globalAlpha = 0.3921;
-        if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight && mouseX > canvas.width / 2 - (mW / 2 + 5) - 15 && mouseX < canvas.width / 2 - (mW / 2 + 5) + mW + 10 + 15) {
+        if ((mouseY + questionScroll) > 150 - blockheight && (mouseY + questionScroll) < 150 + q1.length * blockheight - blockheight && mouseX > canvas.width / 2 - (mW / 2 + 5) - 15 && mouseX < canvas.width / 2 - (mW / 2 + 5) + mW + 10 + 15) {
             draw.fill(currentColor["backgroundBlur"], ctx);
         } else {
             draw.fill(currentColor["questionRedBackgroundBlur"], ctx);
         }
-        ctx.globalAlpha = 1;
+
+        //cap questionScroll
+        if (questionScroll < 0) {
+            questionScroll = 0;
+        }
+        if (150 + q1.length * blockheight - window.innerHeight > 0 && questionScroll > 150 + q1.length * blockheight - window.innerHeight) {
+            questionScroll = 150 + q1.length * blockheight - window.innerHeight;
+        } else if (150 + q1.length * blockheight - window.innerHeight < 0) {
+            questionScroll = 0;
+        }
 
         //box
-        draw.roundedRect(canvas.width / 2 - (mW / 2 + 5), 150 - 47 + 3 + 15, mW + 10, q1.length * blockheight + 5, currentColor["questionBackground"], 30, ctx);
+        ctx.globalAlpha = 1;
+        draw.roundedRect(canvas.width / 2 - (mW / 2 + 5), 150 - 47 + 3 + 15 - questionScroll, mW + 10, q1.length * blockheight + 5, currentColor["questionBackground"], 30, ctx);
 
-        font = "60px msyi"
-        setFont(font, ctx);
-        var textWidth = measureText(Question[0], ctx).width;
-        draw.rect(canvas.width / 2 - textWidth / 2, 80, textWidth, -50, currentColor["QuestionTitleBackground"], ctx);
-        draw.text(canvas.width / 2, 70, Question[0], currentColor["NormalText"], "center", font, ctx);
+
+        //answers
         font = "47px msyi"
         for (let x = 0; x < q1.length; x++) {
             if (q1[x].startsWith("_P")) {
-                renderPicture(pictures[parseInt(q1[x].substring(2, 100))], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw, ctx);
+                renderPicture(pictures[parseInt(q1[x].substring(2, 100))], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3 - questionScroll, draw, ctx);
             } else if (q1[x].startsWith("_p")) {
-                renderPicture(q1[x].substring(3, 500), 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw, ctx);
+                renderPicture(q1[x].substring(3, 500), 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3 - questionScroll, draw, ctx);
             } else if (q1[x].startsWith("_A")) {
                 var inputNum = x;
                 //function (inputNum: string, posx: number, posy: number) {
@@ -3099,13 +3128,21 @@ function updateRects() {
                     if (isNaN(animationProgression[inputNum])) {
                         animationProgression[inputNum] = 0;
                     }
-                    renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3, draw, ctx);
+                    renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3 - questionScroll, draw, ctx);
                 }
             }
             else {
-                draw.text(canvas.width / 2, 150 + x * blockheight, q1[x], currentColor["NormalText"], "center", font, ctx);
+                draw.text(canvas.width / 2, 150 + x * blockheight - questionScroll, q1[x], currentColor["NormalText"], "center", font, ctx);
             }
         }
+
+        //Title
+        font = "60px msyi"
+        setFont(font, ctx);
+        var textWidth = measureText(Question[0], ctx).width;
+        draw.rect(canvas.width / 2 - textWidth / 2, 80, textWidth, -50, currentColor["QuestionTitleBackground"], ctx);
+        draw.text(canvas.width / 2, 70, Question[0], currentColor["NormalText"], "center", font, ctx);
+
     }
     else if (editType == "PictureEdit") {
         pageTeller.innerHTML = "Seite " + (page + 1) + "/" + pictureValues.length;
@@ -3366,7 +3403,7 @@ function cursorUpdate() {
                 if (measureText(q1[x], ctx).width > mW) { mW = measureText(q1[x], ctx).width }
             }
         }
-        if (mouseY > 150 - blockheight && mouseY < 150 + q1.length * blockheight - blockheight && mouseX > canvas.width / 2 - (mW / 2 + 5) - 15 && mouseX < canvas.width / 2 - (mW / 2 + 5) + mW + 10 + 15) { c.style.cursor = "pointer"; normal = false; }
+        if ((mouseY + questionScroll) > 150 - blockheight && (mouseY + questionScroll) < 150 + q1.length * blockheight - blockheight && mouseX > canvas.width / 2 - (mW / 2 + 5) - 15 && mouseX < canvas.width / 2 - (mW / 2 + 5) + mW + 10 + 15) { c.style.cursor = "pointer"; normal = false; }
     }
     if (editType == "Settings") {
         if (mouseX > canvas.width - 50 - 15 && mouseY < 50 + 15) { c.style.cursor = "pointer"; normal = false; }
@@ -3413,26 +3450,38 @@ o();
 setTimeout(() => {
     var firstTry = getCookie("FirstTry")
     if (firstTry == "") {
-        setCookie("FirstTry", "No", 10);
-        goTo("Question", 1);
-        Question = ["$question.firstTry.1", {
-            "$question.firstTry.1.answer.yes": function () {
-                host = sprompt("Server/Host/SRV");
-                myTopic = sprompt("Topic");
-                myUser = sprompt("User");
-                myPass = sprompt("Pass");
-                setStorage();
-                reconnect();
-                firstTry2();
-                goTo("Question", 1)
-            },
-            "$question.firstTry.1.answer.no": function () {
-                firstTry2();
-                goTo("Question", 1)
+        var a: { [key: string]: (seId: number) => void } = {}
+        for (var x of availTranslations) {
+            a[x] = function (seId: number) {
+                loadTranslation(availTranslations[seId]);
+                firstTry1()
             }
-        }]
+        }
+        Question = ["Sprache Auswählen", a]
+        goTo("Question", 1)
     }
 }, 200);
+
+function firstTry1() {
+    setCookie("FirstTry", "No", 10);
+    goTo("Question", 1);
+    Question = ["$question.firstTry.1", {
+        "$question.firstTry.1.answer.yes": function () {
+            host = sprompt("Server/Host/SRV");
+            myTopic = sprompt("Topic");
+            myUser = sprompt("User");
+            myPass = sprompt("Pass");
+            setStorage();
+            reconnect();
+            firstTry2();
+            goTo("Question", 1)
+        },
+        "$question.firstTry.1.answer.no": function () {
+            firstTry2();
+            goTo("Question", 1)
+        }
+    }]
+}
 function firstTry2() {
     ctx.globalAlpha = 0.8;
     drawReal.fill("#ffffff", ctx);
