@@ -176,8 +176,8 @@ function createUserEvents() {
         mouseX = e.touches[0].clientX;
         mouseY = e.touches[0].clientY;
         mouse[0] = true;
-        offsetX = mouseX;
-        offsetY = mouseY;
+        oldMouseX = mouseX;
+        oldMouseY = mouseY;
         clickStart = getMS();
     }
     function toutchEnd(e) {
@@ -197,8 +197,8 @@ function createUserEvents() {
             e.preventDefault();
         }
         mouse[e.button] = true;
-        offsetX = mouseX;
-        offsetY = mouseY;
+        oldMouseX = mouseX;
+        oldMouseY = mouseY;
         clickStart = getMS();
         return true;
     }
@@ -1189,6 +1189,12 @@ let settings = {
             updateSettingsBackground();
             return "";
         } },
+        "Starts am Grid orientieren": function (callType) { if (!callType) {
+            return "bool";
+        }
+        else {
+            return "";
+        } },
         "Vollbild": function (callType) {
             if (!callType) {
                 return "bool";
@@ -1529,8 +1535,8 @@ let settingsOnLoad = {
     },
 };
 let staticElementsData = { "Anmelde Status": undefined, "Verbindung": undefined };
-let settingsInfo = { "FPS": "Benötigt neuladen", "Beim Bilder/Animationen Bearbeiten Automatisch speichern": "Wird nur komplett gespeichert, wenn auch Automatisches speichern aktiviert ist", "Passives Warten": "Es wird darauf gewartet, dass das MoodLight daten sendet. Geschieht durch [Custom <&>]", "Schedules in [Start <0>] mitsenden": "=> Man könnte die Banken als art Moods Ansehen mit eigenen Schedules", "Emulierter Rechtsklick": "Viele Fehler! Normale Linksklicks müssen min 200ms gehalten werden!", "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" };
-let setSettings = { "FPS": "60", "Beim Bilder/Animationen Bearbeiten Automatisch speichern": "true", "Vollbild": "false", "Async ElementLoading": "true", "FPS anzeigen": "false", "Hintergrund Grid": "true", "Passives Warten": "false", "Emulierter Rechtsklick": "false", "Schedules in [Start <0>] mitsenden": "true", /*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
+let settingsInfo = { "©Florian Lohner": "floripro.github.io", "FPS": "Benötigt neuladen", "Beim Bilder/Animationen Bearbeiten Automatisch speichern": "Wird nur komplett gespeichert, wenn auch Automatisches speichern aktiviert ist", "Passives Warten": "Es wird darauf gewartet, dass das MoodLight daten sendet. Geschieht durch [Custom <&>]", "Schedules in [Start <0>] mitsenden": "=> Man könnte die Banken als art Moods Ansehen mit eigenen Schedules", "Emulierter Rechtsklick": "Viele Fehler! Normale Linksklicks müssen min 200ms gehalten werden!", "Live MoodLight": "Stetiges Abfragen der MoodLight LEDs", "Darkmode": "größtenteils nur invertiert!", "Eigenens design": "BETA! überschreibt 'Darkmode'!", "Eigenens design erstellen": "BETA!", "Design Hinzufügen": "BETA! Designs können dieses Programm zerstören!", "Design löschen": "BETA!", "Animationen Anzeigen": "Sehr Performance intensiv" };
+let setSettings = { "Starts am Grid orientieren": "true", "FPS": "60", "Beim Bilder/Animationen Bearbeiten Automatisch speichern": "true", "Vollbild": "false", "Async ElementLoading": "true", "FPS anzeigen": "false", "Hintergrund Grid": "true", "Passives Warten": "false", "Emulierter Rechtsklick": "false", "Schedules in [Start <0>] mitsenden": "true", /*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "Live MoodLight": "false", "Automatisch speichert": "true", "Darkmode": "false", "Promt als eingabe": "false", "Projekt namen anzeigen bei senden": "false", "Animationen Anzeigen": "true", "Bilder Anzeigen": "true", "Upload Delay": "70" };
 let settingsSelLeft = 0;
 function UpdateStaticSettingsIfInSettings() {
     if (editType == "Settings") {
@@ -1846,14 +1852,15 @@ let animationProgression = [];
 let toDrawAnimations = [];
 let Elements = [[["Start", ["0"]]]];
 let ElementPositions = [[0, 0]];
+let ElementPositionEdit = [0, 0];
 let FreeElements = [];
 let drawcolor = "";
 let drawcolorAccent = "";
 let drawcolorO = "";
 let drawcolorAccentO = "";
 let cursorMessage = "";
-let offsetX = 0;
-let offsetY = 0;
+let oldMouseX = 0;
+let oldMouseY = 0;
 let posx = 275;
 let posy = 75;
 let px = 0;
@@ -2131,22 +2138,22 @@ function download(content, mimeType, filename) {
     a.click();
 }
 let drawActions = -1;
+let backgroundGridSize = 38 * 2; //blockheight * 2;
 function drawBoard() {
     ctx.globalAlpha = 1;
     var bw = ctx.canvas.width;
     var bh = ctx.canvas.height;
     var p = 0;
-    var s = 50;
-    var px = 0; // posx - (Math.floor(posx / s) * s);
-    var py = 0; // posy - (Math.floor(posy / s) * s);
+    var px = -6; // posx - (Math.floor(posx / s) * s);
+    var py = 5; // posy - (Math.floor(posy / s) * s);
     ctx.lineWidth = 3;
-    for (var x = 0; x <= bw; x += s) {
-        ctx.moveTo(0.5 + x + p + px, py + p - s);
-        ctx.lineTo(0.5 + x + p + px, py + bh + p + s);
+    for (var x = 0; x <= bw; x += backgroundGridSize) {
+        ctx.moveTo(0.5 + x + p + px, py + p - backgroundGridSize);
+        ctx.lineTo(0.5 + x + p + px, py + bh + p + backgroundGridSize);
     }
-    for (var x = 0; x <= bh; x += s) {
-        ctx.moveTo(p + px - s, py + 0.5 + x + p);
-        ctx.lineTo(bw + p + px + s, py + 0.5 + x + p);
+    for (var x = 0; x <= bh; x += backgroundGridSize) {
+        ctx.moveTo(p + px - backgroundGridSize, py + 0.5 + x + p);
+        ctx.lineTo(bw + p + px + backgroundGridSize, py + 0.5 + x + p);
     }
     ctx.strokeStyle = currentColor["backgroundGrid"];
     ctx.stroke();
@@ -2158,10 +2165,10 @@ function drawScreen() {
     if (editType == "standartEdit") {
         //move cam
         if (mouse[1] || mouseSelectionLeft == 0) {
-            posx += mouseX - offsetX;
-            posy += mouseY - offsetY;
-            offsetX = mouseX;
-            offsetY = mouseY;
+            posx += mouseX - oldMouseX;
+            posy += mouseY - oldMouseY;
+            oldMouseX = mouseX;
+            oldMouseY = mouseY;
         }
         px = posx;
         py = posy;
@@ -2171,8 +2178,8 @@ function drawScreen() {
         //background
         drawReal.fill(currentColor["background"], ctx);
         if (setSettings["Hintergrund Grid"] == "true") {
-            var x = posx - (Math.floor(posx / 50) * 50) - 50;
-            var y = posy - (Math.floor(posy / 50) * 50) - 50;
+            var x = posx - (Math.floor(posx / backgroundGridSize) * backgroundGridSize) - backgroundGridSize;
+            var y = posy - (Math.floor(posy / backgroundGridSize) * backgroundGridSize) - backgroundGridSize;
             drawReal.image(backgroundGrid, x, y, ctx);
             //drawBoard();
         }
@@ -2342,8 +2349,8 @@ function updatefunction() {
                     if (mouseX < sidebarSize) {
                         let sel = Math.ceil((-blockheight + mouseY - 10) / (blockheight + 10));
                         if (sel < available.length) {
-                            offsetX = mouseX - 10 + mouseX;
-                            offsetY = mouseY - (blockheight / 2);
+                            oldMouseX = mouseX - 10 + mouseX;
+                            oldMouseY = mouseY - (blockheight / 2);
                             mouseSelectionLeft = 1;
                             mouseDataLeft = FreeElements.length;
                             FreeElements.push([[...available[sel][0]].join(""), [...available[sel][1]], [mouseX - posx, mouseY - posy]]);
@@ -2377,15 +2384,15 @@ function updatefunction() {
                                     if (Elements[ElementLoadPos][ElementList][0] == "End") {
                                         Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList);
                                         HoldingEnd = ElementLoadPos;
-                                        offsetX = mouseX - 10 + mouseX;
-                                        offsetY = mouseY - (blockheight / 2);
+                                        oldMouseX = mouseX - 10 + mouseX;
+                                        oldMouseY = mouseY - (blockheight / 2);
                                         mouseDataLeft = FreeElements.length;
                                         FreeElements.push(["End", [], [mouseX - posx, mouseY - posy]]);
                                         mouseSelectionLeft = 1;
                                     }
                                     else {
-                                        offsetX = mouseX + (mouseX - px);
-                                        offsetY = mouseY + (mouseY - py);
+                                        oldMouseX = mouseX + (mouseX - px);
+                                        oldMouseY = mouseY + (mouseY - py);
                                         mouseSelectionLeft = 1;
                                         mouseDataLeft = FreeElements.length;
                                         let i = Elements[ElementLoadPos][ElementList];
@@ -2420,6 +2427,8 @@ function updatefunction() {
                                 else if (Elements[ElementLoadPos][ElementList][0] == "Start") {
                                     mouseSelectionLeft = 2;
                                     mouseDataLeft = ElementLoadPos;
+                                    console.log("move Start");
+                                    ElementPositionEdit = [ElementPositions[mouseDataLeft][0], ElementPositions[mouseDataLeft][1]];
                                 }
                             }
                         }
@@ -2427,8 +2436,8 @@ function updatefunction() {
                 }
                 //else
                 if (mouseSelectionLeft == -1) {
-                    offsetX = mouseX;
-                    offsetY = mouseY;
+                    oldMouseX = mouseX;
+                    oldMouseY = mouseY;
                     mouseSelectionLeft = 0;
                 }
             }
@@ -2503,8 +2512,8 @@ function updatefunction() {
                                 //Elements[ElementList]=insertArrayAt([FreeElements[mouseDataLeft][0], FreeElements[mouseSelectionLeft][1]],0,Elements[ElementList])
                                 FreeElements = removeItem(FreeElements, mouseDataLeft);
                                 HoldingEnd = ElementList;
-                                offsetX = mouseX - 10 + mouseX;
-                                offsetY = mouseY - (blockheight / 2);
+                                oldMouseX = mouseX - 10 + mouseX;
+                                oldMouseY = mouseY - (blockheight / 2);
                                 mouseSelectionLeft = 500;
                                 mouse[0] = true;
                                 mouseDataLeft = FreeElements.length;
@@ -2577,22 +2586,30 @@ function updatefunction() {
         //move Free Element
         if (mouseSelectionLeft == 1 && !mouse[1]) {
             update = true;
-            FreeElements[mouseDataLeft][2][0] += mouseX - offsetX;
-            FreeElements[mouseDataLeft][2][1] += mouseY - offsetY;
+            FreeElements[mouseDataLeft][2][0] += mouseX - oldMouseX;
+            FreeElements[mouseDataLeft][2][1] += mouseY - oldMouseY;
         }
         //move Start
         if (mouseSelectionLeft == 2) {
             update = true;
-            ElementPositions[mouseDataLeft][0] += mouseX - offsetX;
-            ElementPositions[mouseDataLeft][1] += mouseY - offsetY;
+            if (setSettings["Starts am Grid orientieren"] != "true") {
+                ElementPositions[mouseDataLeft][0] += mouseX - oldMouseX;
+                ElementPositions[mouseDataLeft][1] += mouseY - oldMouseY;
+            }
+            else {
+                ElementPositionEdit[0] += mouseX - oldMouseX;
+                ElementPositionEdit[1] += mouseY - oldMouseY;
+                ElementPositions[mouseDataLeft][0] = Math.round(ElementPositionEdit[0] / backgroundGridSize) * backgroundGridSize;
+                ElementPositions[mouseDataLeft][1] = Math.round(ElementPositionEdit[1] / backgroundGridSize) * backgroundGridSize;
+            }
         }
         //move HoldingEnd
         if (HoldingEnd != -1) {
             FreeElements[FreeElements.length - 1][2][0] = ElementPositions[HoldingEnd][0];
         }
         if (!(mouse[1] || mouseSelectionLeft == 0)) {
-            offsetX = mouseX;
-            offsetY = mouseY;
+            oldMouseX = mouseX;
+            oldMouseY = mouseY;
         }
         if (mouseSelectionRight == 1) {
             update = true;

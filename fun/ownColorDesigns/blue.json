@@ -20,6 +20,7 @@
     "MenuText": "#91bfca",
     "settingsBoolTrue": "#2f932f",
     "settingsBoolFalse": "#9f2d2d",
+    "settingsBoolUndefined": "#6c7789",
     "settingsSelMouseOver": "#395f65",
     "settingsSelStandard": "#214754",
     "settingsSelSelected": "#4b7171",
@@ -29,5 +30,5 @@
     "questionRedBackgroundBlur": "#561531",
     "questionBackground": "#3d5657",
     "objectSidebarBlur": "#236170",
-    "ProjectName": "#ffffff"
+    "ProjectName": "#ff0000"
 }

@@ -67,7 +67,7 @@
         <br>
         <br>
         <br>
-        
+
         <div class="color diesenHintergrund">
             <h3>Dieser Hintergrund</h3>
             <input onchange="
@@ -75,13 +75,21 @@
                 document.querySelector('#out').style.backgroundColor=this.value;
                 " oninput="this.onchange()" type="color" value="ffffff" />
         </div>
+        <div class="color dieserText">
+            <h3>Diese Text Farbe</h3>
+            <input onchange="
+                document.querySelector('body').style.color=this.value;
+                document.querySelector('#out').style.color=this.value;
+                " oninput="this.onchange()" type="color" value="000000" />
+        </div>
+        <p>Benutze "R" in Easy Edit, um schnell die Designs neuzuladen</p>
     </div>
 </body>
 
 <script>
     let unused = [];
     let colors = { "QuestionTitleBackground": "#ffffff", "background": "#fcfcfc", "backgroundGrid": "#646464", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "GrayBlock": "#b0b0b0", "GrayBlockAccent": "#4d4d4d", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsBoolUndefined": "#5e5e5e", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" };
-    let colorsK = Object.keys(colors);
+    let colorsList = Object.keys(colors);
     load(colors);
 
     let l = localStorage.getItem("!designs");
@@ -103,14 +111,15 @@
         var n = name;
 
         var j = { ...colors };
-        for (var x = 0; x < colorsK.length; x++) {
+        for(var x of colorsList){
+        //for (var x = 0; x < colorsList.length; x++) {
             var val;
             if (document.getElementById(x) == undefined) {
-                val = colors[colorsK[x]];
+                val = colors[x];
             } else {
                 val = document.getElementById(x).value;
             }
-            j[colorsK[x]] = val;
+            j[x] = val;
         }
 
         var l = localStorage.getItem("!designs");
@@ -129,17 +138,17 @@
         console.log(colors);
         document.querySelector("#colors").innerHTML = "";
 
-        var colorsK = Object.keys(colors);
-        for (var x = 0; x < colorsK.length; x++) {
+        var colorsList = Object.keys(colors);
+        for (var x = 0; x < colorsList.length; x++) {
             var d = "";
-            if (!unused.indexOf(colorsK[x])) { d = "grayed" }
+            if (!unused.indexOf(colorsList[x])) { d = "grayed" }
             document.querySelector("#colors").innerHTML += `
             <tr class="color `+ d + `">
                 <td>
-                    <h3>`+ colorsK[x] + `:</h3>
+                    <h3>`+ colorsList[x] + `:</h3>
                 </td>
                 <td>
-                    <input onchange="update();" type="color" id="`+ x + `" value="` + colors[colorsK[x]] + `"/>
+                    <input onchange="update();" type="color" id="`+ colorsList[x] + `" value="` + colors[colorsList[x]] + `"/>
                 </td>
             </tr>
             `;
@@ -149,12 +158,23 @@
 
     function update() {
         var out = { ...colors };
-        for (var x = 0; x < colorsK.length; x++) {
+        for (var x of colorsList) {
+            //for (var x = 0; x < colorsK.length; x++) {
             if (document.getElementById(x) == undefined) {
-                alert(x + " ist nicht definiert")
-                out[colorsK[x]] = colors[colorsK[x]];
+                document.querySelector("#colors").innerHTML += `
+                <tr class="color `+ d + `">
+                    <td>
+                        <h3>`+ x + `:</h3>
+                    </td>
+                    <td>
+                        <input onchange="update();" type="color" id="`+ x + `" value="` + colors[x] + `"/>
+                    </td>
+                </tr>
+                `;
+                alert("Farbe " + x + " nicht definiert! Hinzugefügt. Neu öffnen, um richtige reinfolge zu haben.")
+                out[x] = colors[x];
             } else {
-                out[colorsK[x]] = document.getElementById(x).value;
+                out[x] = document.getElementById(x).value;
             }
         }
         document.getElementById("out").value = JSON.stringify(out);
