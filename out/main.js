@@ -156,6 +156,7 @@ function loadProject(jsonLoad, lastUsed) {
             schedulerList = jsonLoad.Scheduler;
         }
         loadSchedules();
+        UpdateSizeMoodlightSize();
         posx = 275;
         posy = 75;
         /*if (setSettings["Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern"] == "true" && !lastUsed) {
@@ -302,27 +303,37 @@ function createUserEvents() {
         if (mouseSelectionRight == 1) {
             if (e.type == "keydown") {
                 if (e.key == "Backspace") {
-                    Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting].slice(0, -1);
+                    if (isKeyDown("control")) {
+                        //get space
+                        var index = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting].lastIndexOf(" ");
+                        if (index == -1) {
+                            Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = "";
+                        }
+                        else {
+                            Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting].slice(0, index);
+                        }
+                    }
+                    else {
+                        Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting].slice(0, -1);
+                    }
                 }
                 else if (e.key.length == 1) {
                     Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] + e.key;
                 }
             }
         }
-        else {
-            if (e.type == "keyup") {
-                pressedKeys[e.key.toLowerCase()] = false;
+        if (e.type == "keyup") {
+            pressedKeys[e.key.toLowerCase()] = false;
+        }
+        if (e.type == "keydown") {
+            pressedKeys[e.key.toLowerCase()] = true;
+            if (editType == "PictureEdit") {
+                if (e.key.toLowerCase() in pictureEditKeyEvents) {
+                    pictureEditKeyEvents[e.key.toLowerCase()]();
+                }
             }
-            if (e.type == "keydown") {
-                pressedKeys[e.key.toLowerCase()] = true;
-                if (editType == "PictureEdit") {
-                    if (e.key.toLowerCase() in pictureEditKeyEvents) {
-                        pictureEditKeyEvents[e.key.toLowerCase()]();
-                    }
-                }
-                if (e.key.toLowerCase() in globalKeyEvents) {
-                    globalKeyEvents[e.key.toLowerCase()]();
-                }
+            if (e.key.toLowerCase() in globalKeyEvents) {
+                globalKeyEvents[e.key.toLowerCase()]();
             }
         }
     }
@@ -551,6 +562,12 @@ function getStorage() {
     catch (_h) {
         setCookie("language", currentLanguage, 10);
     }
+}
+function unMapElement(dat) {
+    dat = dat.split("__")[0];
+    var p = dat.split("|!|!").slice(1);
+    var out = [dat.split("|!|!")[0], p];
+    return out;
 }
 function mapElement(Element) {
     var out = Element[0] + "|!|!" + Element[1].join("|!|!") + "__" + ctx.globalAlpha;
@@ -1705,6 +1722,22 @@ const specialBlockEditClick = {
             goTo("ColorPicker", 1);
             asyncStuff("colorPickerOfElement");
         }
+    },
+    "$element.load": {
+        0: function () {
+            tempData = [mouseDataRight[0], mouseDataRight[1], EditMenuEdeting];
+            var qAnsw = {};
+            for (var i = 0; i < Elements.length; i++) {
+                qAnsw["_E" + mapElement(["$element.start", ["" + i]])] = function (selId) {
+                    Elements[tempData[0]][tempData[1]][1][tempData[2]] = "" + selId;
+                    goTo("standartEdit", 1);
+                };
+            }
+            mouse[0] = false;
+            Question = ["$question.blockLoadChange", qAnsw];
+            cursorMessage = "";
+            goTo("Question", 1);
+        }
     }
 };
 const specialBlockDropdownRender = {
@@ -1773,6 +1806,7 @@ function drawColerRect(posx, posy, sizeX, sizeY, colorStr, ctx, draw) {
         draw.rect(posx, posy, sizeX, sizeY, colorStr, ctx);
     }
 }
+let dropdownCursorBlink = 0;
 let tempData;
 const presetColors = { "light": { "buttonBackground": "#d2d2d2", "buttonBackgroundHover": "#bebebe", "settingsBoolUndefined": "#5e5e5e", "QuestionTitleBackground": "#ffffff", "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#fcfcfc", "backgroundGrid": "#dbdbdb", "blockArgBackground": "#ffffff", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#b0b0b0", "EditMenu": "#d0f7e9", "EditMenuAccent": "#7bc9ac", "NormalText": "#000000", "MenuButtons": "#000000", "MenuBackground": "#000000", "MenuText": "#ffffff", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#d2d2d2", "settingsSelStandard": "#dcdcdc", "settingsSelSelected": "#c8c8c8", "backgroundBlur": "#000000", "settingsBackground": "#ffffff", "settingsBackgroundHighlight": "#f0f0f0", "questionRedBackgroundBlur": "#960000", "questionBackground": "#aaaaaa", "objectSidebarBlur": "#c0c0c0", "ProjectName": "#4287f5" }, "dark": { "buttonBackground": "#6b6b6b", "buttonBackgroundHover": "#4a4a4a", "settingsBoolUndefined": "#5e5e5e", "QuestionTitleBackground": "#000000", "GrayBlock": "#f0f0f0", "GrayBlockAccent": "#ffffff", "background": "#030303", "backgroundGrid": "#9b9b9b", "blockArgBackground": "#000000", "blueBlock": "#0082ff", "blueBlockAccent": "#0056aa", "YellowBlock": "#ffd000", "YellowBlockAccent": "#aa8a00", "PurpleBlock": "#d900ff", "PurpleBlockAccent": "#9000aa", "MoveBlockShaddow": "#4f4f4f", "EditMenu": "#2f0816", "EditMenuAccent": "#843653", "NormalText": "#ffffff", "MenuButtons": "#ffffff", "MenuBackground": "#ffffff", "MenuText": "#000000", "settingsBoolTrue": "#00ff00", "settingsBoolFalse": "#ff0000", "settingsSelMouseOver": "#2d2d2d", "settingsSelStandard": "#232323", "settingsSelSelected": "#373737", "backgroundBlur": "#ffffff", "settingsBackground": "#000000", "settingsBackgroundHighlight": "#0f0f0f", "questionRedBackgroundBlur": "#69ffff", "questionBackground": "#555555", "objectSidebarBlur": "#3f3f3f", "ProjectName": "#4287f5" } };
 let currentColor = { "buttonBackground": "", "buttonBackgroundHover": "", "settingsBoolUndefined": "", "QuestionTitleBackground": "", "GrayBlock": "", "GrayBlockAccent": "", "background": "", "backgroundGrid": "", "blueBlock": "", "blockArgBackground": "", "blueBlockAccent": "", "YellowBlock": "", "YellowBlockAccent": "", "PurpleBlock": "", "PurpleBlockAccent": "", "MoveBlockShaddow": "", "EditMenu": "", "EditMenuAccent": "", "NormalText": "", "MenuButtons": "", "MenuBackground": "", "MenuText": "", "settingsBoolTrue": "", "settingsBoolFalse": "", "settingsSelMouseOver": "", "settingsSelStandard": "", "settingsSelSelected": "", "backgroundBlur": "", "settingsBackground": "", "settingsBackgroundHighlight": "", "questionRedBackgroundBlur": "", "questionBackground": "", "objectSidebarBlur": "", "ProjectName": "", };
@@ -1844,6 +1878,8 @@ function UpdateSizeMoodlightSize() {
     //gen color selection Table
     colorSelTable.innerHTML = "";
     LiveMoodLight.innerHTML = "";
+    LiveMoodLight.style.width = 23 * moodLightSizeX + "px";
+    LiveMoodLight.style.height = 23 * moodLightSizeY + "px";
     for (var x = 0; x < moodLightSizeY; x++) {
         var i = '<tr>';
         var i2 = '';
@@ -2088,7 +2124,7 @@ function download(content, mimeType, filename) {
     a.click();
 }
 let drawActions = -1;
-let backgroundGridSize = 38 * 2; //blockheight * 2;
+let backgroundGridSize = blockheight * 2;
 function drawBoard() {
     ctx.globalAlpha = 1;
     var bw = ctx.canvas.width;
@@ -2959,7 +2995,13 @@ function updateRects() {
                     draw.text(px, py + x * blockheight + blockheight + 10, Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], currentColor["NormalText"], "left", font, ctx);
                 }
                 if (x == EditMenuEdeting) {
-                    draw.rect(px + measureText(Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], ctx).width, py + x * blockheight + blockheight + 15, 0.75, -30, currentColor["NormalText"], ctx);
+                    if (dropdownCursorBlink < 20) {
+                        draw.rect(px + measureText(Elements[mouseDataRight[0]][mouseDataRight[1]][1][x], ctx).width, py + x * blockheight + blockheight + 15, 0.75, -30, currentColor["NormalText"], ctx);
+                    }
+                    dropdownCursorBlink++;
+                    if (dropdownCursorBlink > 20 * 2) {
+                        dropdownCursorBlink = 0;
+                    }
                 }
                 if (x != hei - 1) {
                     draw.rect(px, py + x * blockheight + blockheight + 20, 250, 1, currentColor["EditMenuAccent"], ctx);
@@ -2981,6 +3023,12 @@ function updateRects() {
             else if (q1[x].startsWith("_p")) {
                 if (42 > mW) {
                     mW = 42;
+                }
+            }
+            else if (q1[x].startsWith("_E")) {
+                var w = elementLenght(unMapElement(q1[x].substring(2)));
+                if (w > mW) {
+                    mW = w;
                 }
             }
             else {
@@ -3054,10 +3102,10 @@ function updateRects() {
                 ctx.globalAlpha = 1;
             }
             if (q1[x].startsWith("_P")) {
-                renderPicture(pictures[parseInt(q1[x].substring(2, 100))], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3 - questionScroll, draw, ctx);
+                renderPicture(pictures[parseInt(q1[x].substring(2, 100))], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 34 + 3 - questionScroll, draw, ctx);
             }
             else if (q1[x].startsWith("_p")) {
-                renderPicture(q1[x].substring(3, 500), 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3 - questionScroll, draw, ctx);
+                renderPicture(q1[x].substring(3, 500), 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 34 + 3 - questionScroll, draw, ctx);
             }
             else if (q1[x].startsWith("_A")) {
                 var inputNum = x;
@@ -3071,6 +3119,10 @@ function updateRects() {
                     }
                     renderPicture(animations[inputNum][Math.round(animationProgression[inputNum])], 36, 36, canvas.width / 2 - 21 + 3, 150 + x * blockheight - 30 + 3 - questionScroll, draw, ctx);
                 }
+            }
+            else if (q1[x].startsWith("_E")) {
+                var w = elementLenght(unMapElement(q1[x].substring(2)));
+                elementLenghtAndDraw(unMapElement(q1[x].substring(2)), canvas.width / 2 - (w / 2), 150 + x * blockheight + 1 - questionScroll);
             }
             else {
                 draw.text(canvas.width / 2, 150 + x * blockheight - questionScroll, q1[x], currentColor["NormalText"], "center", font, ctx);
