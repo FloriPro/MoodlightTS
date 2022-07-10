@@ -4,12 +4,11 @@
 //// <reference path="emulator.ts" />
 /// <reference path="htmlFunctions.ts" />
 
-//////////////////////////////////////////////////////////////////
-// TRANSLATION TESTING                                          //
-//////////////////////////////////////////////////////////////////
+//TODO: update elements, when picture edited
 
 let currentTranslation: { [key: string]: string } = {};
 
+//translation
 let turnBack: { [key: string]: string } = {
     "Start": "$element.start",
     "Bild anzeigen": "$element.picture",
@@ -53,14 +52,11 @@ async function loadTranslation(name: string) {
         aalert("$alert.missingLanguage")
     }
 }
-//{"af": "afrikaans","sq": "albanian","am": "amharic","ar": "arabic","hy": "armenian","az": "azerbaijani","eu": "basque","be": "belarusian","bn": "bengali","bs": "bosnian","bg": "bulgarian","ca": "catalan","ceb": "cebuano","ny": "chichewa","zh-CN": "chinese (simplified)","zh-TW": "chinese (traditional)","co": "corsican","hr": "croatian","cs": "czech","da": "danish","nl": "dutch","en": "english","eo": "esperanto","et": "estonian","tl": "filipino","fi": "finnish","fr": "french","fy": "frisian","gl": "galician","ka": "georgian","de": "german","el": "greek","gu": "gujarati","ht": "haitian creole","ha": "hausa","haw": "hawaiian","iw": "hebrew","hi": "hindi","hmn": "hmong","hu": "hungarian","is": "icelandic","ig": "igbo","id": "indonesian","ga": "irish","it": "italian","ja": "japanese","jw": "javanese","kn": "kannada","kk": "kazakh","km": "khmer","rw": "kinyarwanda","ko": "korean","ku": "kurdish","ky": "kyrgyz","lo": "lao","la": "latin","lv": "latvian","lt": "lithuanian","lb": "luxembourgish","mk": "macedonian","mg": "malagasy","ms": "malay","ml": "malayalam","mt": "maltese","mi": "maori","mr": "marathi","mn": "mongolian","my": "myanmar","ne": "nepali","no": "norwegian","or": "odia","ps": "pashto","fa": "persian","pl": "polish","pt": "portuguese","pa": "punjabi","ro": "romanian","ru": "russian","sm": "samoan","gd": "scots gaelic","sr": "serbian","st": "sesotho","sn": "shona","sd": "sindhi","si": "sinhala","sk": "slovak","sl": "slovenian","so": "somali","es": "spanish","su": "sundanese","sw": "swahili","sv": "swedish","tg": "tajik","ta": "tamil","tt": "tatar","te": "telugu","th": "thai","tr": "turkish","tk": "turkmen","uk": "ukrainian","ur": "urdu","ug": "uyghur","uz": "uzbek","vi": "vietnamese","cy": "welsh","xh": "xhosa","yi": "yiddish","yo": "yoruba","zu": "zulu"}
+//All avail: {"af": "afrikaans","sq": "albanian","am": "amharic","ar": "arabic","hy": "armenian","az": "azerbaijani","eu": "basque","be": "belarusian","bn": "bengali","bs": "bosnian","bg": "bulgarian","ca": "catalan","ceb": "cebuano","ny": "chichewa","zh-CN": "chinese (simplified)","zh-TW": "chinese (traditional)","co": "corsican","hr": "croatian","cs": "czech","da": "danish","nl": "dutch","en": "english","eo": "esperanto","et": "estonian","tl": "filipino","fi": "finnish","fr": "french","fy": "frisian","gl": "galician","ka": "georgian","de": "german","el": "greek","gu": "gujarati","ht": "haitian creole","ha": "hausa","haw": "hawaiian","iw": "hebrew","hi": "hindi","hmn": "hmong","hu": "hungarian","is": "icelandic","ig": "igbo","id": "indonesian","ga": "irish","it": "italian","ja": "japanese","jw": "javanese","kn": "kannada","kk": "kazakh","km": "khmer","rw": "kinyarwanda","ko": "korean","ku": "kurdish","ky": "kyrgyz","lo": "lao","la": "latin","lv": "latvian","lt": "lithuanian","lb": "luxembourgish","mk": "macedonian","mg": "malagasy","ms": "malay","ml": "malayalam","mt": "maltese","mi": "maori","mr": "marathi","mn": "mongolian","my": "myanmar","ne": "nepali","no": "norwegian","or": "odia","ps": "pashto","fa": "persian","pl": "polish","pt": "portuguese","pa": "punjabi","ro": "romanian","ru": "russian","sm": "samoan","gd": "scots gaelic","sr": "serbian","st": "sesotho","sn": "shona","sd": "sindhi","si": "sinhala","sk": "slovak","sl": "slovenian","so": "somali","es": "spanish","su": "sundanese","sw": "swahili","sv": "swedish","tg": "tajik","ta": "tamil","tt": "tatar","te": "telugu","th": "thai","tr": "turkish","tk": "turkmen","uk": "ukrainian","ur": "urdu","ug": "uyghur","uz": "uzbek","vi": "vietnamese","cy": "welsh","xh": "xhosa","yi": "yiddish","yo": "yoruba","zu": "zulu"}
 let availTranslationsR: { [key: string]: string } = { 'Deutsch': 'de', 'English': 'en', 'afrikaans': 'af', 'albanian': 'sq', 'amharic': 'am', 'arabic': 'ar', 'armenian': 'hy', 'azerbaijani': 'az', 'basque': 'eu', 'belarusian': 'be', 'bengali': 'bn', 'bosnian': 'bs', 'bulgarian': 'bg', 'catalan': 'ca', 'cebuano': 'ceb', 'chichewa': 'ny', 'chinese (simplified)': 'zh-CN', 'chinese (traditional)': 'zh-TW', 'corsican': 'co', 'croatian': 'hr', 'czech': 'cs', 'danish': 'da', 'dutch': 'nl', 'esperanto': 'eo', 'estonian': 'et', 'filipino': 'tl', 'finnish': 'fi', 'french': 'fr', 'frisian': 'fy', 'galician': 'gl', 'georgian': 'ka', 'greek': 'el', 'gujarati': 'gu', 'haitian creole': 'ht' }//{ "Deutsch": "de", "Englisch": "en", "Ukrainisch": "uk", "Greek": "el" }
 let availTranslations: string[] = Object.keys(availTranslationsR)
 let currentLanguage = "Deutsch";
 
-//////////////////////////////////////////////////////////////////
-// TRANSLATION TESTING                                          //
-//////////////////////////////////////////////////////////////////
 
 
 
@@ -205,6 +201,13 @@ function loadProject(jsonLoad: {
         loadSchedules();
         aalert("$alert.loadFailed");
         console.error(e);
+    }
+
+    //reset all images Element
+    for (var x of Object.keys(imgStore)) {
+        if (x.startsWith("$element.picture|!|!")) {
+            delete imgStore[x]
+        }
     }
 
     setTimeout(updateRects, 10);
@@ -356,8 +359,8 @@ function createUserEvents() {
         //set to new size
         var wo = canvas.width;
         var ho = canvas.height;
-        canvas.width = window.innerWidth + 50;
-        canvas.height = window.innerHeight + 50;
+        canvas.width = window.innerWidth + 100;
+        canvas.height = window.innerHeight + 100;
 
         //draw
         drawReal.fill(currentColor["background"], ctx);
@@ -562,6 +565,10 @@ function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: num
     let l = elementLenght(Element);
     if (imgStore[mapElement(Element)] == undefined) {
         preloadedInCycle++;
+        if (preloadedInCycle > 1 && Element[0] == "$element.picture" && justfinsishedPicture) {
+            setTimeout(updateScreen, 1, true);
+            return 0;
+        }
 
         let draw = drawReal;
 
@@ -625,7 +632,7 @@ function elementLenghtAndDraw(Element: [string, string[]], plx: number, ply: num
             l += 5;
 
             if (Element[0] in specialRender && x in specialRender[Element[0]]) {
-                try { specialRender[Element[0]][x][1](Element[1][x], 20 + l - 5, yOffset - 22 - 5); } catch { }
+                specialRender[Element[0]][x][1](Element[1][x], 20 + l - 5, yOffset - 22 - 5);
                 l += specialRender[Element[0]][x][0]
             } else {
                 draw.roundedRect(20 + l + 2, yOffset - 5, measureText(t, ctxPreDraw).width - 4, -(blockheight - 10) + 10, currentColor["blockArgBackground"], 10, ctxPreDraw) //body outline
@@ -711,7 +718,7 @@ let ToDraw: { rect?: any[]; image?: any[]; roundedRect?: any[]; circle?: any[]; 
 
 
 let lengthStore: { [key: string]: number } = {};
-let imgStore: { [key: string]: HTMLImageElement } = {};
+let imgStore: { [key: string]: HTMLImageElement | undefined } = {};
 let preloadedInCycle = 0;
 
 
@@ -1731,7 +1738,7 @@ function loadAnim() {
 }
 
 let pictureSave: { [key: string]: HTMLImageElement } = {};
-function renderPicture(picString: string, sizeX: number, sizeY: number, posx: number, posy: number, drawer: drawApp | drawAdder, ctx: CanvasRenderingContext2D) {
+function renderPicture(picString: string, sizeX: number, sizeY: number, posx: number, posy: number, drawer: drawApp | drawAdder, canvasCTX: CanvasRenderingContext2D) {
     posx = Math.floor(posx);
     posy = Math.floor(posy);
 
@@ -1748,7 +1755,7 @@ function renderPicture(picString: string, sizeX: number, sizeY: number, posx: nu
         for (var i = 0; i < moodLightSizeY; i++) {
             for (var ii = 0; ii < moodLightSizeX; ii++) {
                 drawReal.rect(px + i * (sizeX / moodLightSizeY), py + ii * (sizeY / moodLightSizeX), sizeX / moodLightSizeY, sizeY / moodLightSizeX, "#" + dat[ii * moodLightSizeY + i], ctxPreDraw2);
-                drawer.rect(posx + i * (sizeX / moodLightSizeY), posy + ii * (sizeY / moodLightSizeX), sizeX / moodLightSizeY, sizeY / moodLightSizeX, "#" + dat[ii * moodLightSizeY + i], ctx);
+                drawer.rect(posx + i * (sizeX / moodLightSizeY), posy + ii * (sizeY / moodLightSizeX), sizeX / moodLightSizeY, sizeY / moodLightSizeX, "#" + dat[ii * moodLightSizeY + i], canvasCTX);
             }
         }
 
@@ -1757,8 +1764,8 @@ function renderPicture(picString: string, sizeX: number, sizeY: number, posx: nu
         img.src = canvasPreDraw2.toDataURL("image/png");
         pictureSave[picString + "_" + sizeX + "_" + sizeY] = img;
     }
-
-    drawer.image(pictureSave[picString + "_" + sizeX + "_" + sizeY], posx, posy, ctx);
+    //canvasCTX.drawImage(pictureSave[picString + "_" + sizeX + "_" + sizeY], posx, posy)
+    drawer.image(pictureSave[picString + "_" + sizeX + "_" + sizeY], posx, posy, canvasCTX);
 
 }
 
@@ -1806,10 +1813,25 @@ function pictureValue2String(input: string[]): string {
     return out;
 }
 
+let justfinsishedPicture = false;
 function finishPicture() {
     if (pictureId != -1 || animationId != -1) {
         if (pictureEditType == 0) {
-            pictures[pictureId] = pictureValue2String(pictureValues[0]);//pictureValues.join("");
+            //udpate all elements with this picture
+            for (var x of Object.keys(imgStore)) {
+                if (x.startsWith("$element.picture|!|!" + pictureId + "|!|!")) {
+                    imgStore[x] = undefined;
+                    justfinsishedPicture = true;
+                    console.log(x);
+                    //delete imgStore[x]
+                    //var l = x.split("|!|!")
+                    //delete l[0]
+                    //elementLenghtAndDraw(["$element.picture", l], -5000, -5000);
+                }
+            }
+
+            pictures[pictureId] = pictureValue2String(pictureValues[0]);
+
         } else {
             var anim = []
             for (var i = 0; i < pictureValues.length; i++) {
@@ -2789,6 +2811,7 @@ function updateRects() {
             }
         }
         asyncLoading = false;
+        justfinsishedPicture = false;
 
         //Free Elements
         ctx.globalAlpha = 0.5;
@@ -3194,6 +3217,7 @@ function cursorUpdate() {
         else if (mouseSelectionLeft == 1) { c.style.cursor = "grabbing"; normal = false; } //element drag symbol
         //TODO if over Start
         if (mouseSelectionLeft == 2) { c.style.cursor = "all-scroll"; normal = false; }
+        if (asyncLoading) { c.style.cursor = "wait"; normal = false; }
         /*for (var i = 0; i < ElementPositions.length; i++) {
             if (mouseX > posx + ElementPositions[i][0] && mouseY > posy + ElementPositions[i][1] - blockheight && mouseX < posx + ElementPositions[1][0] + 100 && mouseY < posy + ElementPositions[i][1] - blockheight) {
                 c.style.cursor = "all-scroll";
@@ -3232,7 +3256,7 @@ function cursorUpdate() {
         }
     }
 
-    if (currentlyUploading || asyncLoading) { c.style.cursor = "wait"; normal = false; }
+    if (currentlyUploading) { c.style.cursor = "wait"; normal = false; }
 
     //else
     if (normal) { c.style.cursor = "default"; }
