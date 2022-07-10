@@ -31,16 +31,18 @@ def translate(x):
     i += 1
 
 
-out = {}
-i = 0
-tb = 0
-for x in dat:
-    threading.Thread(target=translate, args=[x], daemon=False).start()
-while i < len(dat):
-    time.sleep(1)
-f = open("out/translations/"+target+".json", "w")
-json.dump(out, f)
-f.close()
+for key, val in avail.items():
+    target = val
+    out = {}
+    i = 0
+    tb = 0
+    for x in dat:
+        threading.Thread(target=translate, args=[x], daemon=False).start()
+    while i < len(dat):
+        time.sleep(1)
+    f = open("out/translations/"+target+".json", "w")
+    json.dump(out, f)
+    f.close()
 
 """
 for x in dat:
