@@ -20,111 +20,9 @@
     <script src="spectrum.js" type="text/javascript"></script>
     <link rel="stylesheet" type="text/css" href="spectrum.css">
 
-    <style>
-        @font-face {
-            font-family: 'msyi';
-            src: url('msyi.ttf');
-        }
-
-        .ColorSelContainer {
-            padding: 1px;
-        }
-
-        .ColorSelButton {
-            width: 58px;
-            height: 58px;
-        }
-
-        .LiveDisplay {
-            width: 23px;
-            height: 23px;
-        }
-
-        button {
-            background-color: rgb(210, 210, 210);
-            color: black;
-            border: none;
-            padding: 6px 11px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 18px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: rgb(190, 190, 190);
-        }
-
-        #consoleOut2 {
-            max-height: 90%;
-            text-align: left;
-            background: black;
-            color: gainsboro;
-            width: 100%;
-            min-height: 200px;
-        }
-
-        p {
-            margin-top: 0;
-            margin-bottom: 0;
-            font-size: 20px;
-        }
-
-        #text {
-            width: -webkit-fill-available;
-            width: -moz-available;
-            border: 0px;
-            padding-right: 0px;
-            padding-top: 0px;
-            padding-bottom: 0px;
-            padding-left: 0px;
-            background: black;
-
-            font-size: 20px;
-            color: gainsboro;
-        }
-
-        .break {
-            flex-basis: 100%;
-            height: 0;
-        }
-
-        input {
-            border: none;
-            font-size: 150%;
-            margin: 5px
-        }
-
-        /* The alert message box */
-        .alert {
-            padding: 20px;
-            background-color: #36f43f;
-            /* Red */
-            color: rgb(0, 0, 0);
-            margin-bottom: 15px;
-            margin-top: 0;
-            font-size: 45px;
-        }
-
-        /* The close button */
-        .closebtn {
-            margin-left: 15px;
-            color: rgb(0, 0, 0);
-            font-weight: bold;
-            float: right;
-            font-size: 45px;
-            cursor: pointer;
-        }
-
-        /* When moving the mouse over the close button */
-        .closebtn:hover {
-            color: rgb(255, 255, 255);
-            transition: 1s;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="style.css">
     <script>
-        //Fade out Messages
+        //Messages
         function moveAwayEffect(moveAwayTarget) {
             if (moveAwayTarget == undefined) return;
             let moveAwayTargetStyleMarginTopI = 0
@@ -143,7 +41,6 @@
                 }
             }, 8);
         }
-
         function addMessage(text) {
             if (currentTranslation[text] != undefined) {
                 text = currentTranslation[text];
@@ -155,8 +52,8 @@
             document.getElementById("alerts").innerHTML += '<div class="alert" style="margin-top: 0;" id="alert_id' + r + '"><span class="closebtn" onclick="moveAwayEffect(this.parentElement)">X </span>' + text + '<br></div>'
             setTimeout(eval, time, "moveAwayEffect(document.getElementById('alert_id' + '" + r + "'))")
         }
-    </script>
-    <script>
+        
+        //console send
         function send2(data) {
             if (data == "cls" || data == "clear") {
                 document.querySelector("#consoleOut").innerHTML = "";
@@ -170,6 +67,11 @@
         }
     </script>
 
+    <style id="editableStyle">
+        h1{
+            color:#f0f
+        }
+    </style>
 </head>
 
 <body style="margin:0px;overflow: hidden;" oncontextmenu="return false;" onselectstart="return false;"
@@ -183,7 +85,7 @@
             <!--Image-->
             <div>
                 <!--Pixels-->
-                <table style="border-collapse: collapse;">
+                <table id="pixelSelect" style="border-collapse: collapse;">
                     <tbody id="colorSelTable">
                     </tbody>
                 </table>
@@ -303,7 +205,7 @@
 
     <div id="Console" style="display: none;">
         <div
-            style="background: white;position: fixed;flex-wrap: wrap;align-items: flex-start;width: 100%;height: 100%;">
+            style="/*background: white;*/position: fixed;flex-wrap: wrap;align-items: flex-start;width: 100%;height: 100%;">
             <div id="consoleOut2" style="overflow-y: scroll;">
                 <code>
                     <div id="consoleOut">
@@ -315,6 +217,19 @@
                 </code>
             </div>
             <button onclick="goTo('standartEdit',0)">Fertig</button>
+        </div>
+    </div>
+
+    <div id="Sheduler" style="display: none;">
+        <div
+            style="/*background: white;*/position: fixed;flex-wrap: wrap;align-items: flex-start;width: 100%;height: 100%;">
+            <h1>Scheduler (Work in Progress)</h1><br>
+            <button onclick="send('@D');addMessage('Deaktiviert');">Deaktivieren</button>
+            <button onclick="send('@E');addMessage('Aktiviert');">Aktivieren</button>
+            <div id="SchedulerList"></div>
+
+            <br><button onclick="addShedule()">Hinzufügen</button>
+            <br><br><br><br><button onclick="finishShedule()">Fertig</button>
         </div>
     </div>
 
@@ -332,18 +247,6 @@
         </div>
     </div>
 
-    <div id="Sheduler" style="display: none;">
-        <div
-            style="background: white;position: fixed;flex-wrap: wrap;align-items: flex-start;width: 100%;height: 100%;">
-            <h1>Scheduler (Work in Progress)</h1><br>
-            <button onclick="send('@D');addMessage('Deaktiviert');">Deaktivieren</button>
-            <button onclick="send('@E');addMessage('Aktiviert');">Aktivieren</button>
-            <div id="SchedulerList"></div>
-
-            <br><button onclick="addShedule()">Hinzufügen</button>
-            <br><br><br><br><button onclick="finishShedule()">Fertig</button>
-        </div>
-    </div>
 
     <canvas id="canvas" style="cursor:default; margin:0px; height:100%; width:100%;">
         <p>Jo, dein Browser is echt schei*e</p>

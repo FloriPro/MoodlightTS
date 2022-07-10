@@ -52,23 +52,12 @@ async function compileAnimation(animationData: string[][], wait: number, morph: 
     finishedUpload();
 }
 
+let currentlyUploading = false;
+
 let split = false;
 let maxCommandsPerSave = 500;
 
-async function compileProject() {
-    if (!client.isConnected()) {
-        goTo("Question", 1)
-        Question = ["Nicht verbunden!", {
-            "Abbrechen": function (seId) {
-                goTo("standartEdit", 1);
-            },
-            "Einstellungen öffnen": function (seId) {
-                goTo("Settings", 1)
-                settingsSelLeft = 1;
-            }
-        }]
-        return "";
-    }
+function compileRaw(): string[] | undefined {
 
     var error = false;
     var pics: string[] = []//[...pictures];
@@ -163,7 +152,7 @@ async function compileProject() {
 
                 case "$element.picture":
                     var picIdd = pics.length.toString();
-                    if (pictures[parseInt(params[0])]==undefined){addMessageT("Start " + loadPos + " Element " + command + ": Bild nicht vorhanden", 5000); return;}
+                    if (pictures[parseInt(params[0])] == undefined) { addMessageT("Start " + loadPos + " Element " + command + ": Bild nicht vorhanden", 5000); return; }
                     pics.push(pictures[parseInt(params[0])]);
                     if (parseInt(params[1]) != 0) {
                         if (T_time != parseInt(params[1])) {
@@ -330,6 +319,33 @@ async function compileProject() {
     for (var loadPos = 0; loadPos < parsedCommands.length; loadPos++) {
         output[loadPos] = parsedCommands[loadPos].join(";") + ";";
     }
+    return output;
+}
+
+async function compileProject() {
+    if (!client.isConnected()) {
+        goTo("Question", 1)
+        Question = ["Nicht verbunden!", {
+            "Abbrechen": function (seId) {
+                goTo("standartEdit", 1);
+            },
+            "Einstellungen öffnen": function (seId) {
+                goTo("Settings", 1)
+                settingsSelLeft = 1;
+            }
+        }]
+        return "";
+    }
+
+    currentlyUploading = true;
+    cursorUpdate();
+
+    var output = compileRaw();
+
+    if (output == undefined) {
+        currentlyUploading = false;
+        return;
+    }
 
     if (output.length > 100) {
         aalert("Projekt zu Groß! Da dieses Projekt zurzeit keine Banken benutzt, kannst du maximal 100 Bilder + Starts haben.");
@@ -364,11 +380,11 @@ async function setInformation(maxFrames: number, currentFrame: number) {
     p.innerText = "Uploading (Frame " + currentFrame + "/" + maxFrames + ")";
 }
 function finishedUpload() {
+    currentlyUploading = false;
     var up: HTMLDivElement = document.querySelector("#Uploading") as HTMLDivElement;
     up.style.display = "none";
-    addMessage("$message.send")
+    addMessage("$message.compileSend")
 }
-
 
 function uploadShedules() {
     for (var t of genCompiledScheduler().split(";")) {

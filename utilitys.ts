@@ -76,3 +76,230 @@ function savePictureEdit() {
         download(JSON.stringify(anim), "JSON", "animation.mopic");
     }
 }
+
+function delay(milliseconds: number) {
+    return new Promise(resolve => {
+        setTimeout(resolve, milliseconds);
+    });
+}
+
+
+/**
+ * only use this/pprompt for prompts
+ */
+function sprompt(question: string, setShit?: string): string {
+    if (currentTranslation[question] != undefined) {
+        question = currentTranslation[question];
+    }
+    var a = prompt(question, setShit);
+    if (a == undefined) { a = "" }
+    mouse[0] = false;
+    return a;
+}
+/**
+ * only use this/sprompt for prompts
+ */
+function pprompt(question: string, setShit?: string): string | undefined {
+    if (currentTranslation[question] != undefined) {
+        question = currentTranslation[question];
+    }
+    var a: string | null | undefined = prompt(question, setShit);
+    if (a == null) { a = undefined }
+    mouse[0] = false;
+    return a;
+}
+/**
+ * only use this for alerts
+ */
+function aalert(message: string) {
+    if (currentTranslation[message] != undefined) {
+        message = currentTranslation[message];
+    }
+    alert(message);
+    mouse[0] = false;
+}
+function openWindow(url: string) {
+    window.open(url);
+    mouse[0] = false;
+}
+function removeItem(data: any[], index: number) {
+    var tempList = data;
+    data = [];
+
+    for (var j = 0; j < tempList.length; j++) {
+        if (j != index)
+            data.push(tempList[j]);
+    }
+    return data;
+}
+
+function normalize(degrees: number, min: number, max: number) {
+    var normalized = degrees;
+    if (normalized > max) {
+        while (normalized > max) {
+            normalized -= max;
+        }
+    }
+    if (normalized < min) {
+        while (normalized < min) {
+            normalized += max;
+        }
+    }
+    return normalized;
+};
+function clamp(i: number, min: number, max: number) {
+    if (i < min) {
+        i = min;
+    }
+    if (i > max) {
+        i = max;
+    }
+    return i;
+};
+function Random(min: number, max: number) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+function setCookie(name: string, value: string, days: number) {
+    var expires = "";
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+function getCookie(name: string): string {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+    }
+    return "";
+}
+class drawAdder {
+    public image(image: HTMLImageElement, posx: number, posy: number) {
+        ToDraw.push({ "image": [image, posx, posy, ctx.globalAlpha] });
+    }
+    public rect(posx: any, posy: any, width: any, height: any, color: any, ctx: CanvasRenderingContext2D) {
+        ToDraw.push({ "rect": [posx, posy, width, height, color, ctx, ctx.globalAlpha] });
+    };
+    public roundedRect(posx: any, posy: any, width: any, height: any, color: any, radius: number, ctx: any) {
+        ToDraw.push({ "roundedRect": [posx, posy, width, height, color, radius, ctx, ctx.globalAlpha] });
+    }
+    public circle(posx: any, posy: any, radius: any, color: any, ctx: any) {
+        ToDraw.push({ "circle": [posx, posy, radius, color, ctx, ctx.globalAlpha] });
+    };
+    public fill(color: string, ctx: CanvasRenderingContext2D) {
+        ToDraw.push({ "fill": [color, ctx, ctx.globalAlpha] });
+    };
+    public text(posx: any, posy: any, Text: any, color: any, align: any, font: string, ctx: CanvasRenderingContext2D) {
+        ToDraw.push({ "text": [posx, posy, Text, color, align, font, ctx, ctx.globalAlpha] });
+    };
+    public polygon(ctx: CanvasRenderingContext2D, color: string, pos: [number, number][]) {
+        ToDraw.push({ "polygon": [ctx, color, pos, ctx.globalAlpha] });
+    };
+    public polygonOutline(ctx: CanvasRenderingContext2D, color: string, pos: [number, number][], width: number) {
+        ToDraw.push({ "polygonOutline": [ctx, color, pos, width, ctx.globalAlpha] });
+    };
+}
+class drawApp {
+    public image(image: HTMLImageElement, posx: number, posy: number, ctx: CanvasRenderingContext2D) {
+        ctx.drawImage(image, posx, posy)
+    }
+    public rect(posx: any, posy: any, width: any, height: any, color: any, ctx: CanvasRenderingContext2D) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.rect(posx, posy, width, height);
+        ctx.fill();
+        ctx.closePath();
+    };
+    public roundedRect(posx: any, posy: any, width: any, height: any, color: any, radius: number, ctx: any) {
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineJoin = "round";
+
+        ctx.lineWidth = radius;
+
+        ctx.beginPath();
+
+        ctx.strokeRect(posx, posy, width, height);
+        ctx.stroke();
+        ctx.closePath();
+
+        if (ctx.globalAlpha != 1) {
+            ctx.fillRect(posx + (radius / 2), posy - (radius / 2), width - radius, height + radius);
+        } else {
+            ctx.fillRect(posx, posy, width, height);
+        }
+        ctx.fill();
+
+        ctx.closePath();
+        ctx.strokeStyle = "";
+        ctx.fillStyle = "";
+        ctx.lineJoin = "";
+        ctx.lineWidth = 0;
+    }
+    public circle(posx: any, posy: any, radius: any, color: any, ctx: { fillStyle: any; beginPath: () => void; arc: (arg0: any, arg1: any, arg2: any, arg3: number, arg4: number, arg5: boolean) => void; fill: () => void; closePath: () => void; }) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(posx, posy, radius, 0, 2 * Math.PI, false);
+        ctx.fill();
+        ctx.closePath();
+    };
+    public fill(color: string, ctx: CanvasRenderingContext2D) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.rect(0, 0, canvas.width, canvas.height);
+        ctx.fill();
+        ctx.closePath();
+    };
+    public text(pox: any, posy: any, Text: string, color: any, align: any, font: string, ctx: CanvasRenderingContext2D) {
+        if (ctx.font != font) {
+            ctx.font = font;
+        }
+        ctx.fillStyle = color;
+        ctx.textAlign = align;
+        if (currentTranslation[Text] != undefined) {
+            Text = currentTranslation[Text];
+        }
+        ctx.fillText(Text, pox, posy);
+    };
+    public polygon(ctx: CanvasRenderingContext2D, color: string, pos: [number, number][]) {
+        ctx.fillStyle = color;
+
+        ctx.beginPath();
+
+        ctx.moveTo((pos[0][0] + posx), (pos[0][1] + posy))
+        for (var i = 0; i < pos.length; i++) {
+            ctx.lineTo((pos[i][0] + posx), (pos[i][1] + posy))
+        }
+
+        ctx.fill();
+        ctx.closePath();
+    };
+    public polygonOutline(ctx: CanvasRenderingContext2D, color: string, pos: [number, number][], width: number) {
+        ctx.strokeStyle = color;
+
+        ctx.beginPath();
+
+        ctx.moveTo((pos[0][0] + posx), (pos[0][1] + posy))
+        for (var i = 0; i < pos.length; i++) {
+            ctx.lineTo((pos[i][0] + posx), (pos[i][1] + posy))
+        }
+        ctx.lineWidth = width;
+        ctx.stroke();
+        ctx.closePath();
+    };
+}
+
+function measureText(text: any, ctx: { measureText: (arg0: any) => any; }) {
+    if (currentTranslation[text] != undefined) {
+        text = currentTranslation[text];
+    }
+    return ctx.measureText(text);
+}

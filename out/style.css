@@ -1,0 +1,118 @@
+@font-face {
+    font-family: 'msyi';
+    src: url('msyi.ttf');
+}
+
+.ColorSelContainer {
+    padding: 1px;
+}
+
+.ColorSelButton {
+    width: 58px;
+    height: 58px;
+}
+
+.LiveDisplay {
+    width: 23px;
+    height: 23px;
+}
+
+button {
+    background-color: #f0f;
+    /*rgb(210, 210, 210)*/
+    color: #f0f;
+    /*black*/
+    border: none;
+    padding: 6px 11px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+#pixelSelect {
+    border: 2px #000000;
+    border-style: solid;
+}
+
+button:hover {
+    background-color: #f0f;
+    /*rgb(190, 190, 190)*/
+}
+
+#consoleOut2 {
+    max-height: 90%;
+    text-align: left;
+    background: black;
+    color: gainsboro;
+    width: 100%;
+    min-height: 200px;
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 20px;
+}
+
+#text {
+    width: -webkit-fill-available;
+    width: -moz-available;
+    border: 0px;
+    padding-right: 0px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    padding-left: 0px;
+    background: black;
+
+    font-size: 20px;
+    color: gainsboro;
+}
+
+.break {
+    flex-basis: 100%;
+    height: 0;
+}
+
+input {
+    border: none;
+    font-size: 150%;
+    margin: 5px
+}
+
+/* The alert message box */
+.alert {
+    padding: 20px;
+    background-color: #36f43f;
+    /* Red */
+    color: rgb(0, 0, 0);
+    margin-bottom: 15px;
+    margin-top: 0;
+    font-size: 45px;
+}
+
+/* The close button */
+.closebtn {
+    margin-left: 15px;
+    color: rgb(0, 0, 0);
+    font-weight: bold;
+    float: right;
+    font-size: 45px;
+    cursor: pointer;
+}
+
+/* When moving the mouse over the close button */
+.closebtn:hover {
+    color: rgb(255, 255, 255);
+    transition: 1s;
+}
+
+* {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
