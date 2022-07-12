@@ -784,31 +784,41 @@ let actionElements = [
     ["server eingang", "GET", "specificPathForMyInput"]
 ];
 let menuOpen = 0;
-let menuButtons = {
+const menuButtons = {
     "$menu.save": saveProject,
-    "$menu.load": () => {
+    "$menu.load": () => __awaiter(void 0, void 0, void 0, function* () {
         goTo("Question", 1);
         var a = {};
         var lK = Object.keys(localStorage);
         for (var x = 0; x < lK.length; x++) {
             if (lK[x][0] != "!")
                 a[lK[x]] = function (seId) {
-                    var i = 0;
-                    for (var x = 0; x < Object.keys(localStorage).length; x++) {
-                        if (Object.keys(localStorage)[x][0] != "!") {
-                            if (i == seId) {
-                                break;
+                    return __awaiter(this, void 0, void 0, function* () {
+                        var i = 0;
+                        for (var x = 0; x < Object.keys(localStorage).length; x++) {
+                            if (Object.keys(localStorage)[x][0] != "!") {
+                                if (i == seId) {
+                                    break;
+                                }
+                                i++;
                             }
-                            i++;
                         }
-                    }
-                    loadProject(JSON.parse(localStorage[Object.keys(localStorage)[i]]));
-                    goTo("standartEdit", 0);
-                    setCookie("lastUsed", Object.keys(localStorage)[seId], 0.5);
+                        //syncLoading = true;
+                        //cursorUpdate();
+                        yield delay(100);
+                        loadProject(JSON.parse(localStorage[Object.keys(localStorage)[i]]));
+                        goTo("standartEdit", 0, () => {
+                            c.style.cursor = "wait";
+                            syncLoading = true;
+                            cursorUpdate();
+                        });
+                        setCookie("lastUsed", Object.keys(localStorage)[seId], 0.5);
+                        //TODO: run () = { c.style.cursor = "wait"; syncLoading = true; } on transition finoish
+                    });
                 };
         }
         Question = ["$question.loadProject", a];
-    },
+    }),
     "$menu.add": () => {
         goTo("Question", 1);
         Question = ["$question.add", {
@@ -867,6 +877,14 @@ let menuButtons = {
     "$menu.info.Experimental": () => { },
     "$menu.sheduler": () => {
         goTo("Sheduler", 0);
+        //update information
+        var allElements = document.querySelectorAll(".schedule");
+        for (var elem of allElements) {
+            var id = elem.querySelector(".id");
+            var time = elem.querySelector(".time");
+            sheduleIdChange(id);
+            sheduleTimeChange(time);
+        }
     },
     "$menu.console": () => {
         goTo("Console", 0);
@@ -879,7 +897,7 @@ let menuButtons = {
 let menuWidth = 350;
 const alphabet = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
 /**type: bool, staticBool, showingBool, str, num, button, info */
-let settings = {
+const settings = {
     "$settings.general": {
         "$settings.general.autoSave": function (callType) { if (!callType) {
             return "bool";
@@ -1225,7 +1243,7 @@ let settings = {
                         delete d[Object.keys(d)[seId]];
                         localStorage.setItem("!designs", JSON.stringify(d));
                         console.log("rem: " + Object.keys(localStorage)[seId]);
-                        goTo("Settings", 1, false);
+                        goTo("Settings", 1);
                     };
                 }
                 Question = ["$question.deleteDesign", a];
@@ -1434,8 +1452,7 @@ let settings = {
         "$settings.about.2": function (callType) { if (!callType) {
             return "info";
         }
-        else {
-            openWindow("https://floripro.github.io/?page=Home");
+        else { /*openWindow("https://floripro.github.io/?page=Home");*/
             return "";
         } },
     }
@@ -1494,7 +1511,7 @@ let settingsOnLoad = {
     },
 };
 let staticElementsData = { "Anmelde Status": undefined, "$settings.mqtt.connection": undefined };
-let settingsInfo = { "$settings.about.2": "$settings.about.2.info", "$settings.look.maxFPS": "$settings.look.maxFPS.info", "$settings.general.autoSaveImage": "$settings.general.autoSaveImage.info", "$settings.moodlight.passiveLive": "$settings.moodlight.passiveLive.info", "$settings.general.rightclick": "$settings.general.rightclick.info", "$settings.moodlight.live": "$settings.moodlight.live.info", "$settings.look.darkmode": "$settings.look.darkmode.info", "$settings.look.ownDesign": "$settings.look.ownDesign.info", "$settings.look.createOwnDesign": "$settings.look.createOwnDesign.info", "$settings.look.addDesignJson": "$settings.look.addDesignJson.info", "$settings.look.deleteDesign": "$settings.look.deleteDesign.info", "$settings.look.showAnimations": "$settings.look.showAnimations.info" };
+let settingsInfo = { "$settings.about.2": /*$settings.about.2.info*/ "", "$settings.look.maxFPS": "$settings.look.maxFPS.info", "$settings.general.autoSaveImage": "$settings.general.autoSaveImage.info", "$settings.moodlight.passiveLive": "$settings.moodlight.passiveLive.info", "$settings.general.rightclick": "$settings.general.rightclick.info", "$settings.moodlight.live": "$settings.moodlight.live.info", "$settings.look.darkmode": "$settings.look.darkmode.info", "$settings.look.ownDesign": "$settings.look.ownDesign.info", "$settings.look.createOwnDesign": "$settings.look.createOwnDesign.info", "$settings.look.addDesignJson": "$settings.look.addDesignJson.info", "$settings.look.deleteDesign": "$settings.look.deleteDesign.info", "$settings.look.showAnimations": "$settings.look.showAnimations.info" };
 let setSettings = { "$settings.look.startGridSnap": "true", "$settings.look.maxFPS": "60", "$settings.general.autoSaveImage": "true", "$settings.look.fullscreen": "false", "$settings.look.asyncElementLoading": "true", "$settings.look.showFPS": "false", "$settings.look.backgroundGrid": "true", "$settings.moodlight.passiveLive": "false", "$settings.general.rightclick": "false", "$settings.sheduler.send": "true", /*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "$settings.moodlight.live": "false", "$settings.general.autoSave": "true", "$settings.look.darkmode": "false", "$settings.general.promptInput": "false", "$settings.mqtt.showNameOnSend": "false", "$settings.look.showAnimations": "true", "$settings.look.showPicture": "true", "$settings.mqtt.delay": "70" };
 let settingsSelLeft = 0;
 let schedulerList = [];
@@ -2040,11 +2057,15 @@ function autoSave() {
         saveProject();
     }
 }
+let transitionFunction;
 /**
 * type: 0=fadein+fadeout; 1=cut
 * standartEdit, PictureEdit, Question, Settings, Actions, Sheduler, Console
 */
-function goTo(übergangTo, type, settingsSelLef) {
+function goTo(übergangTo, type, transitionFunc) {
+    if (transitionFunc != undefined) {
+        transitionFunction = transitionFunc;
+    }
     if (editType != "Question") {
         latestCanvasPicStr = canvas.toDataURL("image/png");
         latestCanvasPic.src = latestCanvasPicStr;
@@ -2067,9 +2088,6 @@ function goTo(übergangTo, type, settingsSelLef) {
         page = 0;
     }
     if (übergangTo == "Settings") {
-        if (settingsSelLef) {
-            settingsSelLeft = 0;
-        }
         var sK = Object.keys(settingsOnLoad);
         for (var i = 0; i < sK.length; i++) {
             settingsOnLoad[sK[i]]();
@@ -2172,44 +2190,32 @@ function drawScreen() {
     }
     ToDraw.forEach(value => {
         var key = Object.keys(value)[0];
+        var i = value[key];
+        ctx.shadowColor = i[i.length - 2];
+        ctx.shadowBlur = i[i.length - 1];
+        ctx.globalAlpha = i[i.length - 3];
         if (key == "rect") {
-            var i = value[key];
-            ctx.globalAlpha = i[i.length - 1];
             drawReal.rect(i[0] + px, i[1] + py, i[2], i[3], i[4], i[5]);
         }
         else if (key == "roundedRect") {
-            var i = value[key];
-            ctx.globalAlpha = i[i.length - 1];
             drawReal.roundedRect(i[0] + px, i[1] + py, i[2], i[3], i[4], i[5], i[6]);
         }
         else if (key == "circle") {
-            var i = value[key];
-            ctx.globalAlpha = i[i.length - 1];
             drawReal.circle(i[0] + px, i[1] + py, i[2], i[3], i[4]);
         }
         else if (key == "fill") {
-            var i = value[key];
-            ctx.globalAlpha = i[i.length - 1];
             drawReal.fill(i[0], i[1]);
         }
         else if (key == "text") {
-            var i = value[key];
-            ctx.globalAlpha = i[i.length - 1];
             drawReal.text(i[0] + px, i[1] + py, i[2], i[3], i[4], i[5], i[6]);
         }
         else if (key == "polygon") {
-            var i = value[key];
-            ctx.globalAlpha = i[i.length - 1];
             drawReal.polygon(i[0], i[1], i[2]);
         }
         else if (key == "polygonOutline") {
-            var i = value[key];
-            ctx.globalAlpha = i[i.length - 1];
             drawReal.polygonOutline(i[0], i[1], i[2], i[3]);
         }
         else if (key == "image") {
-            var i = value[key];
-            ctx.globalAlpha = i[i.length - 1];
             drawReal.image(i[0], i[1] + px, i[2] + py, ctx);
         }
         drawActions++;
@@ -2867,10 +2873,19 @@ function updateRects() {
                     if (ElementPositions[ElementLoadPos][0] - 50 < FreeElements[mouseDataLeft][2][0] && ElementPositions[ElementLoadPos][0] + 200 > FreeElements[mouseDataLeft][2][0]) {
                         if (ElementList == Math.round((FreeElements[mouseDataLeft][2][1] - ElementPositions[ElementLoadPos][1]) / blockheight)) {
                             if (ElementList != 0) {
-                                if (mouseX > sidebarSize) { //TODO: 200?
+                                if (mouseX > sidebarSize) {
                                     textLength = elementLenght([FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]]);
-                                    ctx.globalAlpha = 0.6;
-                                    draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), currentColor["MoveBlockShaddow"], 10, ctx); //body
+                                    ctx.globalAlpha = 0.4;
+                                    ctx.shadowColor = currentColor["MoveBlockShaddow"];
+                                    ctx.shadowBlur = 10;
+                                    if ("$element.end" == FreeElements[mouseDataLeft][0]) {
+                                        draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10) / 2, currentColor["MoveBlockShaddow"], 10, ctx); //end-body
+                                    }
+                                    else {
+                                        draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), currentColor["MoveBlockShaddow"], 10, ctx); //body
+                                    }
+                                    ctx.shadowColor = "rgba(0,0,0,0)";
+                                    ctx.shadowBlur = 0;
                                     ctx.globalAlpha = 1;
                                     i++;
                                     lastDragElement = true;
@@ -2952,8 +2967,17 @@ function updateRects() {
                     if ((Elements[ElementLoadPos].length) == Math.round((FreeElements[mouseDataLeft][2][1] - ElementPositions[ElementLoadPos][1]) / blockheight)) {
                         if ((Elements[ElementLoadPos].length) != 0) {
                             textLength = elementLenght([FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]]);
-                            ctx.globalAlpha = 0.6;
-                            draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), currentColor["MoveBlockShaddow"], 10, ctx); //body
+                            ctx.globalAlpha = 0.4;
+                            ctx.shadowColor = currentColor["MoveBlockShaddow"];
+                            ctx.shadowBlur = 10;
+                            if ("$element.end" == FreeElements[mouseDataLeft][0]) {
+                                draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10) / 2, currentColor["MoveBlockShaddow"], 10, ctx); //end-body
+                            }
+                            else {
+                                draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), currentColor["MoveBlockShaddow"], 10, ctx); //body
+                            }
+                            ctx.shadowColor = "rgba(0,0,0,0)";
+                            ctx.shadowBlur = 0;
                             ctx.globalAlpha = 1;
                         }
                     }
@@ -2961,6 +2985,7 @@ function updateRects() {
             }
         }
         asyncLoading = false;
+        syncLoading = false;
         justfinsishedPicture = false;
         //Free Elements
         ctx.globalAlpha = 0.5;
@@ -2968,10 +2993,8 @@ function updateRects() {
             px = FreeElements[FreeElementPos][2][0];
             py = FreeElements[FreeElementPos][2][1];
             textLength = elementLenghtAndDraw([FreeElements[FreeElementPos][0], FreeElements[FreeElementPos][1]], px, py);
-            //draw.roundedRect(px, py, textLength, -(blockheight - 10), drawcolorAccent, 10, ctx) //body outline
-            //draw.roundedRect(px + 1, py - 1, textLength - 2, -blockheight + 12, drawcolor, 10, ctx) //body
-            //draw.text(px, py, text, colors["NormalText"], "left", ctx);
         }
+        ;
         ctx.globalAlpha = 1;
         //EditMenu
         if (mouseSelectionRight != -1) {
@@ -3329,6 +3352,9 @@ function updateRects() {
     }
     //übergang
     if (Übergang >= 1) {
+        if (Übergang == 25) {
+            transitionFunction();
+        }
         var alpha = 0;
         if (Übergang <= 25) {
             alpha = Übergang / 25;
@@ -3347,6 +3373,7 @@ function updateRects() {
     }
 }
 let asyncLoading = false;
+let syncLoading = true;
 function cursorUpdate() {
     if (!document.hasFocus()) {
         return;
@@ -3399,21 +3426,14 @@ function cursorUpdate() {
             c.style.cursor = "grabbing";
             normal = false;
         } //element drag symbol
-        //TODO if over Start
         if (mouseSelectionLeft == 2) {
             c.style.cursor = "all-scroll";
             normal = false;
         }
-        if (asyncLoading) {
+        if (asyncLoading || syncLoading) {
             c.style.cursor = "wait";
             normal = false;
         }
-        /*for (var i = 0; i < ElementPositions.length; i++) {
-            if (mouseX > posx + ElementPositions[i][0] && mouseY > posy + ElementPositions[i][1] - blockheight && mouseX < posx + ElementPositions[1][0] + 100 && mouseY < posy + ElementPositions[i][1] - blockheight) {
-                c.style.cursor = "all-scroll";
-                normal = false;
-            }
-        }*/
     }
     if (editType == "Question") {
         let q1 = Object.keys(Question[1]);
@@ -3457,8 +3477,12 @@ function cursorUpdate() {
             }
         }
     }
-    if (currentlyUploading) {
+    if (syncLoading) {
         c.style.cursor = "wait";
+        normal = false;
+    }
+    if (currentlyUploading) {
+        c.style.cursor = "progress";
         normal = false;
     }
     //else

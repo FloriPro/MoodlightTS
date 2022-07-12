@@ -183,28 +183,28 @@ function getCookie(name: string): string {
 }
 class drawAdder {
     public image(image: HTMLImageElement, posx: number, posy: number) {
-        ToDraw.push({ "image": [image, posx, posy, ctx.globalAlpha] });
+        ToDraw.push({ "image": [image, posx, posy, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     }
     public rect(posx: any, posy: any, width: any, height: any, color: any, ctx: CanvasRenderingContext2D) {
-        ToDraw.push({ "rect": [posx, posy, width, height, color, ctx, ctx.globalAlpha] });
+        ToDraw.push({ "rect": [posx, posy, width, height, color, ctx, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     };
     public roundedRect(posx: any, posy: any, width: any, height: any, color: any, radius: number, ctx: any) {
-        ToDraw.push({ "roundedRect": [posx, posy, width, height, color, radius, ctx, ctx.globalAlpha] });
+        ToDraw.push({ "roundedRect": [posx, posy, width, height, color, radius, ctx, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     }
     public circle(posx: any, posy: any, radius: any, color: any, ctx: any) {
-        ToDraw.push({ "circle": [posx, posy, radius, color, ctx, ctx.globalAlpha] });
+        ToDraw.push({ "circle": [posx, posy, radius, color, ctx, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     };
     public fill(color: string, ctx: CanvasRenderingContext2D) {
-        ToDraw.push({ "fill": [color, ctx, ctx.globalAlpha] });
+        ToDraw.push({ "fill": [color, ctx, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     };
     public text(posx: any, posy: any, Text: any, color: any, align: any, font: string, ctx: CanvasRenderingContext2D) {
-        ToDraw.push({ "text": [posx, posy, Text, color, align, font, ctx, ctx.globalAlpha] });
+        ToDraw.push({ "text": [posx, posy, Text, color, align, font, ctx, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     };
     public polygon(ctx: CanvasRenderingContext2D, color: string, pos: [number, number][]) {
-        ToDraw.push({ "polygon": [ctx, color, pos, ctx.globalAlpha] });
+        ToDraw.push({ "polygon": [ctx, color, pos, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     };
     public polygonOutline(ctx: CanvasRenderingContext2D, color: string, pos: [number, number][], width: number) {
-        ToDraw.push({ "polygonOutline": [ctx, color, pos, width, ctx.globalAlpha] });
+        ToDraw.push({ "polygonOutline": [ctx, color, pos, width, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     };
 }
 class drawApp {
@@ -218,27 +218,53 @@ class drawApp {
         ctx.fill();
         ctx.closePath();
     };
-    public roundedRect(posx: any, posy: any, width: any, height: any, color: any, radius: number, ctx: any) {
+    public roundedRect(x: any, y: any, width: any, height: any, color: any, radius: number, ctx: any) {
         ctx.strokeStyle = color;
         ctx.fillStyle = color;
+        if (height < 0) {
+            height = height * -1
+            y -= height;
+        }
+        if (width < 0) {
+            width = width * -1
+            x -= width;
+        }
+        x -= radius / 2;
+        width += radius;
+        y -= radius / 2;
+        height += radius;
+        radius = radius / 3 * 2
+
+        ctx.beginPath();
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.fill();
+        /*ctx.beginPath();
         ctx.lineJoin = "round";
 
         ctx.lineWidth = radius;
 
         ctx.beginPath();
 
-        ctx.strokeRect(posx, posy, width, height);
-        ctx.stroke();
-        ctx.closePath();
+        ctx.strokeRect(x, y, width, height);
+        ctx.fill()
 
         if (ctx.globalAlpha != 1) {
-            ctx.fillRect(posx + (radius / 2), posy - (radius / 2), width - radius, height + radius);
+            ctx.fillRect(x + (radius / 2), y - (radius / 2), width - radius, height + radius);
         } else {
-            ctx.fillRect(posx, posy, width, height);
+            ctx.fillRect(x, y, width, height);
         }
         ctx.fill();
 
-        ctx.closePath();
+        ctx.closePath();*/
         ctx.strokeStyle = "";
         ctx.fillStyle = "";
         ctx.lineJoin = "";

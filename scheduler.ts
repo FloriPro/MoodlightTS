@@ -1,25 +1,50 @@
 let schedulerListHTML = document.querySelector("#SchedulerList") as HTMLDivElement;
-const schedulPreset = `<div class="schedule"><input type="text" class="time" value="_v_time" oninput="sheduleTimeChange(this)" onfocusout="sheduleTimeFormat(this)" placeholder="Uhrzeit xx:yy (e.g. '23:00')"><input type="text" class="id" value="_v_id" oninput="sheduleIdChange(this)" onfocusout="sheduleIdFormat(this)" placeholder="Start id zz (e.g. '0')"><button onclick="this.parentNode.remove();autoSave();scheduleChanged = true;">X</button></div>`;
+const schedulPreset = `
+<div class="schedule">
+    <p class="hover"><input type="text" class="time" value="_v_time" oninput="sheduleTimeChange(this)" onfocusout="sheduleTimeFormat(this)" placeholder="Uhrzeit xx:yy (e.g. '23:00')"></p>
+    <p class="hover"><input type="text" class="id" value="_v_id" oninput="sheduleIdChange(this)" onfocusout="sheduleIdFormat(this)" placeholder="Start id zz (e.g. '0')"></p>
+    <button onclick="this.parentNode.remove();autoSave();scheduleChanged = true;">X</button>
+</div>`;
 const scheduleOk = "lawngreen";
 const scheduleError = "red"
 
 function addShedule() {
     schedulerListHTML.innerHTML += schedulPreset.replace("_v_time", "").replace("_v_id", "");
 }
+function isPositiveInteger(str: string) {
+    if (typeof str !== 'string') {
+        return false;
+    }
+    if (str == "") {
+        return false
+    }
 
+    const num = Number(str);
+    if (isNaN(num)) {
+        return false
+    }
+    return true;
+
+}
 function sheduleIdChange(t: HTMLInputElement) {
     var error = false;
     var v = parseInt(t.value);
-    if (isNaN(v)) {
+    if (!isPositiveInteger(t.value)) {
         error = true;
+        (t.parentElement as HTMLParagraphElement).title = "Fehler: keine Zahl"
     }
     else if (v >= Elements.length) {
         error = true;
+        (t.parentElement as HTMLParagraphElement).title = "Fehler: Start nicht vorhanden"
+    } else if (v < 0) {
+        error = true;
+        (t.parentElement as HTMLParagraphElement).title = "Fehler: Start nur im Positiven vorhanden"
     }
     if (error) {
         t.style.background = scheduleError;
     } else {
         t.style.background = scheduleOk;
+        (t.parentElement as HTMLParagraphElement).title = "";
     }
 }
 
@@ -29,15 +54,20 @@ function sheduleTimeChange(t: HTMLInputElement) {
     var s = v.split(":");
 
     if (s.length != 2) {
+        (t.parentElement as HTMLParagraphElement).title = "Fehler: Keine Uhrzeit (xx:yy)"
         error = true;
-    } else if (isNaN(parseInt(s[0]))) {
+    } else if (!isPositiveInteger(s[0])) {
+        (t.parentElement as HTMLParagraphElement).title = "Fehler: keine Zahl als Stunde"
         error = true;
-    } else if (parseInt(s[0]) > 24 || parseInt(s[0]) < 0) {
+    } else if (parseInt(s[0]) >= 24 || parseInt(s[0]) < 0) {
+        (t.parentElement as HTMLParagraphElement).title = "Fehler: Stunden zu groß/klein"
         error = true;
     }
-    else if (isNaN(parseInt(s[1]))) {
+    else if (!isPositiveInteger(s[1])) {
         error = true;
-    } else if (parseInt(s[1]) > 60 || parseInt(s[1]) < 0) {
+        (t.parentElement as HTMLParagraphElement).title = "Fehler: keine Zahl als Minute"
+    } else if (parseInt(s[1]) >= 60 || parseInt(s[1]) < 0) {
+        (t.parentElement as HTMLParagraphElement).title = "Fehler: Minuten zu groß/klein"
         error = true;
     }
 
@@ -45,6 +75,7 @@ function sheduleTimeChange(t: HTMLInputElement) {
         t.style.background = scheduleError;
     } else {
         t.style.background = scheduleOk;
+        (t.parentElement as HTMLParagraphElement).title = "";
     }
 }
 
@@ -65,6 +96,7 @@ function sheduleIdFormat(t: HTMLInputElement) {
 }
 
 function getSchedulerHTMLDat() {
+
     var out = [];
 
     var d: NodeListOf<Element> = document.querySelectorAll(".schedule") as NodeListOf<Element>;

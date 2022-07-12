@@ -116,3 +116,46 @@ input {
     -ms-user-select: none;
     user-select: none;
 }
+
+/*Special Title on hover*/
+.hover[title]:hover::before {
+    content: attr(title);
+    background-color: #ff0000;
+    border: solid 0px #000000;
+    padding: 0px;
+    margin: 7px;
+    color: #ffffff;
+    display: block;
+    width: fit-content;
+    height: fit-content;
+    position: fixed;
+    pointer-events: none;
+    opacity: 0.8;
+
+    animation: fadeIn 0.25s;
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    75% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.8;
+    }
+}
+
+.schedule {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.schedule input {
+    width: 400px;
+}

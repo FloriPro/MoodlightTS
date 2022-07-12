@@ -53,7 +53,7 @@ async function loadTranslation(name: string) {
     }
 }
 //All avail: {"af": "afrikaans","sq": "albanian","am": "amharic","ar": "arabic","hy": "armenian","az": "azerbaijani","eu": "basque","be": "belarusian","bn": "bengali","bs": "bosnian","bg": "bulgarian","ca": "catalan","ceb": "cebuano","ny": "chichewa","zh-CN": "chinese (simplified)","zh-TW": "chinese (traditional)","co": "corsican","hr": "croatian","cs": "czech","da": "danish","nl": "dutch","en": "english","eo": "esperanto","et": "estonian","tl": "filipino","fi": "finnish","fr": "french","fy": "frisian","gl": "galician","ka": "georgian","de": "german","el": "greek","gu": "gujarati","ht": "haitian creole","ha": "hausa","haw": "hawaiian","iw": "hebrew","hi": "hindi","hmn": "hmong","hu": "hungarian","is": "icelandic","ig": "igbo","id": "indonesian","ga": "irish","it": "italian","ja": "japanese","jw": "javanese","kn": "kannada","kk": "kazakh","km": "khmer","rw": "kinyarwanda","ko": "korean","ku": "kurdish","ky": "kyrgyz","lo": "lao","la": "latin","lv": "latvian","lt": "lithuanian","lb": "luxembourgish","mk": "macedonian","mg": "malagasy","ms": "malay","ml": "malayalam","mt": "maltese","mi": "maori","mr": "marathi","mn": "mongolian","my": "myanmar","ne": "nepali","no": "norwegian","or": "odia","ps": "pashto","fa": "persian","pl": "polish","pt": "portuguese","pa": "punjabi","ro": "romanian","ru": "russian","sm": "samoan","gd": "scots gaelic","sr": "serbian","st": "sesotho","sn": "shona","sd": "sindhi","si": "sinhala","sk": "slovak","sl": "slovenian","so": "somali","es": "spanish","su": "sundanese","sw": "swahili","sv": "swedish","tg": "tajik","ta": "tamil","tt": "tatar","te": "telugu","th": "thai","tr": "turkish","tk": "turkmen","uk": "ukrainian","ur": "urdu","ug": "uyghur","uz": "uzbek","vi": "vietnamese","cy": "welsh","xh": "xhosa","yi": "yiddish","yo": "yoruba","zu": "zulu"}
-let availTranslationsR: { [key: string]: string } = {"Deutsch": "de","English": "en","afrikaans": "af","albanian": "sq","amharic": "am","arabic": "ar","armenian": "hy","azerbaijani": "az","basque": "eu","belarusian": "be","bengali": "bn","bosnian": "bs","bulgarian": "bg","catalan": "ca","cebuano": "ceb","chichewa": "ny","chinese (simplified)": "zh-CN","chinese (traditional)": "zh-TW","corsican": "co","croatian": "hr","czech": "cs","danish": "da","dutch": "nl","esperanto": "eo","estonian": "et","filipino": "tl","finnish": "fi","french": "fr","frisian": "fy","galician": "gl","georgian": "ka","greek": "el","gujarati": "gu","haitian creole": "ht","hausa": "ha","hawaiian": "haw","hebrew": "iw","hindi": "hi","hmong": "hmn","hungarian": "hu","icelandic": "is","igbo": "ig","indonesian": "id","irish": "ga","italian": "it","japanese": "ja","javanese": "jw","kannada": "kn","kazakh": "kk","khmer": "km","kinyarwanda": "rw","korean": "ko","kurdish": "ku","kyrgyz": "ky","lao": "lo","latin": "la","latvian": "lv","lithuanian": "lt","luxembourgish": "lb","macedonian": "mk","malagasy": "mg","malay": "ms","malayalam": "ml","maltese": "mt","maori": "mi","marathi": "mr","mongolian": "mn","myanmar": "my","nepali": "ne","norwegian": "no","odia": "or","pashto": "ps","persian": "fa","polish": "pl","portuguese": "pt","punjabi": "pa","romanian": "ro","russian": "ru","samoan": "sm","scots gaelic": "gd","serbian": "sr","sesotho": "st","shona": "sn","sindhi": "sd","sinhala": "si","slovak": "sk","slovenian": "sl","somali": "so","spanish": "es","sundanese": "su","swahili": "sw","swedish": "sv","tajik": "tg","tamil": "ta","tatar": "tt","telugu": "te","thai": "th","turkish": "tr","turkmen": "tk","ukrainian": "uk","urdu": "ur","uyghur": "ug","uzbek": "uz","vietnamese": "vi","welsh": "cy","xhosa": "xh","yiddish": "yi","yoruba": "yo","zulu": "zu"}
+let availTranslationsR: { [key: string]: string } = { "Deutsch": "de", "English": "en", "afrikaans": "af", "albanian": "sq", "amharic": "am", "arabic": "ar", "armenian": "hy", "azerbaijani": "az", "basque": "eu", "belarusian": "be", "bengali": "bn", "bosnian": "bs", "bulgarian": "bg", "catalan": "ca", "cebuano": "ceb", "chichewa": "ny", "chinese (simplified)": "zh-CN", "chinese (traditional)": "zh-TW", "corsican": "co", "croatian": "hr", "czech": "cs", "danish": "da", "dutch": "nl", "esperanto": "eo", "estonian": "et", "filipino": "tl", "finnish": "fi", "french": "fr", "frisian": "fy", "galician": "gl", "georgian": "ka", "greek": "el", "gujarati": "gu", "haitian creole": "ht", "hausa": "ha", "hawaiian": "haw", "hebrew": "iw", "hindi": "hi", "hmong": "hmn", "hungarian": "hu", "icelandic": "is", "igbo": "ig", "indonesian": "id", "irish": "ga", "italian": "it", "japanese": "ja", "javanese": "jw", "kannada": "kn", "kazakh": "kk", "khmer": "km", "kinyarwanda": "rw", "korean": "ko", "kurdish": "ku", "kyrgyz": "ky", "lao": "lo", "latin": "la", "latvian": "lv", "lithuanian": "lt", "luxembourgish": "lb", "macedonian": "mk", "malagasy": "mg", "malay": "ms", "malayalam": "ml", "maltese": "mt", "maori": "mi", "marathi": "mr", "mongolian": "mn", "myanmar": "my", "nepali": "ne", "norwegian": "no", "odia": "or", "pashto": "ps", "persian": "fa", "polish": "pl", "portuguese": "pt", "punjabi": "pa", "romanian": "ro", "russian": "ru", "samoan": "sm", "scots gaelic": "gd", "serbian": "sr", "sesotho": "st", "shona": "sn", "sindhi": "sd", "sinhala": "si", "slovak": "sk", "slovenian": "sl", "somali": "so", "spanish": "es", "sundanese": "su", "swahili": "sw", "swedish": "sv", "tajik": "tg", "tamil": "ta", "tatar": "tt", "telugu": "te", "thai": "th", "turkish": "tr", "turkmen": "tk", "ukrainian": "uk", "urdu": "ur", "uyghur": "ug", "uzbek": "uz", "vietnamese": "vi", "welsh": "cy", "xhosa": "xh", "yiddish": "yi", "yoruba": "yo", "zulu": "zu" }
 let availTranslations: string[] = Object.keys(availTranslationsR)
 let currentLanguage = "Deutsch";
 
@@ -795,20 +795,31 @@ let actionElements = [
 ]
 
 let menuOpen = 0;
-let menuButtons: { [name: string]: () => void } = {
+const menuButtons: { [name: string]: () => void } = {
     "$menu.save": saveProject,
-    "$menu.load": () => {
+    "$menu.load": async () => {
         goTo("Question", 1);
         var a: { [ind: string]: (seId: number) => void; } = {}
         var lK = Object.keys(localStorage);
         for (var x = 0; x < lK.length; x++) {
             if (lK[x][0] != "!")
-                a[lK[x]] = function (seId: number) {
+                a[lK[x]] = async function (seId: number) {
                     var i = 0;
-                    for (var x = 0; x < Object.keys(localStorage).length; x++) { if (Object.keys(localStorage)[x][0] != "!") { if (i == seId) { break; } i++; } }
+                    for (var x = 0; x < Object.keys(localStorage).length; x++) {
+                        if (Object.keys(localStorage)[x][0] != "!") {
+                            if (i == seId) { break; } i++;
+                        }
+                    }
 
+                    //syncLoading = true;
+                    //cursorUpdate();
+                    await delay(100)
                     loadProject(JSON.parse(localStorage[Object.keys(localStorage)[i]]));
-                    goTo("standartEdit", 0);
+                    goTo("standartEdit", 0, () => {
+                        c.style.cursor = "wait";
+                        syncLoading = true;
+                        cursorUpdate();
+                    });
                     setCookie("lastUsed", Object.keys(localStorage)[seId], 0.5);
                 }
         }
@@ -872,7 +883,16 @@ let menuButtons: { [name: string]: () => void } = {
     "": () => { },
     "$menu.info.Experimental": () => { },
     "$menu.sheduler": () => {
-        goTo("Sheduler", 0)
+        goTo("Sheduler", 0);
+
+        //update information
+        var allElements: NodeListOf<Element> = document.querySelectorAll(".schedule") as NodeListOf<Element>;
+        for (var elem of allElements) {
+            var id = elem.querySelector(".id") as HTMLInputElement;
+            var time = elem.querySelector(".time") as HTMLInputElement;
+            sheduleIdChange(id);
+            sheduleTimeChange(time);
+        }
     },
     "$menu.console": () => {
         goTo("Console", 0)
@@ -887,7 +907,7 @@ let menuWidth = 350
 const alphabet: string[] = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
 
 /**type: bool, staticBool, showingBool, str, num, button, info */
-let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*false: lookup, true: click*/: boolean) => string /*type*/ } } = {
+const settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*false: lookup, true: click*/: boolean) => string /*type*/ } } = {
     "$settings.general": {
         "$settings.general.autoSave": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
         "$settings.general.autoSaveImage": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
@@ -1109,7 +1129,7 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*false
 
                         localStorage.setItem("!designs", JSON.stringify(d));
                         console.log("rem: " + Object.keys(localStorage)[seId]);
-                        goTo("Settings", 1, false);
+                        goTo("Settings", 1);
                     }
                 }
                 Question = ["$question.deleteDesign", a];
@@ -1281,7 +1301,7 @@ let settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*false
         "": function (callType) { if (!callType) { return "info"; } else { return ""; } },
         " ": function (callType) { if (!callType) { return "info"; } else { return ""; } },
         "  ": function (callType) { if (!callType) { return "info"; } else { return ""; } },
-        "$settings.about.2": function (callType) { if (!callType) { return "info"; } else { openWindow("https://floripro.github.io/?page=Home"); return ""; } },
+        "$settings.about.2": function (callType) { if (!callType) { return "info"; } else { /*openWindow("https://floripro.github.io/?page=Home");*/ return ""; } },
     }
 }
 let settingsOnLoad: any = {
@@ -1336,7 +1356,7 @@ let settingsOnLoad: any = {
     },
 }
 let staticElementsData: any = { "Anmelde Status": undefined, "$settings.mqtt.connection": undefined };
-let settingsInfo: { [einstellung: string]: string } = { "$settings.about.2": "$settings.about.2.info", "$settings.look.maxFPS": "$settings.look.maxFPS.info", "$settings.general.autoSaveImage": "$settings.general.autoSaveImage.info", "$settings.moodlight.passiveLive": "$settings.moodlight.passiveLive.info", "$settings.general.rightclick": "$settings.general.rightclick.info", "$settings.moodlight.live": "$settings.moodlight.live.info", "$settings.look.darkmode": "$settings.look.darkmode.info", "$settings.look.ownDesign": "$settings.look.ownDesign.info", "$settings.look.createOwnDesign": "$settings.look.createOwnDesign.info", "$settings.look.addDesignJson": "$settings.look.addDesignJson.info", "$settings.look.deleteDesign": "$settings.look.deleteDesign.info", "$settings.look.showAnimations": "$settings.look.showAnimations.info" };
+let settingsInfo: { [einstellung: string]: string } = { "$settings.about.2": /*$settings.about.2.info*/"", "$settings.look.maxFPS": "$settings.look.maxFPS.info", "$settings.general.autoSaveImage": "$settings.general.autoSaveImage.info", "$settings.moodlight.passiveLive": "$settings.moodlight.passiveLive.info", "$settings.general.rightclick": "$settings.general.rightclick.info", "$settings.moodlight.live": "$settings.moodlight.live.info", "$settings.look.darkmode": "$settings.look.darkmode.info", "$settings.look.ownDesign": "$settings.look.ownDesign.info", "$settings.look.createOwnDesign": "$settings.look.createOwnDesign.info", "$settings.look.addDesignJson": "$settings.look.addDesignJson.info", "$settings.look.deleteDesign": "$settings.look.deleteDesign.info", "$settings.look.showAnimations": "$settings.look.showAnimations.info" };
 let setSettings: { [einstellung: string]: string } = { "$settings.look.startGridSnap": "true", "$settings.look.maxFPS": "60", "$settings.general.autoSaveImage": "true", "$settings.look.fullscreen": "false", "$settings.look.asyncElementLoading": "true", "$settings.look.showFPS": "false", "$settings.look.backgroundGrid": "true", "$settings.moodlight.passiveLive": "false", "$settings.general.rightclick": "false", "$settings.sheduler.send": "true",/*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "$settings.moodlight.live": "false", "$settings.general.autoSave": "true", "$settings.look.darkmode": "false", "$settings.general.promptInput": "false", "$settings.mqtt.showNameOnSend": "false", "$settings.look.showAnimations": "true", "$settings.look.showPicture": "true", "$settings.mqtt.delay": "70" };
 let settingsSelLeft = 0;
 
@@ -1912,11 +1932,16 @@ function autoSave() {
     }
 }
 
+
+let transitionFunction: () => void;
 /**
 * type: 0=fadein+fadeout; 1=cut
 * standartEdit, PictureEdit, Question, Settings, Actions, Sheduler, Console
 */
-function goTo(übergangTo: string, type: number, settingsSelLef?: boolean) {
+function goTo(übergangTo: string, type: number, transitionFunc?: () => void) {
+    if (transitionFunc != undefined) {
+        transitionFunction = transitionFunc;
+    }
     if (editType != "Question") {
         latestCanvasPicStr = canvas.toDataURL("image/png");
         latestCanvasPic.src = latestCanvasPicStr;
@@ -1940,7 +1965,6 @@ function goTo(übergangTo: string, type: number, settingsSelLef?: boolean) {
         page = 0;
     }
     if (übergangTo == "Settings") {
-        if (settingsSelLef) { settingsSelLeft = 0; }
         var sK = Object.keys(settingsOnLoad);
         for (var i = 0; i < sK.length; i++) {
             settingsOnLoad[sK[i]]();
@@ -2060,48 +2084,35 @@ function drawScreen() {
         }
     }
 
-
     ToDraw.forEach(value => {
-        var key = Object.keys(value)[0]
+        var key = Object.keys(value)[0] as "rect" | "image" | "roundedRect" | "circle" | "fill" | "text" | "polygon" | "polygonOutline"
+        var i: any = value[key] as any;
+        ctx.shadowColor = i[i.length - 2]
+        ctx.shadowBlur = i[i.length - 1]
+        ctx.globalAlpha = i[i.length - 3]
 
         if (key == "rect") {
-            var i = value[key] as any;
-            ctx.globalAlpha = i[i.length - 1]
             drawReal.rect(i[0] + px, i[1] + py, i[2], i[3], i[4], i[5]);
         }
         else if (key == "roundedRect") {
-            var i = value[key] as any;
-            ctx.globalAlpha = i[i.length - 1]
             drawReal.roundedRect(i[0] + px, i[1] + py, i[2], i[3], i[4], i[5], i[6]);
         }
         else if (key == "circle") {
-            var i = value[key] as any;
-            ctx.globalAlpha = i[i.length - 1]
             drawReal.circle(i[0] + px, i[1] + py, i[2], i[3], i[4]);
         }
         else if (key == "fill") {
-            var i = value[key] as any;
-            ctx.globalAlpha = i[i.length - 1]
             drawReal.fill(i[0], i[1]);
         }
         else if (key == "text") {
-            var i = value[key] as any;
-            ctx.globalAlpha = i[i.length - 1]
             drawReal.text(i[0] + px, i[1] + py, i[2], i[3], i[4], i[5], i[6]);
         }
         else if (key == "polygon") {
-            var i = value[key] as any;
-            ctx.globalAlpha = i[i.length - 1]
             drawReal.polygon(i[0], i[1], i[2]);
         }
         else if (key == "polygonOutline") {
-            var i = value[key] as any;
-            ctx.globalAlpha = i[i.length - 1]
             drawReal.polygonOutline(i[0], i[1], i[2], i[3]);
         }
         else if (key == "image") {
-            var i = value[key] as any;
-            ctx.globalAlpha = i[i.length - 1]
             drawReal.image(i[0], i[1] + px, i[2] + py, ctx);
         }
         drawActions++;
@@ -2745,10 +2756,18 @@ function updateRects() {
                     if (ElementPositions[ElementLoadPos][0] - 50 < FreeElements[mouseDataLeft][2][0] && ElementPositions[ElementLoadPos][0] + 200 > FreeElements[mouseDataLeft][2][0]) {
                         if (ElementList == Math.round((FreeElements[mouseDataLeft][2][1] - ElementPositions[ElementLoadPos][1]) / blockheight)) {
                             if (ElementList != 0) {
-                                if (mouseX > sidebarSize) {//TODO: 200?
+                                if (mouseX > sidebarSize) {
                                     textLength = elementLenght([FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]])
-                                    ctx.globalAlpha = 0.6;
-                                    draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), currentColor["MoveBlockShaddow"], 10, ctx) //body
+                                    ctx.globalAlpha = 0.4;
+                                    ctx.shadowColor = currentColor["MoveBlockShaddow"];
+                                    ctx.shadowBlur = 10;
+                                    if ("$element.end" == FreeElements[mouseDataLeft][0]) {
+                                        draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10) / 2, currentColor["MoveBlockShaddow"], 10, ctx) //end-body
+                                    } else {
+                                        draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), currentColor["MoveBlockShaddow"], 10, ctx) //body
+                                    }
+                                    ctx.shadowColor = "rgba(0,0,0,0)";
+                                    ctx.shadowBlur = 0;
                                     ctx.globalAlpha = 1;
                                     i++;
                                     lastDragElement = true;
@@ -2834,8 +2853,16 @@ function updateRects() {
                     if ((Elements[ElementLoadPos].length) == Math.round((FreeElements[mouseDataLeft][2][1] - ElementPositions[ElementLoadPos][1]) / blockheight)) {
                         if ((Elements[ElementLoadPos].length) != 0) {
                             textLength = elementLenght([FreeElements[mouseDataLeft][0], FreeElements[mouseDataLeft][1]])
-                            ctx.globalAlpha = 0.6;
-                            draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), currentColor["MoveBlockShaddow"], 10, ctx) //body
+                            ctx.globalAlpha = 0.4;
+                            ctx.shadowColor = currentColor["MoveBlockShaddow"];
+                            ctx.shadowBlur = 10;
+                            if ("$element.end" == FreeElements[mouseDataLeft][0]) {
+                                draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10) / 2, currentColor["MoveBlockShaddow"], 10, ctx) //end-body
+                            } else {
+                                draw.roundedRect(px, py + blockheight, textLength, -(blockheight - 10), currentColor["MoveBlockShaddow"], 10, ctx) //body
+                            }
+                            ctx.shadowColor = "rgba(0,0,0,0)";
+                            ctx.shadowBlur = 0;
                             ctx.globalAlpha = 1;
                         }
                     }
@@ -2843,6 +2870,7 @@ function updateRects() {
             }
         }
         asyncLoading = false;
+        syncLoading = false;
         justfinsishedPicture = false;
 
         //Free Elements
@@ -2851,14 +2879,7 @@ function updateRects() {
             px = FreeElements[FreeElementPos][2][0];
             py = FreeElements[FreeElementPos][2][1];
             textLength = elementLenghtAndDraw([FreeElements[FreeElementPos][0], FreeElements[FreeElementPos][1]], px, py);
-
-
-
-            //draw.roundedRect(px, py, textLength, -(blockheight - 10), drawcolorAccent, 10, ctx) //body outline
-            //draw.roundedRect(px + 1, py - 1, textLength - 2, -blockheight + 12, drawcolor, 10, ctx) //body
-
-            //draw.text(px, py, text, colors["NormalText"], "left", ctx);
-        }
+        };
         ctx.globalAlpha = 1;
 
         //EditMenu
@@ -3211,6 +3232,11 @@ function updateRects() {
 
     //übergang
     if (Übergang >= 1) {
+
+        if (Übergang == 25) {
+            transitionFunction();
+        }
+
         var alpha = 0;
         if (Übergang <= 25) {
             alpha = Übergang / 25;
@@ -3228,6 +3254,7 @@ function updateRects() {
     }
 }
 let asyncLoading = false;
+let syncLoading = true;
 function cursorUpdate() {
     if (!document.hasFocus()) {
         return;
@@ -3262,15 +3289,9 @@ function cursorUpdate() {
 
         if (mouseX < sidebarSize && mouseSelectionLeft == 1 && !(FreeElements[mouseDataLeft][0] == "$element.end")) { c.style.cursor = "no-drop"; normal = false; } //element delete symbol
         else if (mouseSelectionLeft == 1) { c.style.cursor = "grabbing"; normal = false; } //element drag symbol
-        //TODO if over Start
+
         if (mouseSelectionLeft == 2) { c.style.cursor = "all-scroll"; normal = false; }
-        if (asyncLoading) { c.style.cursor = "wait"; normal = false; }
-        /*for (var i = 0; i < ElementPositions.length; i++) {
-            if (mouseX > posx + ElementPositions[i][0] && mouseY > posy + ElementPositions[i][1] - blockheight && mouseX < posx + ElementPositions[1][0] + 100 && mouseY < posy + ElementPositions[i][1] - blockheight) {
-                c.style.cursor = "all-scroll";
-                normal = false;
-            }
-        }*/
+        if (asyncLoading || syncLoading) { c.style.cursor = "wait"; normal = false; }
     }
     if (editType == "Question") {
         let q1 = Object.keys(Question[1]);
@@ -3302,8 +3323,9 @@ function cursorUpdate() {
             }
         }
     }
+    if (syncLoading) { c.style.cursor = "wait"; normal = false; }
 
-    if (currentlyUploading) { c.style.cursor = "wait"; normal = false; }
+    if (currentlyUploading) { c.style.cursor = "progress"; normal = false; }
 
     //else
     if (normal) { c.style.cursor = "default"; }

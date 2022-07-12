@@ -52,7 +52,7 @@
             document.getElementById("alerts").innerHTML += '<div class="alert" style="margin-top: 0;" id="alert_id' + r + '"><span class="closebtn" onclick="moveAwayEffect(this.parentElement)">X </span>' + text + '<br></div>'
             setTimeout(eval, time, "moveAwayEffect(document.getElementById('alert_id' + '" + r + "'))")
         }
-        
+
         //console send
         function send2(data) {
             if (data == "cls" || data == "clear") {
@@ -68,8 +68,8 @@
     </script>
 
     <style id="editableStyle">
-        h1{
-            color:#f0f
+        h1 {
+            color: #f0f
         }
     </style>
 </head>
@@ -81,7 +81,8 @@
     </div>
     <div id="alerts" style="right: 0;position: fixed;max-width: 350px;min-width: 250px;z-index: 999999;"></div>
     <div id="pictureEdit" style="display: none;">
-        <div style="background: transparent; position: fixed; display: flex;flex-wrap: wrap;align-items: flex-start;">
+        <div
+            style="background: transparent; position: fixed; display: flex;flex-wrap: wrap;align-items: flex-start;width: 100%;height: 100%;">
             <!--Image-->
             <div>
                 <!--Pixels-->
@@ -223,13 +224,14 @@
     <div id="Sheduler" style="display: none;">
         <div
             style="/*background: white;*/position: fixed;flex-wrap: wrap;align-items: flex-start;width: 100%;height: 100%;">
-            <h1>Scheduler (Work in Progress)</h1><br>
+            <h1>Scheduler</h1><br>
             <button onclick="send('@D');addMessage('Deaktiviert');">Deaktivieren</button>
             <button onclick="send('@E');addMessage('Aktiviert');">Aktivieren</button>
             <div id="SchedulerList"></div>
 
-            <br><button onclick="addShedule()">Hinzufügen</button>
-            <br><br><br><br><button onclick="finishShedule()">Fertig</button>
+            <button onclick="addShedule()">Hinzufügen</button>
+            <br>
+            <button onclick="finishShedule()">Fertig</button>
         </div>
     </div>
 
