@@ -1,16 +1,19 @@
 {
+    "buttonBackground": "#636080",
+    "buttonBackgroundHover": "#bebebe",
+    "settingsBoolUndefined": "#6c7789",
     "QuestionTitleBackground": "#49555b",
+    "GrayBlock": "#535c5f",
+    "GrayBlockAccent": "#495050",
     "background": "#425b5c",
     "backgroundGrid": "#32494d",
     "blockArgBackground": "#47555c",
     "blueBlock": "#0e6cc4",
-    "blueBlockAccent": "#08335e",
+    "blueBlockAccent": "#1a5c9e",
     "YellowBlock": "#bc9c10",
     "YellowBlockAccent": "#9b8212",
     "PurpleBlock": "#a604c3",
     "PurpleBlockAccent": "#870b9d",
-    "GrayBlock": "#535c5f",
-    "GrayBlockAccent": "#495050",
     "MoveBlockShaddow": "#718e8d",
     "EditMenu": "#264350",
     "EditMenuAccent": "#325a67",
@@ -20,7 +23,6 @@
     "MenuText": "#91bfca",
     "settingsBoolTrue": "#2f932f",
     "settingsBoolFalse": "#9f2d2d",
-    "settingsBoolUndefined": "#6c7789",
     "settingsSelMouseOver": "#395f65",
     "settingsSelStandard": "#214754",
     "settingsSelSelected": "#4b7171",
@@ -30,5 +32,5 @@
     "questionRedBackgroundBlur": "#561531",
     "questionBackground": "#3d5657",
     "objectSidebarBlur": "#236170",
-    "ProjectName": "#ff0000"
+    "ProjectName": "#99cc9f"
 }
