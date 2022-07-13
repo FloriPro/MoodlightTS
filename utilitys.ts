@@ -185,6 +185,9 @@ class drawAdder {
     public image(image: HTMLImageElement, posx: number, posy: number) {
         ToDraw.push({ "image": [image, posx, posy, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     }
+    public imageWH(image: HTMLImageElement, posx: number, posy: number, width: number, height: number) {
+        ToDraw.push({ "imageWH": [image, posx, posy, width, height, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
+    }
     public rect(posx: any, posy: any, width: any, height: any, color: any, ctx: CanvasRenderingContext2D) {
         ToDraw.push({ "rect": [posx, posy, width, height, color, ctx, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     };
@@ -210,6 +213,9 @@ class drawAdder {
 class drawApp {
     public image(image: HTMLImageElement, posx: number, posy: number, ctx: CanvasRenderingContext2D) {
         ctx.drawImage(image, posx, posy)
+    }
+    public imageWH(image: HTMLImageElement, posx: number, posy: number, width: number, height: number, ctx: CanvasRenderingContext2D) {
+        ctx.drawImage(image, posx, posy, width, height);
     }
     public rect(posx: any, posy: any, width: any, height: any, color: any, ctx: CanvasRenderingContext2D) {
         ctx.fillStyle = color;

@@ -65,6 +65,8 @@ function loadTranslation(name) {
 let availTranslationsR = { "Deutsch": "de", "English": "en", "afrikaans": "af", "albanian": "sq", "amharic": "am", "arabic": "ar", "armenian": "hy", "azerbaijani": "az", "basque": "eu", "belarusian": "be", "bengali": "bn", "bosnian": "bs", "bulgarian": "bg", "catalan": "ca", "cebuano": "ceb", "chichewa": "ny", "chinese (simplified)": "zh-CN", "chinese (traditional)": "zh-TW", "corsican": "co", "croatian": "hr", "czech": "cs", "danish": "da", "dutch": "nl", "esperanto": "eo", "estonian": "et", "filipino": "tl", "finnish": "fi", "french": "fr", "frisian": "fy", "galician": "gl", "georgian": "ka", "greek": "el", "gujarati": "gu", "haitian creole": "ht", "hausa": "ha", "hawaiian": "haw", "hebrew": "iw", "hindi": "hi", "hmong": "hmn", "hungarian": "hu", "icelandic": "is", "igbo": "ig", "indonesian": "id", "irish": "ga", "italian": "it", "japanese": "ja", "javanese": "jw", "kannada": "kn", "kazakh": "kk", "khmer": "km", "kinyarwanda": "rw", "korean": "ko", "kurdish": "ku", "kyrgyz": "ky", "lao": "lo", "latin": "la", "latvian": "lv", "lithuanian": "lt", "luxembourgish": "lb", "macedonian": "mk", "malagasy": "mg", "malay": "ms", "malayalam": "ml", "maltese": "mt", "maori": "mi", "marathi": "mr", "mongolian": "mn", "myanmar": "my", "nepali": "ne", "norwegian": "no", "odia": "or", "pashto": "ps", "persian": "fa", "polish": "pl", "portuguese": "pt", "punjabi": "pa", "romanian": "ro", "russian": "ru", "samoan": "sm", "scots gaelic": "gd", "serbian": "sr", "sesotho": "st", "shona": "sn", "sindhi": "sd", "sinhala": "si", "slovak": "sk", "slovenian": "sl", "somali": "so", "spanish": "es", "sundanese": "su", "swahili": "sw", "swedish": "sv", "tajik": "tg", "tamil": "ta", "tatar": "tt", "telugu": "te", "thai": "th", "turkish": "tr", "turkmen": "tk", "ukrainian": "uk", "urdu": "ur", "uyghur": "ug", "uzbek": "uz", "vietnamese": "vi", "welsh": "cy", "xhosa": "xh", "yiddish": "yi", "yoruba": "yo", "zulu": "zu" };
 let availTranslations = Object.keys(availTranslationsR);
 let currentLanguage = "Deutsch";
+//load images
+const scrollImage = document.querySelector("#image_scroll");
 /*
  * TODO:
  *  -Output
@@ -813,7 +815,6 @@ const menuButtons = {
                             cursorUpdate();
                         });
                         setCookie("lastUsed", Object.keys(localStorage)[seId], 0.5);
-                        //TODO: run () = { c.style.cursor = "wait"; syncLoading = true; } on transition finoish
                     });
                 };
         }
@@ -2218,6 +2219,9 @@ function drawScreen() {
         else if (key == "image") {
             drawReal.image(i[0], i[1] + px, i[2] + py, ctx);
         }
+        else if (key == "imageWH") {
+            drawReal.imageWH(i[0], i[1] + px, i[2] + py, i[3], i[4], ctx);
+        }
         drawActions++;
     });
     harddraw();
@@ -3071,23 +3075,26 @@ function updateRects() {
             else {
                 mouse[0] = false;
                 mouseSelectionLeft = 0;
-                if (comesFrom != "Question") {
-                    goTo(comesFrom, 1);
-                    setTimeout(updateRects, 1);
-                    mouse[0] = false;
-                }
-                else {
-                    if (Question[2] != undefined) {
+                if (Question[2] != undefined) {
+                    if (typeof Question[2] == 'string') {
                         goTo(Question[2], 1);
                         if (Question[2] == "Settings") {
                             mouse[0] = false;
                         }
                     }
-                    else {
-                        goTo("standartEdit", 1);
+                    else if (typeof Question[2] == 'function') {
+                        Question[2]();
                     }
-                    setTimeout(updateRects, 15);
                 }
+                else if (comesFrom != "Question") {
+                    goTo(comesFrom, 1);
+                    setTimeout(updateRects, 1);
+                    mouse[0] = false;
+                }
+                else {
+                    goTo("standartEdit", 1);
+                }
+                setTimeout(updateRects, 15);
             }
         }
         //mouseUp
@@ -3157,6 +3164,10 @@ function updateRects() {
         var textWidth = measureText(Question[0], ctx).width;
         draw.rect(canvas.width / 2 - textWidth / 2, 80, textWidth, -50, currentColor["QuestionTitleBackground"], ctx);
         draw.text(canvas.width / 2, 70, Question[0], currentColor["NormalText"], "center", font, ctx);
+        //draw scroll image, if scroll available
+        if (150 + q1.length * blockheight - window.innerHeight > 0) {
+            draw.imageWH(scrollImage, canvas.width / 2 - (mW / 2 + 5) - 100, canvas.height - 100, 100, 100);
+        }
     }
     else if (editType == "PictureEdit") {
         pageTeller.innerHTML = "Seite " + (page + 1) + "/" + pictureValues.length;
@@ -3353,7 +3364,10 @@ function updateRects() {
     //übergang
     if (Übergang >= 1) {
         if (Übergang == 25) {
-            transitionFunction();
+            if (transitionFunction != undefined) {
+                transitionFunction();
+                transitionFunction = undefined;
+            }
         }
         var alpha = 0;
         if (Übergang <= 25) {
@@ -3523,7 +3537,7 @@ setTimeout(() => {
                 firstTry1();
             };
         }
-        Question = ["Sprache Auswählen", a];
+        Question = ["Sprache Auswählen", a, () => { }];
         goTo("Question", 1);
     }
 }, 200);
@@ -3545,7 +3559,7 @@ function firstTry1() {
                 firstTry2();
                 goTo("Question", 1);
             }
-        }];
+        }, () => { }];
 }
 function firstTry2() {
     ctx.globalAlpha = 0.8;
@@ -3556,7 +3570,7 @@ function firstTry2() {
                 firstTry3();
                 goTo("Question", 1);
             }
-        }];
+        }, () => { }];
 }
 function firstTry3() {
     ctx.globalAlpha = 0.8;
@@ -3565,6 +3579,7 @@ function firstTry3() {
     Question = ["$question.firstTry.3", {
             "$question.firstTry.3.answer.yes": function () {
                 goTo("standartEdit", 0);
+                aalert("!!!!! Diese informationen sind noch nicht fertig !!!!!");
                 aalert("Von Links kannst du elemente in das Bearbeitungs Feld Ziehen. Häfte diese hintereinander unter [Start <0>]. Die Paramenter kannst du nun von den hineingezogenen Elementen mit einem Rechtsklick auf diese verändern.");
                 aalert("Wenn du Animationen/Bilder hinzufügen willst, klicken oben rechts auf den Menü Knopf. Dort kannst du unter 'Hinzufügen' Bilder und Animationen hinzufügen. Wenn du diese Wieder bearbeiten willst, kannst du auf 'Bearbeiten' klicken.");
                 aalert("Zudem kannst du 'Start' hinzufügen. Dort kannst du andere Elemente hinzufügen. [Start <0>] wird beim Hochfahren des Moodlights geladen. Mit [Laden <id>] kannst du andere Starts laden.");
@@ -3572,7 +3587,7 @@ function firstTry3() {
             "$question.firstTry.3.answer.no": function () {
                 goTo("standartEdit", 0);
             },
-        }];
+        }, () => { }];
 }
 let msPerDrawCach = [];
 let msPerDraw = -1;

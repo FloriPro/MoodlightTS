@@ -202,6 +202,9 @@ class drawAdder {
     image(image, posx, posy) {
         ToDraw.push({ "image": [image, posx, posy, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     }
+    imageWH(image, posx, posy, width, height) {
+        ToDraw.push({ "imageWH": [image, posx, posy, width, height, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
+    }
     rect(posx, posy, width, height, color, ctx) {
         ToDraw.push({ "rect": [posx, posy, width, height, color, ctx, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     }
@@ -233,6 +236,9 @@ class drawAdder {
 class drawApp {
     image(image, posx, posy, ctx) {
         ctx.drawImage(image, posx, posy);
+    }
+    imageWH(image, posx, posy, width, height, ctx) {
+        ctx.drawImage(image, posx, posy, width, height);
     }
     rect(posx, posy, width, height, color, ctx) {
         ctx.fillStyle = color;

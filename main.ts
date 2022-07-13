@@ -58,8 +58,8 @@ let availTranslations: string[] = Object.keys(availTranslationsR)
 let currentLanguage = "Deutsch";
 
 
-
-
+//load images
+const scrollImage = document.querySelector("#image_scroll") as HTMLImageElement;
 
 /*
  * TODO:
@@ -727,7 +727,7 @@ function UpdateStaticSettingsIfInSettings() {
         }
     }
 }
-let ToDraw: { rect?: any[]; image?: any[]; roundedRect?: any[]; circle?: any[]; fill?: (string | number | CanvasRenderingContext2D)[]; text?: any[]; polygon?: (string | number | CanvasRenderingContext2D | [number, number][])[]; polygonOutline?: (string | number | CanvasRenderingContext2D | [number, number][])[]; }[] = [];
+let ToDraw: { rect?: any[]; image?: any[]; imageWH?: any[]; roundedRect?: any[]; circle?: any[]; fill?: (string | number | CanvasRenderingContext2D)[]; text?: any[]; polygon?: (string | number | CanvasRenderingContext2D | [number, number][])[]; polygonOutline?: (string | number | CanvasRenderingContext2D | [number, number][])[]; }[] = [];
 
 
 
@@ -783,7 +783,7 @@ let globalKeyEvents: { [key: string]: () => void } = {
     }
 }
 
-var Question: [string, { [name: string]: (seId: number) => void }, string?] = ["ERROR", { "ERROR": function () { console.warn("Question without defenition"); } }]
+var Question: [string, { [name: string]: (seId: number) => void }, (string | Function)?] = ["ERROR", { "ERROR": function () { console.warn("Question without defenition"); } }]
 var questionScroll = 0;
 
 var Übergang = -1;
@@ -1933,7 +1933,7 @@ function autoSave() {
 }
 
 
-let transitionFunction: () => void;
+let transitionFunction: (() => void) | undefined;
 /**
 * type: 0=fadein+fadeout; 1=cut
 * standartEdit, PictureEdit, Question, Settings, Actions, Sheduler, Console
@@ -2114,6 +2114,9 @@ function drawScreen() {
         }
         else if (key == "image") {
             drawReal.image(i[0], i[1] + px, i[2] + py, ctx);
+        }
+        else if (key == "imageWH") {
+            drawReal.imageWH(i[0], i[1] + px, i[2] + py, i[3], i[4], ctx);
         }
         drawActions++;
     });
@@ -2950,22 +2953,24 @@ function updateRects() {
             } else {
                 mouse[0] = false
                 mouseSelectionLeft = 0
-                if (comesFrom != "Question") {
-                    goTo(comesFrom, 1);
-                    setTimeout(updateRects, 1);
-                    mouse[0] = false;
-                } else {
-                    if (Question[2] != undefined) {
+                if (Question[2] != undefined) {
+                    if (typeof Question[2] == 'string') {
                         goTo(Question[2], 1);
                         if (Question[2] == "Settings") {
                             mouse[0] = false;
                         }
-                    } else {
-                        goTo("standartEdit", 1);
+                    } else if (typeof Question[2] == 'function') {
+                        Question[2]();
                     }
-                    setTimeout(updateRects, 15);
-
                 }
+                else if (comesFrom != "Question") {
+                    goTo(comesFrom, 1);
+                    setTimeout(updateRects, 1);
+                    mouse[0] = false;
+                } else {
+                    goTo("standartEdit", 1);
+                }
+                setTimeout(updateRects, 15);
             }
         }
 
@@ -3037,6 +3042,11 @@ function updateRects() {
         var textWidth = measureText(Question[0], ctx).width;
         draw.rect(canvas.width / 2 - textWidth / 2, 80, textWidth, -50, currentColor["QuestionTitleBackground"], ctx);
         draw.text(canvas.width / 2, 70, Question[0], currentColor["NormalText"], "center", font, ctx);
+
+        //draw scroll image, if scroll available
+        if (150 + q1.length * blockheight - window.innerHeight > 0) {
+            draw.imageWH(scrollImage, canvas.width / 2 - (mW / 2 + 5) - 100, canvas.height - 100, 100, 100);
+        }
 
     }
     else if (editType == "PictureEdit") {
@@ -3234,7 +3244,10 @@ function updateRects() {
     if (Übergang >= 1) {
 
         if (Übergang == 25) {
-            transitionFunction();
+            if (transitionFunction != undefined) {
+                transitionFunction();
+                transitionFunction = undefined;
+            }
         }
 
         var alpha = 0;
@@ -3365,7 +3378,7 @@ setTimeout(() => {
                 firstTry1()
             }
         }
-        Question = ["Sprache Auswählen", a]
+        Question = ["Sprache Auswählen", a, () => { /*do noting on try to exit window (language required)*/ }]
         goTo("Question", 1)
     }
 }, 200);
@@ -3388,7 +3401,7 @@ function firstTry1() {
             firstTry2();
             goTo("Question", 1)
         }
-    }]
+    }, () => { }]
 }
 function firstTry2() {
     ctx.globalAlpha = 0.8;
@@ -3399,7 +3412,7 @@ function firstTry2() {
             firstTry3();
             goTo("Question", 1)
         }
-    }]
+    }, () => { }]
 }
 function firstTry3() {
     ctx.globalAlpha = 0.8;
@@ -3408,6 +3421,7 @@ function firstTry3() {
     Question = ["$question.firstTry.3", {
         "$question.firstTry.3.answer.yes": function () {
             goTo("standartEdit", 0);
+            aalert("!!!!! Diese informationen sind noch nicht fertig !!!!!")
             aalert("Von Links kannst du elemente in das Bearbeitungs Feld Ziehen. Häfte diese hintereinander unter [Start <0>]. Die Paramenter kannst du nun von den hineingezogenen Elementen mit einem Rechtsklick auf diese verändern.");
             aalert("Wenn du Animationen/Bilder hinzufügen willst, klicken oben rechts auf den Menü Knopf. Dort kannst du unter 'Hinzufügen' Bilder und Animationen hinzufügen. Wenn du diese Wieder bearbeiten willst, kannst du auf 'Bearbeiten' klicken.");
             aalert("Zudem kannst du 'Start' hinzufügen. Dort kannst du andere Elemente hinzufügen. [Start <0>] wird beim Hochfahren des Moodlights geladen. Mit [Laden <id>] kannst du andere Starts laden.")
@@ -3415,7 +3429,7 @@ function firstTry3() {
         "$question.firstTry.3.answer.no": function () {
             goTo("standartEdit", 0);
         },
-    }]
+    }, () => { }]
 }
 
 let msPerDrawCach: number[] = [];
