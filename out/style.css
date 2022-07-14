@@ -159,3 +159,7 @@ input {
 .schedule input {
     width: 400px;
 }
+
+.pictureEditTool_sel {
+    background-color: #36f43f;
+}

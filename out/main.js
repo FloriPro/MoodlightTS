@@ -134,6 +134,7 @@ function loadProject(jsonLoad, lastUsed) {
     var projectNameSave = projectName;
     var sizeXSave = moodLightSizeX;
     var scheduleSave = schedulerList;
+    var ledSortTypeSave = ledSortType;
     try {
         Elements = updateToNewTranslation(jsonLoad.Elements);
         pictures = jsonLoad.pictures;
@@ -145,6 +146,9 @@ function loadProject(jsonLoad, lastUsed) {
         }
         moodLightSizeX = jsonLoad.sizeX;
         moodLightSizeY = jsonLoad.sizeX;
+        if (jsonLoad.ledSortType != undefined) {
+            ledSortType = parseInt(jsonLoad.ledSortType);
+        }
         if (jsonLoad.projectName != undefined) {
             projectName = jsonLoad.projectName;
         }
@@ -182,6 +186,7 @@ function loadProject(jsonLoad, lastUsed) {
         moodLightSizeX = sizeXSave;
         moodLightSizeY = sizeXSave;
         schedulerList = scheduleSave;
+        ledSortType = ledSortTypeSave;
         loadSchedules();
         aalert("$alert.loadFailed");
         console.error(e);
@@ -197,6 +202,7 @@ function loadProject(jsonLoad, lastUsed) {
 let clickStart = -1;
 let clickTime = -1;
 let waitClickTime = 200;
+let waitForFirmware = false;
 function createUserEvents() {
     //Phone
     document.addEventListener("touchstart", toutchStart);
@@ -367,6 +373,41 @@ function isKeyDown(key) {
     }
     return true;
 }
+/**
+ * 0: snake
+ * 1: line by line
+ */
+const moodlightSizeType = { "6x6": 0, "8x8": 1 };
+function firmwareToSettingsCheck(firmware) {
+    var sizeInfo = "6x6"; //default to
+    for (var f of firmware.split(".")) {
+        if (f.includes("x")) {
+            sizeInfo = f;
+            break;
+        }
+    }
+    var sizeX = parseInt(sizeInfo.split("x")[0]);
+    var sizeY = parseInt(sizeInfo.split("x")[1]);
+    if (sizeX != sizeY) {
+        aalert("Moodlight ist nicht quadratisch! Dieses Programm funktioniert nur bei quadratischen MoodLights richtig!");
+    }
+    if (moodLightSizeX != sizeX || moodLightSizeY != sizeY) {
+        if (confirm("Projekt größe an MoodLight anpassen")) {
+            moodLightSizeX = sizeX;
+            moodLightSizeY = sizeY;
+            UpdateSizeMoodlightSize();
+            autoSave();
+        }
+    }
+    if (moodlightSizeType[sizeInfo] != undefined) {
+        if (moodlightSizeType[sizeInfo] != ledSortType) {
+            if (confirm("MoodLight led anordnung anpassen?")) {
+                ledSortType = moodlightSizeType[sizeInfo];
+                autoSave();
+            }
+        }
+    }
+}
 //MQTT
 let latesMQTTMessage = "";
 let client;
@@ -391,9 +432,11 @@ function mqttConstructor() {
 }
 function onConnect() {
     UpdateStaticSettingsIfInSettings();
-    // Once a connection has been made, make a subscription and send a message.
     console.log("onConnect");
     client.subscribe(myTopic);
+    //check firmware
+    send("V");
+    waitForFirmware = true;
 }
 function onFailure() {
     UpdateStaticSettingsIfInSettings();
@@ -425,7 +468,10 @@ function onMessageArrived(message) {
     var objDiv2 = document.querySelector("#consoleOut2");
     objDiv.appendChild(tag);
     objDiv2.scrollTop = objDiv2.scrollHeight;
-    if (message.payloadString.substring(1, 0) == ";" && waitingForMQTTPic) {
+    if (waitForFirmware && message.payloadString.substring(1, 0) == ";" && message.payloadString.includes("x")) {
+        firmwareToSettingsCheck(message.payloadString);
+    }
+    else if (message.payloadString.substring(1, 0) == ";" && waitingForMQTTPic) {
         console.log("load");
         pictureValues[page] = pictureString2Value(message.payloadString.substring(1));
         loadPictureVal(pictureValues[page]);
@@ -1284,7 +1330,7 @@ const settings = {
                 return "button";
             }
             else {
-                openWindow("/colorMaker/");
+                openWindow("colorMaker/");
                 return "";
             }
         },
@@ -1329,6 +1375,27 @@ const settings = {
                     moodLightSizeY = r;
                     UpdateSizeMoodlightSize();
                 }
+                return "";
+            }
+        },
+        "$settings.moodlight.ledType": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                Question = ["Welchen LED Typ hat dein MoodLight (6x6: snake, 8x8: line by line)", {
+                        "snake": () => {
+                            ledSortType = 0;
+                            goTo("Settings", 1);
+                            autoSave();
+                        },
+                        "line by line": () => {
+                            ledSortType = 1;
+                            goTo("Settings", 1);
+                            autoSave();
+                        }
+                    }];
+                goTo("Question", 1);
                 return "";
             }
         },
@@ -1529,6 +1596,9 @@ vwxyz.
 let pictureValues = [];
 /**0=Bild,1=Animation */
 let pictureEditType = 0;
+let pictureEditTool = 0;
+let pictureEditLineStart = [0, 0];
+pictureEditMarkUsedTool();
 let page = 0;
 resetPicEdit();
 let sidebarSize = 250;
@@ -1558,7 +1628,9 @@ const available = [
     ["$element.colors", ["ffffff", "000000"]],
     ["$element.load", ["0"]],
     ["$element.pixel", ["0", "ff0000"]],
-    ["$element.comment", [""]]
+    ["$element.comment", [""]],
+    ["$element.sound", ["1000", "100"]],
+    ["$element.loopSound", ["100"]]
 ];
 const description = {
     "$element.wait": ["$element.wait.seconds"],
@@ -1573,7 +1645,9 @@ const description = {
     "$element.colors": ["$element.colors.foregroundColor", "$element.colors.backgroundColor"],
     "$element.move": ["$element.move.direction", "$element.move.backgroundColor"],
     "$element.pixel": ["$element.pixel.position", "$element.pixel.color"],
-    "$element.comment": ["$element.comment.information"]
+    "$element.comment": ["$element.comment.information"],
+    "$element.sound": ["HZ", "dauer"],
+    "$element.loopSound": ["dauer"],
 };
 const joggAvailLookup = { "$element.move.pixelverschiebennachvorne": 0, "$element.move.pixelverschiebennachhinten": 1, "$element.move.verschiebenlinks": 9, "$element.move.verschiebenrechts": 7, "$element.move.verschiebenoben": 6, "$element.move.verschiebenunten": 8, "$element.move.drehenlinks": 5, "$element.move.drehenrechts": 3, "$element.move.drehenoben": 2, "$element.move.drehenunten": 4 };
 const joggAvail = Object.keys(joggAvailLookup);
@@ -1888,6 +1962,11 @@ else {
 }
 let moodLightSizeX = 6;
 let moodLightSizeY = 6;
+/**
+ * 0: snake
+ * 1: line by line
+ */
+let ledSortType = 0;
 var la = getCookie("lastUsed");
 if (la != "" && localStorage[la] != undefined) {
     loadProject(JSON.parse(localStorage[la]), true);
@@ -1952,14 +2031,22 @@ function pictureString2Value(input) {
     try {
         var out = [];
         for (var i = 0; i < moodLightSizeY; i++) {
-            if (i % 2 == 0) {
-                for (var ii = 0; ii < moodLightSizeX; ii++) {
-                    var s = i * moodLightSizeY + ii;
-                    out.push(input.substring(s * 6, s * 6 + 6));
+            if (ledSortType == 0) {
+                if (i % 2 == 0) {
+                    for (var ii = 0; ii < moodLightSizeX; ii++) {
+                        var s = i * moodLightSizeY + ii;
+                        out.push(input.substring(s * 6, s * 6 + 6));
+                    }
+                }
+                else {
+                    for (var ii = moodLightSizeX - 1; ii >= 0; ii--) {
+                        var s = i * moodLightSizeY + ii;
+                        out.push(input.substring(s * 6, s * 6 + 6));
+                    }
                 }
             }
-            else {
-                for (var ii = moodLightSizeX - 1; ii >= 0; ii--) {
+            else if (ledSortType == 1) {
+                for (var ii = 0; ii < moodLightSizeX; ii++) {
                     var s = i * moodLightSizeY + ii;
                     out.push(input.substring(s * 6, s * 6 + 6));
                 }
@@ -1974,16 +2061,26 @@ function pictureString2Value(input) {
 function pictureValue2String(input) {
     var out = "";
     for (var i = 0; i < moodLightSizeY; i++) {
-        if (i % 2 == 0) {
-            for (var ii = 0; ii < moodLightSizeX; ii++) {
-                if (input[i * moodLightSizeY + ii] == "") {
-                    input[i * moodLightSizeY + ii] = "000000";
+        if (ledSortType == 0) {
+            if (i % 2 == 0) {
+                for (var ii = 0; ii < moodLightSizeX; ii++) {
+                    if (input[i * moodLightSizeY + ii] == "") {
+                        input[i * moodLightSizeY + ii] = "000000";
+                    }
+                    out = out + input[i * moodLightSizeY + ii];
                 }
-                out = out + input[i * moodLightSizeY + ii];
+            }
+            else {
+                for (var ii = moodLightSizeX - 1; ii >= 0; ii--) {
+                    if (input[i * moodLightSizeY + ii] == "") {
+                        input[i * moodLightSizeY + ii] = "000000";
+                    }
+                    out = out + input[i * moodLightSizeY + ii];
+                }
             }
         }
         else {
-            for (var ii = moodLightSizeX - 1; ii >= 0; ii--) {
+            for (var ii = 0; ii < moodLightSizeX; ii++) {
                 if (input[i * moodLightSizeY + ii] == "") {
                     input[i * moodLightSizeY + ii] = "000000";
                 }
@@ -2029,7 +2126,7 @@ function finishPicture() {
     autoSave();
 }
 function genProjectJson() {
-    return JSON.stringify({ "sizeX": moodLightSizeX, "Elements": Elements, "pictures": pictures, "ElementPositions": ElementPositions, "FreeElements": FreeElements, "animations": animations, "projectName": projectName, "Scheduler": getSchedulerDat() });
+    return JSON.stringify({ "sizeX": moodLightSizeX, "ledSortType": ledSortType, "Elements": Elements, "pictures": pictures, "ElementPositions": ElementPositions, "FreeElements": FreeElements, "animations": animations, "projectName": projectName, "Scheduler": getSchedulerDat() });
 }
 function downloadProject() {
     var filename = projectName;
@@ -3173,16 +3270,48 @@ function updateRects() {
         pageTeller.innerHTML = "Seite " + (page + 1) + "/" + pictureValues.length;
         drawReal.fill(currentColor["background"], ctx);
         if (mouse[0]) {
+            mouseSelectionLeft == 0;
             if (mouseX < 60 * moodLightSizeX && mouseY < 60 * moodLightSizeY && mouseY > 1) {
                 let x = Math.floor(mouseX / 60);
                 let y = Math.floor(mouseY / 60);
                 let a = document.getElementById("y" + x + "x" + y);
                 if (a != null) {
                     if (!isKeyDown("alt")) {
-                        //pictuer changed
-                        if (pictureValues[page][y * moodLightSizeY + x] != rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b)) {
-                            pictureValues[page][y * moodLightSizeY + x] = rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b);
-                            a.style.backgroundColor = colorPicker.spectrum("get");
+                        //stift
+                        if (pictureEditTool == 0) {
+                            //pictuer changed
+                            if (pictureValues[page][y * moodLightSizeY + x] != rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b)) {
+                                pictureValues[page][y * moodLightSizeY + x] = rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b);
+                                a.style.backgroundColor = colorPicker.spectrum("get");
+                                //auto upload
+                                var au = document.querySelector("#autoUptade");
+                                if (au.checked) {
+                                    send(pictureValue2String(pictureValues[page]));
+                                }
+                                //autosave
+                                if (setSettings["$settings.general.autoSaveImage"] == "true") {
+                                    if (pictureId != -1 || animationId != -1) {
+                                        if (pictureEditType == 0) {
+                                            pictures[pictureId] = pictureValue2String(pictureValues[0]); //pictureValues.join("");
+                                        }
+                                        else {
+                                            var anim = [];
+                                            for (var i = 0; i < pictureValues.length; i++) {
+                                                anim.push(pictureValue2String(pictureValues[i]));
+                                            }
+                                            animations[animationId] = anim;
+                                        }
+                                    }
+                                    else {
+                                        aalert("Something went wrong: No ID!");
+                                    }
+                                    autoSave();
+                                }
+                            }
+                        }
+                        //füllen
+                        else if (pictureEditTool == 1) {
+                            pictureEditFill(x, y);
                             //auto upload
                             var au = document.querySelector("#autoUptade");
                             if (au.checked) {
@@ -3208,6 +3337,11 @@ function updateRects() {
                                 autoSave();
                             }
                         }
+                        //line
+                        else if (pictureEditTool == 2 && mouseSelectionLeft == -1) {
+                            pictureEditLineStart = [x, y];
+                            mouseSelectionLeft = 1;
+                        }
                     }
                     else {
                         colorPicker.spectrum("set", a.style.backgroundColor);
@@ -3215,6 +3349,50 @@ function updateRects() {
                     }
                 }
             }
+        }
+        if (mouseSelectionLeft == 1 && !mouse[0]) {
+            var color = rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b);
+            var x = mouseX / 60;
+            var y = mouseY / 60;
+            var x2 = pictureEditLineStart[0];
+            var y2 = pictureEditLineStart[1];
+            var r = Math.atan2(x - x2, y - y2);
+            for (var i = 0; i < 5000; i++) {
+                x2 += Math.sin(r) * 1;
+                y2 += Math.cos(r) * 1;
+                pictureEditSetPixel(Math.floor(x2), Math.floor(y2), color);
+                if (Math.floor(x2) == Math.floor(x) && Math.floor(y2) == Math.floor(y)) {
+                    console.log("end");
+                    break;
+                }
+            }
+            //auto upload
+            var au = document.querySelector("#autoUptade");
+            if (au.checked) {
+                send(pictureValue2String(pictureValues[page]));
+            }
+            //autosave
+            if (setSettings["$settings.general.autoSaveImage"] == "true") {
+                if (pictureId != -1 || animationId != -1) {
+                    if (pictureEditType == 0) {
+                        pictures[pictureId] = pictureValue2String(pictureValues[0]); //pictureValues.join("");
+                    }
+                    else {
+                        var anim = [];
+                        for (var i = 0; i < pictureValues.length; i++) {
+                            anim.push(pictureValue2String(pictureValues[i]));
+                        }
+                        animations[animationId] = anim;
+                    }
+                }
+                else {
+                    aalert("Something went wrong: No ID!");
+                }
+                autoSave();
+            }
+        }
+        if (mouseSelectionLeft != -1 && !mouse[0]) {
+            mouseSelectionLeft = -1;
         }
     }
     else if (editType == "Settings") {
@@ -3264,11 +3442,17 @@ function updateRects() {
                             settings[hauptgruppe[settingsSelLeft]][sel](true);
                         }
                         else if (settings[hauptgruppe[settingsSelLeft]][sel](false) == "str") {
-                            setSettings[sel] = sprompt(setSettings[sel] + " verändern zu");
+                            var answer = pprompt(setSettings[sel] + " verändern zu");
+                            if (answer != undefined) {
+                                setSettings[sel] = answer;
+                            }
                             settings[hauptgruppe[settingsSelLeft]][sel](true);
                         }
                         else if (settings[hauptgruppe[settingsSelLeft]][sel](false) == "num") {
-                            setSettings[sel] = sprompt(setSettings[sel] + " verändern zu");
+                            var answer = pprompt(setSettings[sel] + " verändern zu");
+                            if (answer != undefined) {
+                                setSettings[sel] = answer;
+                            }
                             settings[hauptgruppe[settingsSelLeft]][sel](true);
                         }
                         mouse[0] = false;
@@ -3542,7 +3726,6 @@ setTimeout(() => {
     }
 }, 200);
 function firstTry1() {
-    setCookie("FirstTry", "No", 10);
     goTo("Question", 1);
     Question = ["$question.firstTry.1", {
             "$question.firstTry.1.answer.yes": function () {
@@ -3573,6 +3756,7 @@ function firstTry2() {
         }, () => { }];
 }
 function firstTry3() {
+    setCookie("FirstTry", "No", 10);
     ctx.globalAlpha = 0.8;
     drawReal.fill("#ffffff", ctx);
     ctx.globalAlpha = 1;

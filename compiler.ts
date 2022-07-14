@@ -203,11 +203,12 @@ function compileRaw(): string[] | undefined {
                     var pos = command;
                     do {
                         if (Elements[loadPos][pos][0] == "$element.end") { indents += 1; }
-                        if (Elements[loadPos][pos][0] == "$element.loop" || Elements[loadPos][pos][0] == "$element.infiniteLoop") { indents -= 1; }
+                        if (Elements[loadPos][pos][0] == "$element.loop" ||
+                            Elements[loadPos][pos][0] == "$element.infiniteLoop") { indents -= 1; }
                         pos--;
                     } while (indents != 0);
-                    if (Elements[loadPos][pos + 1][0] == "Unendlich") {
-                        rawCommands[savePos].push("R0000");
+                    if (Elements[loadPos][pos + 1][0] == "$element.infiniteLoop") {
+                        rawCommands[savePos].push("R");
                     } else {
                         if (parseInt(Elements[loadPos][pos + 1][1][0]) > 1) {
                             rawCommands[savePos].push("R" + addZero(parseInt(Elements[loadPos][pos + 1][1][0]) - 1, 4));
@@ -230,6 +231,15 @@ function compileRaw(): string[] | undefined {
                     }
                     rawCommands[savePos].push("O" + params[0]);
                     break;
+
+                case "$element.sound":
+                    rawCommands[savePos].push("N" + addZero(params[0], 5) + "," + addZero(params[1], 4));
+                    break;
+                case "$element.loopSound":
+                    rawCommands[savePos].push("N0," + addZero(params[0], 4));
+                    break;
+
+
 
                 case "$element.comment":
                     break;

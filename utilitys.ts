@@ -335,3 +335,44 @@ function measureText(text: any, ctx: { measureText: (arg0: any) => any; }) {
     }
     return ctx.measureText(text);
 }
+
+function pictureEditGetPixel(px: number, py: number): string {
+    if (px < 0) { return "_" + Math.floor(1E7 * Math.random()).toString(16) }
+    if (py < 0) { return "_" + Math.floor(1E7 * Math.random()).toString(16) }
+    if (py >= moodLightSizeY) { return "_" + Math.floor(1E7 * Math.random()).toString(16) }
+    if (px >= moodLightSizeX) { return "_" + Math.floor(1E7 * Math.random()).toString(16) }
+    return pictureValues[page][py * moodLightSizeY + px]
+}
+function pictureEditSetPixel(px: number, py: number, value: string) {
+    pictureValues[page][py * moodLightSizeY + px] = value
+    var a = document.getElementById("y" + px + "x" + py) as unknown as HTMLElement;
+    if (!value.startsWith("#")) {
+        value = "#" + value;
+    }
+    if (a == null) { return; }
+    a.style.backgroundColor = value;
+}
+
+function pictureEditFill(px: number, py: number) {
+    var ogColor = pictureEditGetPixel(px, py);
+    var color: string = rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b)
+    if (pictureEditGetPixel(px, py) == color) {
+        return;
+    } else {
+        pictureEditSetPixel(px, py, color);
+
+        if (pictureEditGetPixel(px + 1, py) == ogColor) { pictureEditFill(px + 1, py) }
+        if (pictureEditGetPixel(px - 1, py) == ogColor) { pictureEditFill(px - 1, py) }
+        if (pictureEditGetPixel(px, py + 1) == ogColor) { pictureEditFill(px, py + 1) }
+        if (pictureEditGetPixel(px, py - 1) == ogColor) { pictureEditFill(px, py - 1) }
+    }
+}
+
+function pictureEditMarkUsedTool() {
+    for (var x = 0; x < 10; x++) {
+        if (document.getElementById("pictureEditTool_" + x) != undefined) {
+            (document.getElementById("pictureEditTool_" + x) as HTMLButtonElement).className = "pictureEditTool";
+        }
+    }
+    (document.getElementById("pictureEditTool_" + pictureEditTool) as HTMLButtonElement).className = "pictureEditTool_sel";
+}

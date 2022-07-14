@@ -357,4 +357,60 @@ function measureText(text, ctx) {
     }
     return ctx.measureText(text);
 }
+function pictureEditGetPixel(px, py) {
+    if (px < 0) {
+        return "_" + Math.floor(1E7 * Math.random()).toString(16);
+    }
+    if (py < 0) {
+        return "_" + Math.floor(1E7 * Math.random()).toString(16);
+    }
+    if (py >= moodLightSizeY) {
+        return "_" + Math.floor(1E7 * Math.random()).toString(16);
+    }
+    if (px >= moodLightSizeX) {
+        return "_" + Math.floor(1E7 * Math.random()).toString(16);
+    }
+    return pictureValues[page][py * moodLightSizeY + px];
+}
+function pictureEditSetPixel(px, py, value) {
+    pictureValues[page][py * moodLightSizeY + px] = value;
+    var a = document.getElementById("y" + px + "x" + py);
+    if (!value.startsWith("#")) {
+        value = "#" + value;
+    }
+    if (a == null) {
+        return;
+    }
+    a.style.backgroundColor = value;
+}
+function pictureEditFill(px, py) {
+    var ogColor = pictureEditGetPixel(px, py);
+    var color = rgb2hex(colorPicker.spectrum("get")._r, colorPicker.spectrum("get")._g, colorPicker.spectrum("get")._b);
+    if (pictureEditGetPixel(px, py) == color) {
+        return;
+    }
+    else {
+        pictureEditSetPixel(px, py, color);
+        if (pictureEditGetPixel(px + 1, py) == ogColor) {
+            pictureEditFill(px + 1, py);
+        }
+        if (pictureEditGetPixel(px - 1, py) == ogColor) {
+            pictureEditFill(px - 1, py);
+        }
+        if (pictureEditGetPixel(px, py + 1) == ogColor) {
+            pictureEditFill(px, py + 1);
+        }
+        if (pictureEditGetPixel(px, py - 1) == ogColor) {
+            pictureEditFill(px, py - 1);
+        }
+    }
+}
+function pictureEditMarkUsedTool() {
+    for (var x = 0; x < 10; x++) {
+        if (document.getElementById("pictureEditTool_" + x) != undefined) {
+            document.getElementById("pictureEditTool_" + x).className = "pictureEditTool";
+        }
+    }
+    document.getElementById("pictureEditTool_" + pictureEditTool).className = "pictureEditTool_sel";
+}
 //# sourceMappingURL=utilitys.js.map

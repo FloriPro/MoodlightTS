@@ -120,6 +120,14 @@
 
             <!--Edit-->
             <div>
+                <!--Tool selection-->
+                <div style="display:flex">
+                    <button class="pictureEditTool" id="pictureEditTool_0" onclick="pictureEditTool=0;pictureEditMarkUsedTool()">Stift</button>
+                    <button class="pictureEditTool" id="pictureEditTool_1" onclick="pictureEditTool=1;pictureEditMarkUsedTool()">Füllen</button>
+                    <button class="pictureEditTool" id="pictureEditTool_2" onclick="pictureEditTool=2;pictureEditMarkUsedTool()">Line</button>
+                    <button class="pictureEditTool" id="pictureEditTool_3" onclick="pictureEditTool=3;pictureEditMarkUsedTool()">?</button>
+                </div>
+
                 <!--Colorpicker-->
                 <div>
                     <input onclick="return true;" type="text" value="#ffffff" id="color" placeholder="HEX Farbe"
@@ -207,13 +215,14 @@
     <div id="Console" style="display: none;">
         <div
             style="/*background: white;*/position: fixed;flex-wrap: wrap;align-items: flex-start;width: 100%;height: 100%;">
-            <div id="consoleOut2" style="overflow-y: scroll;">
+            <div id="consoleOut2" style="overflow-y: scroll;cursor: text;"
+                onclick="document.querySelector('#text').focus();">
                 <code>
                     <div id="consoleOut">
                     </div>
                     <div style="display: flex;">
                         <p>>&nbsp;</p>
-                        <input style="font-family: monospace;" id="text" type="text" placeholder="[command]" onkeypress="if(event.key==='Enter'){send2(document.querySelector('#text').value)}">
+                        <input style="font-family: monospace;outline: none;" id="text" type="text" placeholder="[command]" onkeypress="if(event.key==='Enter'){send2(document.querySelector('#text').value)}">
                     </div>
                 </code>
             </div>

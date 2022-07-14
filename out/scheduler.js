@@ -4,12 +4,16 @@ const schedulPreset = `
 <div class="schedule">
     <p class="hover"><input type="text" class="time" value="_v_time" oninput="sheduleTimeChange(this)" onfocusout="sheduleTimeFormat(this)" placeholder="Uhrzeit xx:yy (e.g. '23:00')"></p>
     <p class="hover"><input type="text" class="id" value="_v_id" oninput="sheduleIdChange(this)" onfocusout="sheduleIdFormat(this)" placeholder="Start id zz (e.g. '0')"></p>
+    <select class="runOnStartup">
+        <option _sel_N value="n">Nur bei uhrzeit ausführen</option>
+        <option _sel_Y value="j">Wenn in vergangenheit beim hochfahren, dann ausführen</option>
+    </select>
     <button onclick="this.parentNode.remove();autoSave();scheduleChanged = true;">X</button>
 </div>`;
 const scheduleOk = "lawngreen";
 const scheduleError = "red";
 function addShedule() {
-    schedulerListHTML.innerHTML += schedulPreset.replace("_v_time", "").replace("_v_id", "");
+    schedulerListHTML.innerHTML += schedulPreset.replace("_v_time", "").replace("_v_id", "").replace("_sel_Y", "").replace("_sel_N", "selected");
 }
 function isPositiveInteger(str) {
     if (typeof str !== 'string') {
@@ -100,14 +104,22 @@ function getSchedulerHTMLDat() {
     for (var elem of d) {
         var id = elem.querySelector(".id");
         var time = elem.querySelector(".time");
-        out.push([id.value, time.value]);
+        var runOnStartup = elem.querySelector(".runOnStartup");
+        out.push([id.value, time.value, runOnStartup.value]);
     }
     return out;
 }
 function loadSchedules() {
     schedulerListHTML.innerHTML = "";
     for (var s of schedulerList) {
-        schedulerListHTML.innerHTML += schedulPreset.replace("_v_time", s[1]).replace("_v_id", s[0]);
+        var v = schedulPreset.replace("_v_time", s[1]).replace("_v_id", s[0]);
+        if (s[2] == "j") {
+            v = v.replace("_sel_Y", "selected").replace("_sel_N", "");
+        }
+        else {
+            v = v.replace("_sel_N", "selected").replace("_sel_Y", "");
+        }
+        schedulerListHTML.innerHTML += v;
     }
     //update information
     var allElements = document.querySelectorAll(".schedule");
@@ -132,7 +144,11 @@ function genCompiledScheduler() {
     var dat = getSchedulerDat();
     var out = [];
     for (var schedule of dat) {
-        out.push("@" + schedule[1] + ",A" + schedule[0] + ",f");
+        if (schedule[2] == "j")
+            var s2 = "1";
+        else
+            var s2 = "0";
+        out.push("@" + schedule[1] + ",A" + schedule[0] + "," + s2);
     }
     //TODO
     return out.join(";");

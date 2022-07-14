@@ -86,6 +86,10 @@
         </div>
     </div>
     <button onclick="uSpeed()">Set speed</button>
+    <button onclick="
+        moodLightSizeX=prompt('Größe');
+        moodLightSizeY=moodLightSizeX;
+        UpdateSizeMoodlightSize();">Größe</button>
 </body>
 
 <script>
@@ -222,7 +226,7 @@
     let myPass = getCookie("myPass");
     let myUser = getCookie("myUser");
     let host = getCookie("host");
-     
+
     UpdateSizeMoodlightSize();
     connect();
 
