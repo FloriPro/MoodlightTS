@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<!-- saved from url=(0044)https://www.hotti.info/fabuser/ml6/help.html -->
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <title>LED Moodlight 6x6 © Heinrich Hottarek</title>
+
+    <link rel="stylesheet" type="text/css" href="./6x6_info_files/style.css">
+
+    <link href="./6x6_info_files/css" rel="stylesheet" type="text/css">
+    <link href="./6x6_info_files/css(1)" rel="stylesheet" type="text/css">
+</head>
+
+<body>
+    <div id="header">
+        <div id="title">HOTTIs LED Moodlight 6x6 Matrix * COMMAND REFERENCE (V2.1.2)</div>
+    </div>
+
+    <div id="body">
+        <div>
+            <h3>VALID PRESETS:</h3>
+            00 = Autostart Preset<br>
+            01 - 99 Flash-Filesystem-Presets<br>
+            0R - 9R RAM-Presets, volatile<br>
+            <br>
+            <h3>VALID BANKS:</h3>
+            A – Z = 26 Banks, each containing 100 Presets
+            Bank A is default bank. It hosts the Main Loop, if enabled. It´s first Preset (00) is the
+            Autostart Preset, witch the device will start after power-on or reset
+            <br>
+            <h3>MQTT COMMANDS:</h3>
+            * = SCRIPT identifier. Script-Lines alway start with *; and end with ;<br>
+            ; = COMMAND DELIMITER<br>
+            xxxxxx = Six character hex-value per clock pixel, so 216 chars for complete 6x6 matrix<br>
+            Lxx = LOAD and display preset xx<br>
+            Lbxx = LOAD and display preset xx from preset-bank b (b = capital letter from A-Z, xx = preset
+            nr)<br>
+            Lbxx,yy,zz = LOAD and display preset xx in preset-bank b in the pixel-range yy to zz (b =
+            capital letter from A-Z (optional), xx = preset nr, yy = start-pixel, zz = end-pixel)<br>
+            Txx = TRANSITION-speed for morphing and scrolltext (xx = speed 00 and 99, smaller = faster)<br>
+            Mxx = MORPH to preset nr xx<br>
+            Mbxx = MORPH to preset nr xx in preset-bank b (b = capital letter from A-Z, xx = preset nr)<br>
+            Mbxx,yy,zz = MORPH to preset nr xx in preset-bank b in the pixel-range yy to zz (b = capital
+            letter from A-Z (optional), xx = preset nr, yy = start-pixel, zz = end-pixel)<br>
+            Syyxxxxxx = SAVE hex-pixels or script (xxxxxx (up to 36 pixels = 216 hex-chars) or script) to
+            preset yy<br>
+            Sbyyxxxxxx = SAVE hex-pixels or script (xxxxxx (up to 36 pixels = 216 hex-chars) or script) to
+            preset yy in preset-bank b<br>
+            Wxxxx = WAIT xxxx/100 Seconds (eg. W0100 waits 1 second) ; W0000 waits for end of running
+            morph<br>
+            WMxx = WAIT xx/1000 Seconds (eg. WM01 waits 1/1000 second)<br>
+            H = HALT clock hands drawing<br>
+            G = GO and enable clock hands drawing<br>
+            Xxx = Delete preset xx<br>
+            Xbyy = Delete preset yy from preset-bank b<br>
+            Ixxxxxxyyyyyy = Set Ink- and background-color for pixelset functions<br>
+            IR = Set Ink- and background-color to random values<br>
+            D = Begin DO loop<br>
+            Rxxxx = REPEAT from DO xxxx times (set xxxx = 0 for endless Loop) (max. loop nesting depth is
+            10)<br>
+            Oxx = Set pixel xx to fOregroundcolor set by I command (xx = value between 0 and 35)<br>
+            Oxx,yy = Tint pixelrange xx to yy with fOregroundcolor set by I command (each value between 0
+            and 35)<br>
+            OR = Set random pixel to fOregroundcolor<br>
+            Jx = JOGG-scroll-funktion (x = 0 -&gt; pixels forward | x = 1 -&gt; pixels backward | x =
+            2|3|4|5 -&gt; rotate up|right|down|left | x = 6|7|8|9 -&gt; shift up|right|down|left ). The
+            shift feature takes into account the currenty set background color<br>
+            Jx,yyy,zzz = JOGG rotate pixels in range from yyy to zzz with direction x (x = 0 -&gt; clockwise
+            | x = 1 -&gt; counterclockwise)<br>
+            " = Begin of Scroll-Text-Message, has to be terminated with second " (eg. "Hello World")<br>
+            ?xx = Send content of preset xx via MQTT to own topic. Response is prefixed with ;<br>
+            ?bxx = Send content of preset xx from preset-bank b via MQTT to own topic. Response is prefixed
+            with ;<br>
+            ??xx = Send content of preset xx via MQTT to own topic. Response is prefixed with ;;xx (response
+            contains preset-number)<br>
+            ??bxx = Send content of preset xx from preset-bank b via MQTT to own topic. Response is prefixed
+            with ;;xx (response contains preset-number but not bank)<br>
+            ??? = Send comma-separated list of existing presets in current preset-bank<br>
+            ???? = Send all Presets<br>
+            &amp; = Send current framebuffer in hexformat prefixed with ;<br>
+            ! = Start Main Loop (starting with preset 01 to first preset containing a ! then loops back from
+            preset 01 – Main Loop is bound to bank A<br>
+            - = Stop Main Loop execution<br>
+            = = Do resync with NTP-Time-Server now<br>
+            ZXxx = Set overall brightness (xx = hex-value)<br>
+            V = Send Firmware-Version followed by hash sign(#) followed by time and date. Response is
+            prefixed with ;V<br>
+            Nxxxxx,yyyy = Generate NOISE ( tone with xxxxx Hz and yyyy/100 seconds duration, whilst
+            execution is nonblocking) ( if frequency is either 0 or 1 then loopcounter or 5000-loopcounter
+            is used as frequency (for simple sound-effects like eg. alarm) )<br>
+            POxx,y = PORT OUTPUT to GPIO pin xx with logic state y (y = 0 -&gt; low | y = 1 -&gt; high)<br>
+            PIxx = PORT INPUT from GPIO pin xx - Port state is sent back as ;Pxx;y where xx is the requestet
+            port and y is 0 or 1 depending on port-state<br>
+            PTxx,yy,zz,x = PORT TRIGGER on GPIO pin xx level-change. On HIGH-&gt;LOW go to preset yy, on
+            LOW-&gt;HIGH go to preset zz. x = 0 (first branch on next level-change) or 1 (first branch
+            now)<br>
+            PTC = PORT TRIGGER CLEAR <br>
+            XX = Reset Device (restart)<br>
+            XXX = Reset WiFi-Credentials (delete WiFi-Credentials and restart)<br>
+            XXXX = Check for Firmware-Update (only restart device when new firmware is available and
+            installed)<br>
+            $x = Switch preset-bank to x ( x = capital letter from A-Z so 26 preset-banks with 100 presets
+            each = 2600 presets). Bank A is default preset-bank<br>
+            @xx:yy,zzz,f = Schedule task to start preset nr zzz (e.g. A98) AT xx:yy clock (e.g. 23:00). On
+            reset or power-up of the device, only process previous scheduled tasks of the day that have 1 as
+            f, otherwise ignore this task if it is in the past.<br>
+            @E = ENABLE scheduler<br>
+            @D = DISABLE scheduler<br>
+            @C = CLEAR scheduler<br>
+            ~ = Ignore WiFi outages (include in autostart-preset to avoid restarts on loss of WiFi
+            signals)<br>
+            &lt;xxxxx,yyyyy&gt; = Send MQTT message to given topic (xxxxx = MQTT-Topic, yyyyy =
+            MQTT-Message) <br>
+
+            <h3>SCRIPT EXAMPLE:</h3>
+            EXAMPLE: *;T08;IFF0000000000;"rot ";W0000;I00FF00000000;"gruen ";W0000;I0000FF000000;"blau
+            ";W0000;IFFFFFF000000;<br>
+            RESULT: Set morph-speed to 8, set foreground-color to red and background to black, display text
+            "rot ", wait for scrolling end, set foreground green, display text "gruen ", wait again for
+            scrolling to complete, set foreground to blue, display text "blau ", wait for end of
+            text-display, reset to default ink (bg: black, fg: white)<br><br>
+            EXAMPLE: *;D;IFFFFFFFF00FF;J8;W0020;IFFFFFF00FFFF;J8;W0020;IFFFFFFFFFF00;J8;W0020;R0100;<br>
+            RESULT: Start loop, set foreground-color to white and background-color to magenta, shift display
+            down (always one pixel), wait 200 ms, set foreground-color to white and background-color to
+            cyan, shift display down, wait 200 ms, set foreground-color to white and background-color to
+            yellow, wait 200 ms, repeat 100 times from loop-start<br>
+            <br>
+            <h3>PUSH BUTTON</h3>
+            Press button to cycle through presets on bank A<br>
+            Store a single @ in a preset to reset button-cycle to preset 01 (e.g. @ in preset 5 will give
+            folowing button-cycle-sequence: 1,2,3,4,1,2,3,4,1,2,3,4......)<br>
+            If no preset with @ exists, button will cycle from 1 to 99 and then start again at preset 1 of
+            bank A, banks will never automatically switch!<br>
+        </div>
+
+    </div>
+    <br>
+
+    <script>
+        function search(e) {
+            let searched = e;
+            if (searched !== "") {
+                let text = document.getElementById("body").innerHTML;
+                let re = new RegExp("<br>\n( *)" + searched, "g"); // search for all instances
+                let newText = text.replace(re, `<br><span style="color: #4dff00;background: red;" class="goTo">${searched}</span>`);
+                document.getElementById("body").innerHTML = newText;
+                document.querySelector(".goTo").scrollIntoView();
+            }
+        }
+        search(location.hash.replace("#", ""))
+    </script>
+</body>
+
+</html>

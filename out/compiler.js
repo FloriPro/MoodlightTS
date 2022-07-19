@@ -238,8 +238,11 @@ function compileRaw() {
                 case "$element.sound":
                     rawCommands[savePos].push("N" + addZero(params[0], 5) + "," + addZero(params[1], 4));
                     break;
-                case "$element.loopSound":
-                    rawCommands[savePos].push("N0," + addZero(params[0], 4));
+                //case "$element.loopSound":
+                //    rawCommands[savePos].push("N0," + addZero(params[0], 4));
+                //    break;
+                case "$element.addPortTrigger":
+                    rawCommands[savePos].push("N" + addZero(params[0], 2) + "," + addZero(params[1], 2) + "," + addZero(params[2], 2) + "," + params[3]);
                     break;
                 case "$element.comment":
                     break;

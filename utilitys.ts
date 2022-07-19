@@ -376,3 +376,91 @@ function pictureEditMarkUsedTool() {
     }
     (document.getElementById("pictureEditTool_" + pictureEditTool) as HTMLButtonElement).className = "pictureEditTool_sel";
 }
+
+//MQTT
+let latesMQTTMessage = "";
+let client: Paho.MQTT.Client;
+function mqttConstructor() {
+    client = new Paho.MQTT.Client(host, 10833, "client" + ((new Date).getTime().toString(16) + Math.floor(1E7 * Math.random()).toString(16)));
+    client.onConnectionLost = onConnectionLost;
+    client.onMessageArrived = onMessageArrived;
+    try {
+        client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
+    } catch (e: any) {
+        if (e.message == "Failed to construct 'WebSocket': The URL 'wss://:10833/mqtt' is invalid.") {
+            settingsInfo["$settings.mqtt.connection"] = "Es wird ein Host für eine Verbindung benötigt.";
+        } else {
+            settingsInfo["$settings.mqtt.connection"] = e.message;
+        }
+        staticElementsData["$settings.mqtt.connection"] = false;
+        console.error(e);
+        //console.error("empty data!")
+    }
+}
+function onConnect() {
+    UpdateStaticSettingsIfInSettings();
+
+    console.log("onConnect");
+    client.subscribe(myTopic);
+
+    //check firmware
+    send("V");
+    waitForFirmware = true;
+}
+function onFailure() {
+    UpdateStaticSettingsIfInSettings();
+    settingsInfo["$settings.mqtt.connection"] = "Failed: evtl. Passwort/Topic/Username Falsch";
+    console.log("on Failure");
+}
+function onConnectionLost(responseObject: { errorCode: number; errorMessage: string; }) {
+    if (responseObject.errorCode != 0) {
+        staticElementsData["$settings.mqtt.connection"] = false
+        console.log("onConnectionLost:" + responseObject.errorMessage + "\nreconnecting...");
+        connect()
+    }
+}
+function reconnect() {
+    if (client.isConnected()) {
+        client.disconnect()
+        UpdateStaticSettingsIfInSettings();
+    }
+    staticElementsData["$settings.mqtt.connection"] = undefined;
+    settingsInfo["$settings.mqtt.connection"] = "Verbinden...";
+    connect();
+}
+function onMessageArrived(message: { payloadString: string; }) {
+    //console.log("onMessageArrived:" + message.payloadString);
+    var tag = document.createElement("p");
+    var text = document.createTextNode(message.payloadString);
+    tag.appendChild(text);
+    tag.innerHTML = highlight(tag.innerHTML);
+
+    var objDiv: HTMLDivElement = document.querySelector("#consoleOut") as HTMLDivElement;
+    var objDiv2: HTMLDivElement = document.querySelector("#consoleOut2") as HTMLDivElement;
+    objDiv.appendChild(tag)
+
+
+    objDiv2.scrollTop = objDiv2.scrollHeight;
+    if (waitForFirmware && message.payloadString.startsWith(";V") && message.payloadString.includes("x")) {
+        firmwareToSettingsCheck(message.payloadString);
+    }
+    else if (message.payloadString.substring(1, 0) == ";" && waitingForMQTTPic) {
+        console.log("load");
+        pictureValues[page] = pictureString2Value(message.payloadString.substring(1))
+        loadPictureVal(pictureValues[page]);
+        waitingForMQTTPic = false
+    } else if (message.payloadString.substring(1, 0) == ";") {
+        LiveMoodLightUpdate(message.payloadString.replace(";", ""));
+    }
+    latesMQTTMessage = message.payloadString;
+    setHighLightInformation();
+}
+function send(dat: string) {
+    var message = new Paho.MQTT.Message(dat);
+    message.destinationName = myTopic;
+    client.send(message);
+}
+function connect() {
+    mqttConstructor();
+    //client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
+}

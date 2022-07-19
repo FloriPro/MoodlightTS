@@ -56,7 +56,7 @@ p {
     font-size: 20px;
 }
 
-#text {
+.consoleInputText {
     width: -webkit-fill-available;
     width: -moz-available;
     border: 0px;
@@ -135,6 +135,26 @@ input {
     animation: fadeIn 0.25s;
 }
 
+.consoleHighLightCommand {
+    cursor: help;
+}
+
+.consoleHighLightCommand[title]:hover::after {
+    content: attr(title);
+    background-color: #ffffff;
+    border: solid 5px #ff0000;
+    color: #000000;
+    padding: 0px;
+    margin: 7px;
+    width: fit-content;
+    height: fit-content;
+    position: fixed;
+    pointer-events: none;
+    opacity: 0.8;
+    bottom: 0px;
+    left: 0px;
+}
+
 @keyframes fadeIn {
     0% {
         opacity: 0;
@@ -162,4 +182,36 @@ input {
 
 .pictureEditTool_sel {
     background-color: #36f43f;
+}
+
+#consoleOut p {
+    color: whitesmoke !important;
+}
+
+#consoleCursor {
+    width: 11px;
+    height: 25px;
+    background-color: rgba(255, 255, 255, 0.753);
+    position: relative;
+    left: 10px;
+    /* opacity: 0.0;*/
+}
+
+#consoleOut2:focus-within #consoleCursor {
+    animation: blink 0.75s step-start 0s infinite;
+}
+
+@keyframes blink {
+
+    0% {
+        opacity: 1.0;
+    }
+
+    50% {
+        opacity: 0.0;
+    }
+
+    100% {
+        opacity: 1.0;
+    }
 }

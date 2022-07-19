@@ -1,11 +1,11 @@
 //create field
 let emulatorTable = document.getElementById('emulatorTable') as HTMLCanvasElement;
-var moodLightSizY = 6;
-var moodLightSizX = 6;
+let moodLightSizeY = 6;
+let moodLightSizeX = 6;
 emulatorTable.innerHTML = "";
-for (var x = 0; x < moodLightSizY; x++) {
+for (var x = 0; x < moodLightSizeY; x++) {
     var i = '<tr>';
-    for (var y = 0; y < moodLightSizX; y++) {
+    for (var y = 0; y < moodLightSizeX; y++) {
         i += '<th style="background:white" class="ColorSelContainer"><div class="ColorSelButton" style="background:black" id="y' + y + "x" + x + '"></div></th>';
     }
     emulatorTable.innerHTML += i + "</tr>";
@@ -18,7 +18,7 @@ function delay(milliseconds: number) {
     });
 }
 
-function pictureString2Val(input: string): string[] {
+function pictureString2Value(input: string): string[] {
     try {
         var out: string[] = [];
         for (var i = 0; i < moodLightSizeY; i++) {
@@ -35,7 +35,7 @@ function pictureString2Val(input: string): string[] {
             }
         }
     } catch {
-        out = pictureString2Value(getErrorIMG());
+        var out: string[] = ["ff00ff"]
     }
     return out;
 }

@@ -6,6 +6,8 @@
 
 //TODO: update elements, when picture edited
 
+const version = "0.2.0";
+
 let currentTranslation: { [key: string]: string } = {};
 
 //translation
@@ -174,6 +176,11 @@ function loadProject(jsonLoad: {
         posx = 275;
         posy = 75;
 
+        //alert if size not matching to connnected moodlight
+        if (moodLightGotSizeX != -1 && moodLightGotSizeY != -1) {
+            sizeCheck(moodLightGotSizeX, moodLightGotSizeY);
+        }
+
         /*if (setSettings["Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern"] == "true" && !lastUsed) {
             if (client.isConnected()) {
                 send('@C');
@@ -324,26 +331,45 @@ function createUserEvents() {
     }
     function keyEvent(e: KeyboardEvent) {
         if (e.key == "Alt" || e.key == "Tab") { e.preventDefault(); }
-        if (mouseSelectionRight == 1) {
+        if (editType == "standartEdit") {
             if (e.type == "keydown") {
-                if (e.key == "Backspace") {
-                    if (isKeyDown("control")) {
-                        //get space
-                        var index = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting].lastIndexOf(" ");
-                        if (index == -1) {
-                            Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = "";
+                if (mouseSelectionRight == 1) {
+                    if (e.key == "Backspace") {
+                        if (isKeyDown("control")) {
+                            //get space
+                            var index = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting].lastIndexOf(" ");
+                            if (index == -1) {
+                                Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = "";
+                            } else {
+                                Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting].slice(0, index);
+                            }
                         } else {
-                            Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting].slice(0, index);
+                            Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting].slice(0, -1);
                         }
-                    } else {
-                        Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting].slice(0, -1);
                     }
-                }
-                else if (e.key.length == 1) {
-                    Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] + e.key
+                    else if (e.key == "Enter" || e.key == "Escape") {
+                        autoSave();
+                        EditMenuEdeting = -1
+                        mouseSelectionRight--;
+                        mouseSelectionLeft = -2;
+                    }
+                    else if (e.key.length == 1) {
+                        Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] = Elements[mouseDataRight[0]][mouseDataRight[1]][1][EditMenuEdeting] + e.key
+                    }
+                    return;
+                } else if (mouseSelectionRight == 0) {
+                    if (e.key == "Escape") {
+                        autoSave();
+                        EditMenuEdeting = -1
+                        mouseSelectionRight--;
+                        mouseSelectionLeft = -2;
+                        cursorMessage = "";
+                        return;
+                    }
                 }
             }
         }
+
         if (e.type == "keyup") {
             pressedKeys[e.key.toLowerCase()] = false;
         }
@@ -406,6 +432,15 @@ function firmwareToSettingsCheck(firmware: string) {
 
     var sizeX: number = parseInt(sizeInfo.split("x")[0]);
     var sizeY: number = parseInt(sizeInfo.split("x")[1]);
+
+
+    moodLightGotSizeX = sizeX;
+    moodLightGotSizeY = sizeY;
+    sizeCheck(sizeX, sizeY);
+}
+function sizeCheck(sizeX: number, sizeY: number) {
+    var sizeInfo: string = sizeX + "x" + sizeY;
+
     if (sizeX != sizeY) {
         aalert("Moodlight ist nicht quadratisch! Dieses Programm funktioniert nur bei quadratischen MoodLights richtig!")
     }
@@ -425,93 +460,7 @@ function firmwareToSettingsCheck(firmware: string) {
             }
         }
     }
-
 }
-
-//MQTT
-let latesMQTTMessage = "";
-let client: Paho.MQTT.Client;
-function mqttConstructor() {
-    client = new Paho.MQTT.Client(host, 10833, "client" + ((new Date).getTime().toString(16) + Math.floor(1E7 * Math.random()).toString(16)));
-    client.onConnectionLost = onConnectionLost;
-    client.onMessageArrived = onMessageArrived;
-    try {
-        client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
-    } catch (e: any) {
-        if (e.message == "Failed to construct 'WebSocket': The URL 'wss://:10833/mqtt' is invalid.") {
-            settingsInfo["$settings.mqtt.connection"] = "Es wird ein Host für eine Verbindung benötigt.";
-        } else {
-            settingsInfo["$settings.mqtt.connection"] = e.message;
-        }
-        staticElementsData["$settings.mqtt.connection"] = false;
-        console.error(e);
-        //console.error("empty data!")
-    }
-}
-function onConnect() {
-    UpdateStaticSettingsIfInSettings();
-
-    console.log("onConnect");
-    client.subscribe(myTopic);
-
-    //check firmware
-    send("V");
-    waitForFirmware = true;
-}
-function onFailure() {
-    UpdateStaticSettingsIfInSettings();
-    settingsInfo["$settings.mqtt.connection"] = "Failed: evtl. Passwort/Topic/Username Falsch";
-    console.log("on Failure");
-}
-function onConnectionLost(responseObject: { errorCode: number; errorMessage: string; }) {
-    if (responseObject.errorCode != 0) {
-        staticElementsData["$settings.mqtt.connection"] = false
-        console.log("onConnectionLost:" + responseObject.errorMessage + "\nreconnecting...");
-        connect()
-    }
-}
-function reconnect() {
-    if (client.isConnected()) {
-        client.disconnect()
-        UpdateStaticSettingsIfInSettings();
-    }
-    staticElementsData["$settings.mqtt.connection"] = undefined;
-    settingsInfo["$settings.mqtt.connection"] = "Verbinden...";
-    connect();
-}
-function onMessageArrived(message: { payloadString: string; }) {
-    //console.log("onMessageArrived:" + message.payloadString);
-    var tag = document.createElement("p");
-    var text = document.createTextNode(message.payloadString);
-    tag.appendChild(text);
-
-    var objDiv: HTMLDivElement = document.querySelector("#consoleOut") as HTMLDivElement;
-    var objDiv2: HTMLDivElement = document.querySelector("#consoleOut2") as HTMLDivElement;
-    objDiv.appendChild(tag)
-    objDiv2.scrollTop = objDiv2.scrollHeight;
-    if (waitForFirmware && message.payloadString.substring(1, 0) == ";" && message.payloadString.includes("x")) {
-        firmwareToSettingsCheck(message.payloadString);
-    }
-    else if (message.payloadString.substring(1, 0) == ";" && waitingForMQTTPic) {
-        console.log("load");
-        pictureValues[page] = pictureString2Value(message.payloadString.substring(1))
-        loadPictureVal(pictureValues[page]);
-        waitingForMQTTPic = false
-    } else if (message.payloadString.substring(1, 0) == ";") {
-        LiveMoodLightUpdate(message.payloadString.replace(";", ""));
-    }
-    latesMQTTMessage = message.payloadString;
-}
-function send(dat: string) {
-    var message = new Paho.MQTT.Message(dat);
-    message.destinationName = myTopic;
-    client.send(message);
-}
-function connect() {
-    mqttConstructor();
-    //client.connect({ onSuccess: onConnect, useSSL: true, onFailure: onFailure, userName: myUser, password: myPass });
-}
-
 
 async function asyncStuff(stuff: string) {
     if (stuff == "firmware") {
@@ -576,6 +525,13 @@ function updateColor() {
         }
         button:hover {
             background-color: `+ currentColor["buttonBackgroundHover"] + `;
+        }
+        p{
+            color: `+ currentColor["NormalText"] + `;
+        }
+        input{
+            color: `+ currentColor["NormalText"] + `;
+            background-color: `+ currentColor["buttonBackground"] + `;
         }
     `;
     //update other
@@ -785,6 +741,11 @@ var comesFrom = "";
 /**standartEdit, PictureEdit, Question, Settings, Action, Sheduler, Console, ColorPicker*/
 var editType: string = "standartEdit";
 let projectName = "unset"
+///////// DEV /////////
+
+setTimeout(() => { goTo("Console", 1) }, 10);
+
+/////////_DEV_/////////
 
 let pictureEditKeyEvents: { [key: string]: () => void } = {
     "y": function () {
@@ -918,7 +879,7 @@ const menuButtons: { [name: string]: () => void } = {
         var empt = JSON.parse(empty);
         empt.projectName = pprompt("$prompt.newProjectName");
         loadProject(empt)
-        setCookie("lastUsed", projectName, 0.5);
+        setCookie("lastUsed", empt.projectName, 0.5);
     },
     "$menu.fileSave": downloadProject,
     "$menu.loadFile": () => { console.log("clickedLoad"); ProjectLoader.click(); },
@@ -1098,6 +1059,7 @@ const settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*fal
         "$settings.look.showAnimations": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
         "$settings.look.showPicture": function (callType) { if (!callType) { return "bool"; } else { updateCach(); return ""; } },
         "$settings.look.backgroundGrid": function (callType) { if (!callType) { return "bool"; } else { updateSettingsBackground(); return ""; } },
+        "$settings.look.hideElementMenu": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
         "$settings.look.startGridSnap": function (callType) { if (!callType) { return "bool"; } else { return ""; } },
         "$settings.look.fullscreen": function (callType) {
             if (!callType) {
@@ -1366,6 +1328,8 @@ const settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*fal
         "$settings.about.2": function (callType) { if (!callType) { return "info"; } else { /*openWindow("https://floripro.github.io/?page=Home");*/ return ""; } },
     }
 }
+settings["$settings.about"]["Version " + version] = function (callType) { if (!callType) { return "info"; } else { return ""; } }
+
 let settingsOnLoad: any = {
     /*"Anmelde Status": function () {
         settingsInfo["Anmelde Status"] = "Aktualisieren...";
@@ -1419,7 +1383,7 @@ let settingsOnLoad: any = {
 }
 let staticElementsData: any = { "Anmelde Status": undefined, "$settings.mqtt.connection": undefined };
 let settingsInfo: { [einstellung: string]: string } = { "$settings.about.2": /*$settings.about.2.info*/"", "$settings.look.maxFPS": "$settings.look.maxFPS.info", "$settings.general.autoSaveImage": "$settings.general.autoSaveImage.info", "$settings.moodlight.passiveLive": "$settings.moodlight.passiveLive.info", "$settings.general.rightclick": "$settings.general.rightclick.info", "$settings.moodlight.live": "$settings.moodlight.live.info", "$settings.look.darkmode": "$settings.look.darkmode.info", "$settings.look.ownDesign": "$settings.look.ownDesign.info", "$settings.look.createOwnDesign": "$settings.look.createOwnDesign.info", "$settings.look.addDesignJson": "$settings.look.addDesignJson.info", "$settings.look.deleteDesign": "$settings.look.deleteDesign.info", "$settings.look.showAnimations": "$settings.look.showAnimations.info" };
-let setSettings: { [einstellung: string]: string } = { "$settings.look.startGridSnap": "true", "$settings.look.maxFPS": "60", "$settings.general.autoSaveImage": "true", "$settings.look.fullscreen": "false", "$settings.look.asyncElementLoading": "true", "$settings.look.showFPS": "false", "$settings.look.backgroundGrid": "true", "$settings.moodlight.passiveLive": "false", "$settings.general.rightclick": "false", "$settings.sheduler.send": "true",/*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "$settings.moodlight.live": "false", "$settings.general.autoSave": "true", "$settings.look.darkmode": "false", "$settings.general.promptInput": "false", "$settings.mqtt.showNameOnSend": "false", "$settings.look.showAnimations": "true", "$settings.look.showPicture": "true", "$settings.mqtt.delay": "70" };
+let setSettings: { [einstellung: string]: string } = { "$settings.look.hideElementMenu": "false", "$settings.look.startGridSnap": "true", "$settings.look.maxFPS": "60", "$settings.general.autoSaveImage": "true", "$settings.look.fullscreen": "false", "$settings.look.asyncElementLoading": "true", "$settings.look.showFPS": "false", "$settings.look.backgroundGrid": "true", "$settings.moodlight.passiveLive": "false", "$settings.general.rightclick": "false", "$settings.sheduler.send": "true",/*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "$settings.moodlight.live": "false", "$settings.general.autoSave": "true", "$settings.look.darkmode": "false", "$settings.general.promptInput": "false", "$settings.mqtt.showNameOnSend": "false", "$settings.look.showAnimations": "true", "$settings.look.showPicture": "true", "$settings.mqtt.delay": "70" };
 let settingsSelLeft = 0;
 
 let schedulerList: string[][] = [];
@@ -1471,13 +1435,14 @@ const available: [string, string[]][] = [
     ["$element.loop", ["2"]],
     ["$element.infiniteLoop", []],
     ["$element.custom", [""]],
-    ["$element.move", ["verschieben links", "000000"]],
+    ["$element.move", ["$element.move.verschiebenlinks", "000000"]],
     ["$element.colors", ["ffffff", "000000"]],
     ["$element.load", ["0"]],
     ["$element.pixel", ["0", "ff0000"]],
-    ["$element.comment", [""]],
     ["$element.sound", ["1000", "100"]],
-    ["$element.loopSound", ["100"]]
+    //["$element.music",["1000,4000"]],
+    ["$element.addPortTrigger", ["10", "0", "0", "0"]],
+    ["$element.comment", [""]],
 ];
 const description = {
     "$element.wait": ["$element.wait.seconds"],
@@ -1492,9 +1457,11 @@ const description = {
     "$element.colors": ["$element.colors.foregroundColor", "$element.colors.backgroundColor"],
     "$element.move": ["$element.move.direction", "$element.move.backgroundColor"],
     "$element.pixel": ["$element.pixel.position", "$element.pixel.color"],
-    "$element.comment": ["$element.comment.information"],
     "$element.sound": ["HZ", "dauer"],
-    "$element.loopSound": ["dauer"],
+    "$element.addPortTrigger": ["Port", "Hight -> Low trigger", "Low -> Hight trigger", "?"],
+    //"$element.music": ["Töne"],
+
+    "$element.comment": ["$element.comment.information"],
 };
 const joggAvailLookup: { [key: string]: number } = { "$element.move.pixelverschiebennachvorne": 0, "$element.move.pixelverschiebennachhinten": 1, "$element.move.verschiebenlinks": 9, "$element.move.verschiebenrechts": 7, "$element.move.verschiebenoben": 6, "$element.move.verschiebenunten": 8, "$element.move.drehenlinks": 5, "$element.move.drehenrechts": 3, "$element.move.drehenoben": 2, "$element.move.drehenunten": 4 }
 const joggAvail = Object.keys(joggAvailLookup);
@@ -1678,7 +1645,37 @@ const specialBlockEditClick: { [key: string]: { [key2: number]: () => void } } =
             cursorMessage = "";
             goTo("Question", 1);
         }
-    }
+    },
+    "$element.addPortTrigger": {
+        1: function () {
+            tempData = [mouseDataRight[0], mouseDataRight[1], EditMenuEdeting]
+            var qAnsw: { [name: string]: (seId: number) => void } = {}
+            for (var i = 0; i < Elements.length; i++) {
+                qAnsw["_E" + mapElement(["$element.start", ["" + i]])] = function (selId) {
+                    Elements[tempData[0]][tempData[1]][1][tempData[2]] = "" + selId;
+                    goTo("standartEdit", 1);
+                }
+            }
+            mouse[0] = false;
+            Question = ["$question.blockLoadChange", qAnsw];
+            cursorMessage = "";
+            goTo("Question", 1);
+        },
+        2: function () {
+            tempData = [mouseDataRight[0], mouseDataRight[1], EditMenuEdeting]
+            var qAnsw: { [name: string]: (seId: number) => void } = {}
+            for (var i = 0; i < Elements.length; i++) {
+                qAnsw["_E" + mapElement(["$element.start", ["" + i]])] = function (selId) {
+                    Elements[tempData[0]][tempData[1]][1][tempData[2]] = "" + selId;
+                    goTo("standartEdit", 1);
+                }
+            }
+            mouse[0] = false;
+            Question = ["$question.blockLoadChange", qAnsw];
+            cursorMessage = "";
+            goTo("Question", 1);
+        }
+    },
 };
 const specialBlockDropdownRender: { [key: string]: { [key2: number]: (inputNum: string, posx: number, posy: number) => void } } = {
     "$element.animation": {
@@ -1821,6 +1818,8 @@ if (setSettings["$settings.look.ownDesign"] == "" || setSettings["$settings.look
 }
 let moodLightSizeX = 6;
 let moodLightSizeY = 6;
+let moodLightGotSizeX = -1;
+let moodLightGotSizeY = -1;
 /**
  * 0: snake
  * 1: line by line
@@ -2158,10 +2157,7 @@ function drawScreen() {
 
         px = posx;
         py = posy;
-    }
-    drawActions = 0;
 
-    if (editType == "standartEdit") {
         //background
         drawReal.fill(currentColor["background"], ctx);
         if (setSettings["$settings.look.backgroundGrid"] == "true") {
@@ -2172,6 +2168,7 @@ function drawScreen() {
             //drawBoard();
         }
     }
+    drawActions = 0;
 
     ToDraw.forEach(value => {
         var key = Object.keys(value)[0] as "rect" | "image" | "roundedRect" | "circle" | "fill" | "text" | "polygon" | "polygonOutline"
@@ -2209,7 +2206,7 @@ function drawScreen() {
         }
         drawActions++;
     });
-    harddraw();
+    allwaysDraw();
     if (cursorMessage != "" && cursorMessage != undefined) {
         setFont(font, ctx);
         drawReal.rect(mouseX - 1, mouseY - 1, measureText(cursorMessage, ctx).width + 2, 35 + 2, "#bebebe", ctx);//outline
@@ -2275,7 +2272,6 @@ function updatefunction(): boolean {
                         c = false;
                         mouseDataRight = [ElementLoadPos, ElementList];
                         EditMenuEdeting = -1
-
                         //1=EditMenu Geöffnet; 2=EditMenu Text Bearbeiten
                         mouseSelectionRight = 10;
                     }
@@ -2284,6 +2280,8 @@ function updatefunction(): boolean {
 
             if (c) {
                 mouseSelectionRight = -1;
+
+                cursorMessage = "";
                 //TODO:open context-menu?
             }
         }
@@ -2308,10 +2306,16 @@ function updatefunction(): boolean {
                         }
                     }
                 }
-                //change name
+                //change project name
                 if (mouseSelectionLeft == -1) {
                     if (menuOpen == 1 && mouseY < 40 && mouseX < canvas.width - 60 && mouseX > canvas.width - 60 - measureText(projectName, ctx).width) {
-                        var r = pprompt("", projectName); if (r != undefined) { localStorage.removeItem(projectName); projectName = r; localStorage.setItem(projectName, genProjectJson()); }
+                        var r = pprompt("", projectName);
+                        if (r != undefined) {
+                            localStorage.removeItem(projectName);
+                            projectName = r;
+                            localStorage.setItem(projectName, genProjectJson());
+                            setCookie("lastUsed", projectName, 0.5);
+                        }
                     }
                 }
                 //use Menu
@@ -2461,6 +2465,7 @@ function updatefunction(): boolean {
                     EditMenuEdeting = -1
                     mouseSelectionRight--;
                     mouseSelectionLeft = -2;
+                    cursorMessage = "";
                 }
             }
 
@@ -2601,7 +2606,7 @@ function updatefunction(): boolean {
     return update;
 }
 
-function harddraw() {
+function allwaysDraw() {
     if (editType == "standartEdit") {
         //Animations
         if (setSettings["$settings.look.showAnimations"] == "true") {
@@ -2633,9 +2638,9 @@ function harddraw() {
             }
         }
 
-        font = "47px msyi";
+        setFont("47px msyi", ctx)
         //Object sidebar
-        if (mouseX < (sidebarSize + sidebarFadeIn) || sidebarFadeInTimer >= 0.05) {
+        if (mouseX < (sidebarSize + sidebarFadeIn) || sidebarFadeInTimer >= 0.05 || setSettings["$settings.look.hideElementMenu"] != "true") {
             if (sidebarFadeInTimer < 0) { sidebarFadeInTimer = 0 }
 
             let mul = ((sidebarFadeIn - (mouseX - sidebarSize)) / sidebarFadeIn);
@@ -2645,6 +2650,10 @@ function harddraw() {
             ctx.globalAlpha = 0.5 * sidebarFadeInTimer;
             drawReal.rect(0, 0, sidebarSize, canvas.height, currentColor["objectSidebarBlur"], ctx);
             ctx.globalAlpha = sidebarFadeInTimer;
+
+            if (setSettings["$settings.look.hideElementMenu"] != "true") {
+                sidebarFadeInTimer = 1;
+            }
 
             for (let i = 0; i < available.length; i++) {
                 let text = available[i][0];
@@ -3241,8 +3250,8 @@ function updateRects() {
             for (var i = 0; i < 5000; i++) {
                 x2 += Math.sin(r) * 1
                 y2 += Math.cos(r) * 1
-                pictureEditSetPixel(Math.floor(x2), Math.floor(y2), color);
-                if (Math.floor(x2) == Math.floor(x) && Math.floor(y2) == Math.floor(y)) {
+                pictureEditSetPixel(Math.ceil(x2), Math.ceil(y2), color);
+                if (Math.ceil(x2) == Math.ceil(x) && Math.ceil(y2) == Math.ceil(y)) {
                     console.log("end")
                     break;
                 }
