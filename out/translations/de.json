@@ -115,6 +115,8 @@
     "$settings.moodlight.passiveLive": "Passives Warten",
     "$settings.moodlight.passiveLive.info": "Es wird darauf gewartet, dass das MoodLight daten sendet. Geschieht durch [Custom <&>]",
     "$settings.moodlight.setBank": "Preset Bank ändern",
+    "$settings.moodlight.askMoodLightSizeProjectSizeDiff": "MoodLight größe mit Projekt abgleichen",
+    "$settings.moodlight.checkProjectSize": "MoodLight größe mit Projekt Jetzt abgleichen",
     "$settings.sheduler": "Scheduler",
     "$settings.sheduler.send": "Schedules in [Start <0>] mitsenden",
     "$settings.language": "Sprache",

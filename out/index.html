@@ -383,7 +383,6 @@
     }
 
     function setHighLightInformation() {
-        console.log("update Info " + document.querySelectorAll(".consoleHighLightCommand").length);
         for (var x of document.querySelectorAll(".consoleHighLightCommand")) {
             x.title = commandInfo[x.innerText]
         }

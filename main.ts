@@ -438,7 +438,8 @@ function firmwareToSettingsCheck(firmware: string) {
     moodLightGotSizeY = sizeY;
     sizeCheck(sizeX, sizeY);
 }
-function sizeCheck(sizeX: number, sizeY: number) {
+function sizeCheck(sizeX: number, sizeY: number, force?: boolean) {
+    if (setSettings["$settings.moodlight.askMoodLightSizeProjectSizeDiff"] == "false" && force != true) { return; }
     var sizeInfo: string = sizeX + "x" + sizeY;
 
     if (sizeX != sizeY) {
@@ -743,7 +744,7 @@ var editType: string = "standartEdit";
 let projectName = "unset"
 ///////// DEV /////////
 
-setTimeout(() => { goTo("Console", 1) }, 10);
+//setTimeout(() => { goTo("Console", 1) }, 10);
 
 /////////_DEV_/////////
 
@@ -1269,6 +1270,21 @@ const settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*fal
                 return "";
             }
         },
+        "$settings.moodlight.askMoodLightSizeProjectSizeDiff": function (callType) {
+            if (!callType) {
+                return "bool";
+            } else {
+                return "";
+            }
+        },
+        "$settings.moodlight.checkProjectSize": function (callType) {
+            if (!callType) {
+                return "button";
+            } else {
+                sizeCheck(moodLightGotSizeX, moodLightGotSizeY, true);
+                return "";
+            }
+        },
     },
     "$settings.sheduler": {
         "$settings.sheduler.send": function (callType) {
@@ -1383,7 +1399,7 @@ let settingsOnLoad: any = {
 }
 let staticElementsData: any = { "Anmelde Status": undefined, "$settings.mqtt.connection": undefined };
 let settingsInfo: { [einstellung: string]: string } = { "$settings.about.2": /*$settings.about.2.info*/"", "$settings.look.maxFPS": "$settings.look.maxFPS.info", "$settings.general.autoSaveImage": "$settings.general.autoSaveImage.info", "$settings.moodlight.passiveLive": "$settings.moodlight.passiveLive.info", "$settings.general.rightclick": "$settings.general.rightclick.info", "$settings.moodlight.live": "$settings.moodlight.live.info", "$settings.look.darkmode": "$settings.look.darkmode.info", "$settings.look.ownDesign": "$settings.look.ownDesign.info", "$settings.look.createOwnDesign": "$settings.look.createOwnDesign.info", "$settings.look.addDesignJson": "$settings.look.addDesignJson.info", "$settings.look.deleteDesign": "$settings.look.deleteDesign.info", "$settings.look.showAnimations": "$settings.look.showAnimations.info" };
-let setSettings: { [einstellung: string]: string } = { "$settings.look.hideElementMenu": "false", "$settings.look.startGridSnap": "true", "$settings.look.maxFPS": "60", "$settings.general.autoSaveImage": "true", "$settings.look.fullscreen": "false", "$settings.look.asyncElementLoading": "true", "$settings.look.showFPS": "false", "$settings.look.backgroundGrid": "true", "$settings.moodlight.passiveLive": "false", "$settings.general.rightclick": "false", "$settings.sheduler.send": "true",/*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "$settings.moodlight.live": "false", "$settings.general.autoSave": "true", "$settings.look.darkmode": "false", "$settings.general.promptInput": "false", "$settings.mqtt.showNameOnSend": "false", "$settings.look.showAnimations": "true", "$settings.look.showPicture": "true", "$settings.mqtt.delay": "70" };
+let setSettings: { [einstellung: string]: string } = { "$settings.moodlight.askMoodLightSizeProjectSizeDiff": "true", "$settings.look.hideElementMenu": "false", "$settings.look.startGridSnap": "true", "$settings.look.maxFPS": "60", "$settings.general.autoSaveImage": "true", "$settings.look.fullscreen": "false", "$settings.look.asyncElementLoading": "true", "$settings.look.showFPS": "false", "$settings.look.backgroundGrid": "true", "$settings.moodlight.passiveLive": "false", "$settings.general.rightclick": "false", "$settings.sheduler.send": "true",/*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "$settings.moodlight.live": "false", "$settings.general.autoSave": "true", "$settings.look.darkmode": "false", "$settings.general.promptInput": "false", "$settings.mqtt.showNameOnSend": "false", "$settings.look.showAnimations": "true", "$settings.look.showPicture": "true", "$settings.mqtt.delay": "70" };
 let settingsSelLeft = 0;
 
 let schedulerList: string[][] = [];
