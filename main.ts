@@ -903,6 +903,19 @@ const menuButtons: { [name: string]: () => void } = {
     },
     "$menu.reloadPictures": () => {
         updateCach()
+    },
+    "$menu.showOutput": () => {
+        var out: string[] | undefined = compileRaw();
+        let myPopup: Window = window.open("popup.html", "popUpWindow", 'height=300,width=500,left=100,top=100,resizable=no,scrollbars=no,toolbar=no,menubar=no,location=no,directories=no, status=no') as Window;
+        myPopup.onload = function () {
+            if (out == undefined) { return; }
+            var dat = "";
+            for (var x of out) {
+                dat = dat + "<div>" + highlight(x) + "</div>";
+            }
+
+            (myPopup.document.querySelector("#popupBody") as HTMLDivElement).innerHTML = `<div style="background: black; color: gainsboro; word-break: break-all;">` + dat + "</div>";
+        }
     }
     //"actions": function () { openWindow("/action"); },
 }
