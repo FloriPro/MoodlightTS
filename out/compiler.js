@@ -74,7 +74,13 @@ function compileRaw() {
         //schedules in start 0
         if (savePos == 0 && setSettings["$settings.sheduler.send"] == "true") {
             rawCommands[savePos].push("@C");
-            rawCommands[savePos].push(genCompiledScheduler());
+            var shedulerSave = genCompiledScheduler();
+            if (shedulerSave != "") {
+                rawCommands[savePos].push(shedulerSave);
+            }
+        }
+        if (savePos == 0 && setSettings["$settings.moodlight.autoBrightness"].length == 2) {
+            rawCommands[savePos].push("ZX" + setSettings["$settings.moodlight.autoBrightness"]);
         }
         //for every Element under(because 0="Start *") Start
         for (var command = 1; command < Elements[loadPos].length; command++) {

@@ -64,7 +64,7 @@
     "$menu.sheduler": "Sheduler",
     "$menu.console": "Console",
     "$menu.reloadPictures": "Bilder neu Laden",
-    "$menu.showOutput": "Compiler output anzeigen",
+    "$menu.showOutput": "Compiler output",
     "$settings.title": "EINSTELLUNGEN",
     "$settings.general": "Allgemein",
     "$settings.general.autoSave": "Automatisch speichert",

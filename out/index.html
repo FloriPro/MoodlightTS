@@ -181,14 +181,15 @@
                     </div>
                     <div style="display: flex; align-items: center;">
                         <div id="consoleCursor"></div>
-                        <p class="consoleInputText" id="currentlyEddetingText">Text</p>
+                        <p class="consoleInputText" id="currentlyEddetingText" >Text</p>
                         <input
                             class="consoleInputText"
                             onfocus="consoleFocusChange(true)"
                             onfocusout="consoleFocusChange(false)"
                             style="
-                                caret-color: black;
+                                caret-color: rgb(255, 255, 255);
                                 font-family: monospace;outline: none;
+                                margin: 0px;
                                 width: 0px;
                                 "
                             onmouseup="updateCursorPos(false)"
@@ -196,10 +197,9 @@
                             onmousemove="updateCursorPos(false)"
                             id="text"
                             type="text"
-                            placeholder=""
                             onkeyup="updateCursorPos(false)"
                             onkeydown="updateCursorPos(false)"
-                            onkeypress="updateCursorPos(true);if(event.key==='Enter'){send2(document.querySelector('#text').value)}"
+                            onkeypress="updateCursorPos(true); if(event.key==='Enter'){send2(document.querySelector('#text').value)}"
                         >
                     </div>
                 </code>
@@ -277,12 +277,12 @@
         }, 8);
     }
     function addMessage(text) {
-        if (currentTranslation[text] != undefined) {
-            text = currentTranslation[text];
-        }
         addMessageT(text, 800);
     }
     function addMessageT(text, time) {
+        if (currentTranslation[text] != undefined) {
+            text = currentTranslation[text];
+        }
         r = Math.round(Math.random() * 10000000000)
         document.getElementById("alerts").innerHTML += '<div class="alert" style="margin-top: 0;" id="alert_id' + r + '"><span class="closebtn" onclick="moveAwayEffect(this.parentElement)">X </span>' + text + '<br></div>'
         setTimeout(eval, time, "moveAwayEffect(document.getElementById('alert_id' + '" + r + "'))")
@@ -294,8 +294,11 @@
             document.querySelector("#consoleOut").innerHTML = "";
             return;
         }
-        if (data == "help") {
+        else if (data == "help") {
             document.querySelector("#consoleOut").innerHTML += `<p>- <a href="https://www.hotti.info/fabuser/ml6/help.html" target="_blank">MoodLight Informationen</a><br>- cls/clear: Console löschen<br>- help: Diese Hilfe anzeigen</p>`;
+            return;
+        } else if (data == "exit") {
+            goTo("standartEdit", 1);
             return;
         }
         send(data);
@@ -315,9 +318,14 @@
 
     var availNumbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"]
 
-    function highlight(inp) {
+    function highlight(inp, addCodeLookUp) {
+        if (typeof setSettings != "undefined" && setSettings["$settings.console.highlight"] == "false") { return inp; }
         //for testing:
         //S03*;D;J3;W0030;R0040;ZXff;"sh*t";ZX20;N01000,10;L00;
+        if (addCodeLookUp == undefined) {
+            addCodeLookUp = true;
+        }
+
         var out = "";
 
         var isSpecialChar = false;
@@ -325,19 +333,18 @@
         var commandType = 0;
 
         for (var x of inp) {
-            if (commandType == 2 && !isEnclosedText && availNumbers.includes(x)) {
-                if (commandType == 4) { out += "</span>" }
-                if (commandType == 2) { out += `</span>` }
-                commandType = 3;
-            }
 
             if (x == "&") {
                 isSpecialChar = true;
             }
+            if (commandType == 2 && !isEnclosedText && availNumbers.includes(x) && !isSpecialChar) {
+                if (commandType == 4) { out += "</span>" }
+                if (commandType == 2) { out += `</span>` }
+                commandType = 3;
+            }
             if (isSpecialChar) {
                 out += x;
                 if (x == ";") {
-
                     isSpecialChar = false;
                 }
             }
@@ -363,13 +370,19 @@
                 out += `<span style="color:#474747">*</span>`;
             }
             else if (commandType == 1) {
-                out += `<span style="color:#296bd6" class="consoleHighLightCommand" onclick="window.open('6x6_info.html#'+this.innerText,'popUpWindow','height=300,width=500,left=100,top=100,resizable=no,scrollbars=no,toolbar=no,menubar=no,location=no,directories=no, status=no');">` + x;
+                if (addCodeLookUp) {
+                    out += `<span style="color:orange" class="consoleHighLightCommand" onclick="window.open('6x6_info.html#'+this.innerText,'popUpWindow','height=300,width=500,left=100,top=100,resizable=no,scrollbars=no,toolbar=no,menubar=no,location=no,directories=no, status=no');">` + x;
+                } else {
+                    out += `<span style="color:orange" class="consoleHighLightCommand">` + x;
+
+                }
+
             }
             else if (commandType == 4 && x == ",") {
                 out += `<span style="color:gray">,</span>`;
             }
             else if (commandType == 3) {
-                out += `<span style="color:orange">` + x + ``;
+                out += `<span style="color:#296bd6">` + x + ``;
             }
             else {
                 out += x;

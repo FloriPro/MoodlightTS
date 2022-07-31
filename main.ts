@@ -6,7 +6,7 @@
 
 //TODO: update elements, when picture edited
 
-const version = "0.2.0";
+const version = "0.2.1";
 
 let currentTranslation: { [key: string]: string } = {};
 
@@ -907,14 +907,20 @@ const menuButtons: { [name: string]: () => void } = {
     "$menu.showOutput": () => {
         var out: string[] | undefined = compileRaw();
         let myPopup: Window = window.open("popup.html", "popUpWindow", 'height=300,width=500,left=100,top=100,resizable=no,scrollbars=no,toolbar=no,menubar=no,location=no,directories=no, status=no') as Window;
-        myPopup.onload = function () {
+        myPopup.window.onload = function () {
             if (out == undefined) { return; }
             var dat = "";
+            var i = 0;
             for (var x of out) {
-                dat = dat + "<div>" + highlight(x) + "</div>";
+                dat = dat + "<div><p style='margin-bottom: 0px;font-style: italic;'>Save " + i + ": </p><div>" + highlight(x, false) + "</div></div>";
+                i++
             }
 
-            (myPopup.document.querySelector("#popupBody") as HTMLDivElement).innerHTML = `<div style="background: black; color: gainsboro; word-break: break-all;">` + dat + "</div>";
+            (myPopup.document.querySelector("#popupBody") as HTMLDivElement).innerHTML = `<div style="color: gainsboro; word-break: break-all;">` + dat + "</div>";
+            (myPopup.document.querySelector("#title") as HTMLDivElement).innerText = `EasyEdit Compiler ©Florian Lohner`;
+            (myPopup.document.querySelector("body") as HTMLBodyElement).style.height = "fit-content";
+            (myPopup.document.querySelector("body") as HTMLBodyElement).style.background = "black";
+            (myPopup.document.querySelector("html") as HTMLHtmlElement).style.background = "black";
         }
     }
     //"actions": function () { openWindow("/action"); },
@@ -1298,6 +1304,21 @@ const settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*fal
                 return "";
             }
         },
+        "$settings.moodlight.status": function (callType) {
+            if (!callType) {
+                return "showingBool";
+            } else {
+                settingsOnLoad["$settings.moodlight.status"]();
+                return "";
+            }
+        },
+        "$settings.moodlight.autoBrightness": function (callType) {
+            if (!callType) {
+                return "str";
+            } else {
+                return "";
+            }
+        },
     },
     "$settings.sheduler": {
         "$settings.sheduler.send": function (callType) {
@@ -1321,6 +1342,13 @@ const settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*fal
                 return "";
             }
         }*/
+    },
+    "$settings.console": {
+        "$settings.console.highlight": function (callType) {
+            if (!callType) { return "bool" }
+            return ""
+        }
+
     },
     "$settings.language": {
         "$settings.language.change": function (callType) {
@@ -1399,7 +1427,7 @@ let settingsOnLoad: any = {
             staticElementsData["Anmelde Status"] = undefined;
         });
     },*/
-    "$settings.mqtt.connection": function () {
+    "$settings.mqtt.connection": () => {
         staticElementsData["$settings.mqtt.connection"] = client.isConnected();
         if (client.isConnected()) {
             settingsInfo["$settings.mqtt.connection"] = client.host;
@@ -1409,10 +1437,15 @@ let settingsOnLoad: any = {
             settingsInfo["$settings.mqtt.connection"] = "";
         }
     },
+    "$settings.moodlight.status": () => {
+        if (moodLightStatus == 0) staticElementsData["$settings.moodlight.status"] = false; settingsInfo["$settings.moodlight.status"] = "";
+        if (moodLightStatus == 1) staticElementsData["$settings.moodlight.status"] = true; settingsInfo["$settings.moodlight.status"] = "";
+        if (moodLightStatus == 2) settingsInfo["$settings.moodlight.status"] = "restarted in session";
+    }
 }
-let staticElementsData: any = { "Anmelde Status": undefined, "$settings.mqtt.connection": undefined };
+let staticElementsData: any = { "$settings.mqtt.connection": undefined, "$settings.moodlight.status": false };
 let settingsInfo: { [einstellung: string]: string } = { "$settings.about.2": /*$settings.about.2.info*/"", "$settings.look.maxFPS": "$settings.look.maxFPS.info", "$settings.general.autoSaveImage": "$settings.general.autoSaveImage.info", "$settings.moodlight.passiveLive": "$settings.moodlight.passiveLive.info", "$settings.general.rightclick": "$settings.general.rightclick.info", "$settings.moodlight.live": "$settings.moodlight.live.info", "$settings.look.darkmode": "$settings.look.darkmode.info", "$settings.look.ownDesign": "$settings.look.ownDesign.info", "$settings.look.createOwnDesign": "$settings.look.createOwnDesign.info", "$settings.look.addDesignJson": "$settings.look.addDesignJson.info", "$settings.look.deleteDesign": "$settings.look.deleteDesign.info", "$settings.look.showAnimations": "$settings.look.showAnimations.info" };
-let setSettings: { [einstellung: string]: string } = { "$settings.moodlight.askMoodLightSizeProjectSizeDiff": "true", "$settings.look.hideElementMenu": "false", "$settings.look.startGridSnap": "true", "$settings.look.maxFPS": "60", "$settings.general.autoSaveImage": "true", "$settings.look.fullscreen": "false", "$settings.look.asyncElementLoading": "true", "$settings.look.showFPS": "false", "$settings.look.backgroundGrid": "true", "$settings.moodlight.passiveLive": "false", "$settings.general.rightclick": "false", "$settings.sheduler.send": "true",/*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "$settings.moodlight.live": "false", "$settings.general.autoSave": "true", "$settings.look.darkmode": "false", "$settings.general.promptInput": "false", "$settings.mqtt.showNameOnSend": "false", "$settings.look.showAnimations": "true", "$settings.look.showPicture": "true", "$settings.mqtt.delay": "70" };
+let setSettings: { [einstellung: string]: string } = { "$settings.moodlight.autoBrightness": "ff", "$settings.console.highlight": "true", "$settings.moodlight.askMoodLightSizeProjectSizeDiff": "true", "$settings.look.hideElementMenu": "false", "$settings.look.startGridSnap": "true", "$settings.look.maxFPS": "60", "$settings.general.autoSaveImage": "true", "$settings.look.fullscreen": "false", "$settings.look.asyncElementLoading": "true", "$settings.look.showFPS": "false", "$settings.look.backgroundGrid": "true", "$settings.moodlight.passiveLive": "false", "$settings.general.rightclick": "false", "$settings.sheduler.send": "true",/*"Bei Projekt Laden Schedules zu dem Aktuellen Projekt ändern": "true", "Vor dem Hochladen alte Schedules löschen": "true"*/ "$settings.moodlight.live": "false", "$settings.general.autoSave": "true", "$settings.look.darkmode": "false", "$settings.general.promptInput": "false", "$settings.mqtt.showNameOnSend": "false", "$settings.look.showAnimations": "true", "$settings.look.showPicture": "true", "$settings.mqtt.delay": "70" };
 let settingsSelLeft = 0;
 
 let schedulerList: string[][] = [];
@@ -2391,11 +2424,22 @@ function updatefunction(): boolean {
                 //search non Free Elements
                 if (mouseSelectionLeft == -1) {
                     for (let ElementLoadPos = 0; ElementLoadPos < Elements.length; ElementLoadPos++) {
+                        var indentX = 0;
+                        var indent = 0;
                         for (let ElementList = 0; ElementList < Elements[ElementLoadPos].length; ElementList++) {
+                            //indent
+                            if (Elements[ElementLoadPos][ElementList][0] == "$element.end") {
+                                indent--;
+                            }
+                            if (["$element.loop", "$element.infiniteLoop"].includes(Elements[ElementLoadPos][ElementList][0])) {
+                                indent++;
+                            }
+                            indentX = indent * 10;
+
                             let px = posx + ElementPositions[ElementLoadPos][0];
                             let py = posy + ElementPositions[ElementLoadPos][1] + ElementList * blockheight;
                             textLength = elementLenght(Elements[ElementLoadPos][ElementList]);
-                            if (mouseX > px && mouseX < px + textLength && mouseY < py && mouseY > py - blockheight) {
+                            if (mouseX > px + indentX && mouseX < px + textLength + indentX && mouseY < py && mouseY > py - blockheight) {
                                 if (notDragable.indexOf(Elements[ElementLoadPos][ElementList][0]) == -1) {
                                     if (Elements[ElementLoadPos][ElementList][0] == "$element.end") {
                                         Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList)
@@ -2404,7 +2448,7 @@ function updatefunction(): boolean {
                                         oldMouseX = mouseX - 10 + mouseX;
                                         oldMouseY = mouseY - (blockheight / 2);
                                         mouseDataLeft = FreeElements.length;
-                                        FreeElements.push(["$element.end", [], [mouseX - posx, mouseY - posy]])
+                                        FreeElements.push(["$element.end", [], [mouseX - posx + indentX, mouseY - posy]])
                                         mouseSelectionLeft = 1;
                                     } else {
                                         oldMouseX = mouseX + (mouseX - px);
@@ -2412,7 +2456,7 @@ function updatefunction(): boolean {
                                         mouseSelectionLeft = 1;
                                         mouseDataLeft = FreeElements.length;
                                         let i = Elements[ElementLoadPos][ElementList];
-                                        FreeElements.push([[...Elements[ElementLoadPos][ElementList][0]].join(""), [...Elements[ElementLoadPos][ElementList][1]], [mouseX - posx, mouseY - posy]])
+                                        FreeElements.push([[...Elements[ElementLoadPos][ElementList][0]].join(""), [...Elements[ElementLoadPos][ElementList][1]], [mouseX - posx + indentX, mouseY - posy]])
                                         if (!isKeyDown("alt")) {
                                             //search End
                                             if (["$element.loop", "$element.infiniteLoop"].includes(Elements[ElementLoadPos][ElementList][0])) {
@@ -2430,7 +2474,7 @@ function updatefunction(): boolean {
                                             else {
                                                 Elements[ElementLoadPos] = removeItem(Elements[ElementLoadPos], ElementList)
                                             }
-                                        } else { console.log("ALT"); }
+                                        }
                                     }
                                     break;
                                 } else if (Elements[ElementLoadPos][ElementList][0] == "$element.start") {

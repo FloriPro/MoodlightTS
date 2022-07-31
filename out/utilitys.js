@@ -413,6 +413,10 @@ function pictureEditMarkUsedTool() {
     }
     document.getElementById("pictureEditTool_" + pictureEditTool).className = "pictureEditTool_sel";
 }
+/**
+ * 0: Off, 1: Responses, 2: sends connect
+ */
+let moodLightStatus = 0;
 //MQTT
 let latesMQTTMessage = "";
 let client;
@@ -475,7 +479,11 @@ function onMessageArrived(message) {
     objDiv.appendChild(tag);
     objDiv2.scrollTop = objDiv2.scrollHeight;
     if (waitForFirmware && message.payloadString.startsWith(";V") && message.payloadString.includes("x")) {
+        moodLightStatus = 1;
         firmwareToSettingsCheck(message.payloadString);
+    }
+    else if (message.payloadString.startsWith(";;connected")) {
+        moodLightStatus = 2;
     }
     else if (message.payloadString.substring(1, 0) == ";" && waitingForMQTTPic) {
         console.log("load");

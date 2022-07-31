@@ -5,7 +5,7 @@ function addMessage(arg0) {
 function addMessageT(arg0, arg1) {
     throw new Error("Function in HTML.");
 }
-function highlight(arg1) {
+function highlight(arg0, arg1) {
     throw new Error("Function in HTML.");
 }
 function setHighLightInformation() {

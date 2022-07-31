@@ -150,7 +150,6 @@ function genCompiledScheduler() {
             var s2 = "0";
         out.push("@" + schedule[1] + ",A" + schedule[0] + "," + s2);
     }
-    //TODO
     return out.join(";");
 }
 //# sourceMappingURL=scheduler.js.map
