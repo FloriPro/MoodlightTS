@@ -76,6 +76,7 @@ let isFocused = false
 let font = "47px msyi";
 
 let host = "";
+let port = "1883";
 let myTopic = "";
 let myUser = "";
 let myPass = "";
@@ -553,6 +554,7 @@ function setStorage() {
     setCookie("myPass", myPass, 10);
     setCookie("myUser", myUser, 10);
     setCookie("host", host, 10);
+    setCookie("port",port,10);
     setCookie("language", currentLanguage, 10);
 }
 function getStorage() {
@@ -561,6 +563,7 @@ function getStorage() {
     try { myPass = getCookie("myPass"); } catch { setCookie("myPass", myPass, 10); }
     try { myUser = getCookie("myUser"); } catch { setCookie("myUser", myUser, 10); }
     try { host = getCookie("host"); } catch { setCookie("host", host, 10); }
+    try { port = getCookie("port"); } catch { setCookie("port", port, 10); }
     try { loadTranslation(getCookie("language")); } catch { setCookie("language", currentLanguage, 10); }
 }
 function unMapElement(dat: string): [string, string[]] {
@@ -1069,6 +1072,13 @@ const settings: { [hauptgruppe: string]: { [einstellung: string]: (callType/*fal
         "$settings.mqtt.hostChange": function (callType) {
             if (!callType) { return "button"; } else {
                 host = sprompt("Server/Host/SRV (" + host + ")");
+                setStorage();
+                reconnect();
+                return "";
+            }
+        },"$settings.mqtt.portChange": function (callType) {
+            if (!callType) { return "button"; } else {
+                port = sprompt("Port (" + port + ")");
                 setStorage();
                 reconnect();
                 return "";

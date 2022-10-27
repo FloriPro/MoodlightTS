@@ -78,6 +78,7 @@ const empty = '{"sizeX":"6","Elements":[[["$element.start",["0"]]]],"pictures":[
 let isFocused = false;
 let font = "47px msyi";
 let host = "";
+let port = "1883";
 let myTopic = "";
 let myUser = "";
 let myPass = "";
@@ -528,6 +529,7 @@ function setStorage() {
     setCookie("myPass", myPass, 10);
     setCookie("myUser", myUser, 10);
     setCookie("host", host, 10);
+    setCookie("port", port, 10);
     setCookie("language", currentLanguage, 10);
 }
 function getStorage() {
@@ -562,9 +564,15 @@ function getStorage() {
         setCookie("host", host, 10);
     }
     try {
-        loadTranslation(getCookie("language"));
+        port = getCookie("port");
     }
     catch (_h) {
+        setCookie("port", port, 10);
+    }
+    try {
+        loadTranslation(getCookie("language"));
+    }
+    catch (_j) {
         setCookie("language", currentLanguage, 10);
     }
 }
@@ -1132,6 +1140,16 @@ const settings = {
             }
             else {
                 host = sprompt("Server/Host/SRV (" + host + ")");
+                setStorage();
+                reconnect();
+                return "";
+            }
+        }, "$settings.mqtt.portChange": function (callType) {
+            if (!callType) {
+                return "button";
+            }
+            else {
+                port = sprompt("Port (" + port + ")");
                 setStorage();
                 reconnect();
                 return "";

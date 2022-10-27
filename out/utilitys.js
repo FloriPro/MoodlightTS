@@ -421,7 +421,7 @@ let moodLightStatus = 0;
 let latesMQTTMessage = "";
 let client;
 function mqttConstructor() {
-    client = new Paho.MQTT.Client(host, 10833, "client" + ((new Date).getTime().toString(16) + Math.floor(1E7 * Math.random()).toString(16)));
+    client = new Paho.MQTT.Client(host, parseInt(port), "client" + ((new Date).getTime().toString(16) + Math.floor(1E7 * Math.random()).toString(16)));
     client.onConnectionLost = onConnectionLost;
     client.onMessageArrived = onMessageArrived;
     try {
@@ -447,10 +447,11 @@ function onConnect() {
     send("V");
     waitForFirmware = true;
 }
-function onFailure() {
+function onFailure(err) {
     UpdateStaticSettingsIfInSettings();
     settingsInfo["$settings.mqtt.connection"] = "Failed: evtl. Passwort/Topic/Username Falsch";
     console.log("on Failure");
+    console.error(err);
 }
 function onConnectionLost(responseObject) {
     if (responseObject.errorCode != 0) {
