@@ -133,6 +133,29 @@ function aalert(message) {
     alert(message);
     mouse[0] = false;
 }
+function cconfirm(message) {
+    if (currentTranslation[message] != undefined) {
+        message = currentTranslation[message];
+    }
+    var promise = new Promise((resolve, reject) => {
+        Question = [message, {
+                "Ja": function (seId) {
+                    goTo(comesFrom, 1);
+                    resolve(true);
+                },
+                "Nein": function (seId) {
+                    goTo(comesFrom, 1);
+                    resolve(false);
+                }
+            }, function () {
+                goTo(comesFrom, 1);
+                resolve(false);
+            }];
+        goTo("Question", 1);
+        //resolve(confirm(message));
+    });
+    return promise;
+}
 function openWindow(url) {
     window.open(url);
     mouse[0] = false;
@@ -220,8 +243,8 @@ class drawAdder {
         ToDraw.push({ "fill": [color, ctx, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     }
     ;
-    text(posx, posy, Text, color, align, font, ctx) {
-        ToDraw.push({ "text": [posx, posy, Text, color, align, font, ctx, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
+    text(posx, posy, Text, color, align, font, ctx, maxwidth = undefined) {
+        ToDraw.push({ "text": [posx, posy, Text, color, align, font, ctx, maxwidth, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     }
     ;
     polygon(ctx, color, pos) {
@@ -315,7 +338,7 @@ class drawApp {
         ctx.closePath();
     }
     ;
-    text(pox, posy, Text, color, align, font, ctx) {
+    text(pox, posy, Text, color, align, font, ctx, maxwidth = undefined) {
         if (ctx.font != font) {
             ctx.font = font;
         }
@@ -324,7 +347,17 @@ class drawApp {
         if (currentTranslation[Text] != undefined) {
             Text = currentTranslation[Text];
         }
-        ctx.fillText(Text, pox, posy);
+        /*//cut text to fit in maxwidth
+        if (maxwidth != undefined) {
+            var textWidth = ctx.measureText(Text).width;
+            if (textWidth > maxwidth) {
+                while (ctx.measureText(Text + "...").width > maxwidth) {
+                    Text = Text.substring(0, Text.length - 1);
+                }
+                Text = Text + "...";
+            }
+        }*/
+        ctx.fillText(Text, pox, posy, maxwidth);
     }
     ;
     polygon(ctx, color, pos) {

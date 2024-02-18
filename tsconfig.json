@@ -3,7 +3,7 @@
     "allowJs": true,
     "outDir": "out",
     "sourceMap": true,
-    "charset": "utf8",
+    // Remove the deprecated "charset":"uft-8" option
     "target": "es6",
     "module": "esnext",
     "moduleResolution": "node",

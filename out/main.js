@@ -418,29 +418,32 @@ function firmwareToSettingsCheck(firmware) {
     sizeCheck(sizeX, sizeY);
 }
 function sizeCheck(sizeX, sizeY, force) {
-    if (setSettings["$settings.moodlight.askMoodLightSizeProjectSizeDiff"] == "false" && force != true) {
-        return;
-    }
-    var sizeInfo = sizeX + "x" + sizeY;
-    if (sizeX != sizeY) {
-        aalert("Moodlight ist nicht quadratisch! Dieses Programm funktioniert nur bei quadratischen MoodLights richtig!");
-    }
-    if (moodLightSizeX != sizeX || moodLightSizeY != sizeY) {
-        if (confirm("Projekt größe an MoodLight anpassen")) {
-            moodLightSizeX = sizeX;
-            moodLightSizeY = sizeY;
-            UpdateSizeMoodlightSize();
-            autoSave();
+    return __awaiter(this, void 0, void 0, function* () {
+        if (setSettings["$settings.moodlight.askMoodLightSizeProjectSizeDiff"] == "false" && force != true) {
+            return;
         }
-    }
-    if (moodlightSizeType[sizeInfo] != undefined) {
-        if (moodlightSizeType[sizeInfo] != ledSortType) {
-            if (confirm("MoodLight led anordnung anpassen?")) {
-                ledSortType = moodlightSizeType[sizeInfo];
+        var sizeInfo = sizeX + "x" + sizeY;
+        if (sizeX != sizeY) {
+            aalert("Moodlight ist nicht quadratisch! Dieses Programm funktioniert nur bei quadratischen MoodLights richtig!");
+        }
+        if (moodLightSizeX != sizeX || moodLightSizeY != sizeY) {
+            if (yield cconfirm("Möchtest du das Projekt an die größe des MoodLight anpassen?")) {
+                //if (confirm("Möchtest du das Projekt an die größe des MoodLight anpassen?")) {
+                moodLightSizeX = sizeX;
+                moodLightSizeY = sizeY;
+                UpdateSizeMoodlightSize();
                 autoSave();
             }
         }
-    }
+        if (moodlightSizeType[sizeInfo] != undefined) {
+            if (moodlightSizeType[sizeInfo] != ledSortType) {
+                if (confirm("MoodLight led anordnung anpassen?")) {
+                    ledSortType = moodlightSizeType[sizeInfo];
+                    autoSave();
+                }
+            }
+        }
+    });
 }
 function asyncStuff(stuff) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -837,9 +840,27 @@ const menuButtons = {
     "$menu.add": () => {
         goTo("Question", 1);
         Question = ["$question.add", {
-                "$question.add.answer.start": function (seId) { ElementPositions.push([Elements.length * 400, 0]); Elements.push([["$element.start", [String(Elements.length)]]]); goTo(comesFrom, 1); },
-                "$question.add.answer.picture": function (seId) { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); pictureId = pictures.length; pictures.push("000000".repeat(32)); pictureEditType = 0; },
-                "$question.add.answer.animation": function (seId) { goTo("PictureEdit", 0); mouse[0] = false; resetPicEdit(); animationId = animations.length; animations.push(["000000".repeat(32)]); pictureEditType = 1; },
+                "$question.add.answer.start": function (seId) {
+                    ElementPositions.push([Elements.length * 400, 0]);
+                    Elements.push([["$element.start", [String(Elements.length)]]]);
+                    goTo(comesFrom, 1);
+                },
+                "$question.add.answer.picture": function (seId) {
+                    goTo("PictureEdit", 0);
+                    mouse[0] = false;
+                    resetPicEdit();
+                    pictureId = pictures.length;
+                    pictures.push("000000".repeat(32));
+                    pictureEditType = 0;
+                },
+                "$question.add.answer.animation": function (seId) {
+                    goTo("PictureEdit", 0);
+                    mouse[0] = false;
+                    resetPicEdit();
+                    animationId = animations.length;
+                    animations.push(["000000".repeat(32)]);
+                    pictureEditType = 1;
+                },
             }];
     },
     "$menu.edit": () => {
@@ -2399,7 +2420,7 @@ function drawScreen() {
             drawReal.fill(i[0], i[1]);
         }
         else if (key == "text") {
-            drawReal.text(i[0] + px, i[1] + py, i[2], i[3], i[4], i[5], i[6]);
+            drawReal.text(i[0] + px, i[1] + py, i[2], i[3], i[4], i[5], i[6], i[7]);
         }
         else if (key == "polygon") {
             drawReal.polygon(i[0], i[1], i[2]);
@@ -3062,6 +3083,7 @@ function checkDisplay() {
         }
     }
 }
+//////////////// MAIN DRAW FUNCTION ////////////////
 function updateRects() {
     ToDraw = [];
     if (editType == "standartEdit") {
@@ -3366,8 +3388,107 @@ function updateRects() {
         font = "60px msyi";
         setFont(font, ctx);
         var textWidth = measureText(Question[0], ctx).width;
-        draw.rect(canvas.width / 2 - textWidth / 2, 80, textWidth, -50, currentColor["QuestionTitleBackground"], ctx);
-        draw.text(canvas.width / 2, 70, Question[0], currentColor["NormalText"], "center", font, ctx);
+        if (textWidth < canvas.width) {
+            draw.rect(canvas.width / 2 - textWidth / 2, 80, textWidth, -50, currentColor["QuestionTitleBackground"], ctx);
+            draw.text(canvas.width / 2, 70, Question[0], currentColor["NormalText"], "center", font, ctx);
+        }
+        else {
+            font = "47px msyi";
+            setFont(font, ctx);
+            textWidth = measureText(Question[0], ctx).width;
+            if (textWidth < canvas.width) {
+                draw.rect(canvas.width / 2 - textWidth / 2, 80, textWidth, -40, currentColor["QuestionTitleBackground"], ctx);
+                draw.text(canvas.width / 2, 70, Question[0], currentColor["NormalText"], "center", font, ctx);
+            }
+            else {
+                // make two lines
+                var text = Question[0];
+                var text1 = text.substring(0, text.length / 2);
+                var text2 = text.substring(text.length / 2, text.length);
+                var textWidth1 = measureText(text1, ctx).width;
+                var textWidth2 = measureText(text2, ctx).width;
+                if (textWidth1 < canvas.width && textWidth2 < canvas.width) {
+                    draw.rect(canvas.width / 2 - textWidth1 / 2, 60, textWidth1, -40, currentColor["QuestionTitleBackground"], ctx);
+                    draw.text(canvas.width / 2, 50, text1, currentColor["NormalText"], "center", font, ctx);
+                    draw.rect(canvas.width / 2 - textWidth2 / 2, 90, textWidth2, -40, currentColor["QuestionTitleBackground"], ctx);
+                    draw.text(canvas.width / 2, 80, text2, currentColor["NormalText"], "center", font, ctx);
+                }
+                else {
+                    //make three lines
+                    var text = Question[0];
+                    var text1 = text.substring(0, text.length / 3);
+                    var text2 = text.substring(text.length / 3, text.length / 3 * 2);
+                    var text3 = text.substring(text.length / 3 * 2, text.length);
+                    var textWidth1 = measureText(text1, ctx).width;
+                    var textWidth2 = measureText(text2, ctx).width;
+                    var textWidth3 = measureText(text3, ctx).width;
+                    if (textWidth1 < canvas.width && textWidth2 < canvas.width && textWidth3 < canvas.width) {
+                        draw.rect(canvas.width / 2 - textWidth1 / 2, 60 - 12, textWidth1, -40, currentColor["QuestionTitleBackground"], ctx);
+                        draw.text(canvas.width / 2, 50 - 12, text1, currentColor["NormalText"], "center", font, ctx);
+                        draw.rect(canvas.width / 2 - textWidth2 / 2, 90 - 12, textWidth2, -40, currentColor["QuestionTitleBackground"], ctx);
+                        draw.text(canvas.width / 2, 80 - 12, text2, currentColor["NormalText"], "center", font, ctx);
+                        draw.rect(canvas.width / 2 - textWidth3 / 2, 120 - 12, textWidth3, -40, currentColor["QuestionTitleBackground"], ctx);
+                        draw.text(canvas.width / 2, 110 - 12, text3, currentColor["NormalText"], "center", font, ctx);
+                    }
+                    else {
+                        //make three lines with ...
+                        font = "30px msyi";
+                        setFont(font, ctx);
+                        var text = Question[0];
+                        var text1 = text.substring(0, text.length / 3);
+                        var text2 = text.substring(text.length / 3, text.length / 3 * 2);
+                        var text3 = text.substring(text.length / 3 * 2, text.length);
+                        var textWidth1 = measureText(text1, ctx).width;
+                        var textWidth2 = measureText(text2, ctx).width;
+                        var textWidth3 = measureText(text3, ctx).width;
+                        if (textWidth1 < canvas.width && textWidth2 < canvas.width && textWidth3 < canvas.width) {
+                            draw.rect(canvas.width / 2 - textWidth1 / 2, 60 - 25, textWidth1, -30, currentColor["QuestionTitleBackground"], ctx);
+                            draw.text(canvas.width / 2, 50 - 10 - 13, text1, currentColor["NormalText"], "center", font, ctx);
+                            draw.rect(canvas.width / 2 - textWidth2 / 2, 90 - 25, textWidth2, -30, currentColor["QuestionTitleBackground"], ctx);
+                            draw.text(canvas.width / 2, 80 - 10 - 13, text2, currentColor["NormalText"], "center", font, ctx);
+                            draw.rect(canvas.width / 2 - textWidth3 / 2, 120 - 25, textWidth3, -30, currentColor["QuestionTitleBackground"], ctx);
+                            draw.text(canvas.width / 2, 110 - 10 - 13, text3, currentColor["NormalText"], "center", font, ctx);
+                        }
+                        else {
+                            var text = Question[0];
+                            var text1 = text.substring(0, text.length / 4);
+                            var text2 = text.substring(text.length / 4, text.length / 4 * 2);
+                            var text3 = text.substring(text.length / 4 * 2, text.length / 4 * 3);
+                            var text4 = text.substring(text.length / 4 * 3, text.length);
+                            var textWidth1 = measureText(text1, ctx).width;
+                            var textWidth2 = measureText(text2, ctx).width;
+                            var textWidth3 = measureText(text3, ctx).width;
+                            var textWidth4 = measureText(text4, ctx).width;
+                            if (!(textWidth1 < canvas.width && textWidth2 < canvas.width && textWidth3 < canvas.width && textWidth4 < canvas.width)) {
+                                // cut text until it fits
+                                text = text + "...";
+                                while (!(textWidth1 < canvas.width && textWidth2 < canvas.width && textWidth3 < canvas.width && textWidth4 < canvas.width)) {
+                                    text = text.substring(0, text.length - 5) + "...";
+                                    text1 = text.substring(0, text.length / 4);
+                                    text2 = text.substring(text.length / 4, text.length / 4 * 2);
+                                    text3 = text.substring(text.length / 4 * 2, text.length / 4 * 3);
+                                    text4 = text.substring(text.length / 4 * 3, text.length);
+                                    textWidth1 = measureText(text1, ctx).width;
+                                    textWidth2 = measureText(text2, ctx).width;
+                                    textWidth3 = measureText(text3, ctx).width;
+                                    textWidth4 = measureText(text4, ctx).width;
+                                }
+                            }
+                            draw.rect(canvas.width / 2 - textWidth1 / 2, 60 - 28 - 40, textWidth1, 40, currentColor["QuestionTitleBackground"], ctx);
+                            draw.text(canvas.width / 2, 50 - 28, text1, currentColor["NormalText"], "center", font, ctx);
+                            draw.rect(canvas.width / 2 - textWidth2 / 2, 90 - 28 - 40, textWidth2, 40, currentColor["QuestionTitleBackground"], ctx);
+                            draw.text(canvas.width / 2, 80 - 28, text2, currentColor["NormalText"], "center", font, ctx);
+                            draw.rect(canvas.width / 2 - textWidth3 / 2, 120 - 28 - 40, textWidth3, 40, currentColor["QuestionTitleBackground"], ctx);
+                            draw.text(canvas.width / 2, 110 - 28, text3, currentColor["NormalText"], "center", font, ctx);
+                            draw.rect(canvas.width / 2 - textWidth4 / 2, 150 - 28 - 40, textWidth4, 40, currentColor["QuestionTitleBackground"], ctx);
+                            draw.text(canvas.width / 2, 140 - 28, text4, currentColor["NormalText"], "center", font, ctx);
+                        }
+                    }
+                }
+            }
+        }
+        font = "60px msyi";
+        setFont(font, ctx);
         //draw scroll image, if scroll available
         if (150 + q1.length * blockheight - window.innerHeight > 0) {
             draw.imageWH(scrollImage, canvas.width / 2 - (mW / 2 + 5) - 100, canvas.height - 100, 100, 100);
@@ -3605,7 +3726,7 @@ function updateRects() {
                         draw.rect(25 + 200 + 10, 70 + s * 30, canvas.width - 280, 27, currentColor["settingsSelStandard"], ctx); //mouse over: d2d2d2}
                     }
                 }
-                draw.text(25 + 200 + 10, 93 + s * 30, settinggruppe[s], currentColor["NormalText"], "left", font, ctx);
+                draw.text(25 + 200 + 10, 93 + s * 30, settinggruppe[s], currentColor["NormalText"], "left", font, ctx, canvas.width - 280 - 10 - 21);
                 if (settings[hauptgruppe[settingsSelLeft]][settinggruppe[s]] != undefined && type == "bool") {
                     if (setSettings[settinggruppe[s]] == "false") {
                         draw.rect(canvas.width - 45 - 3 - 21, 70 + s * 30 + 3, 21, 21, currentColor["settingsBoolFalse"], ctx);

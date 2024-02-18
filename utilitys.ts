@@ -118,6 +118,31 @@ function aalert(message: string) {
     alert(message);
     mouse[0] = false;
 }
+
+function cconfirm(message: string): Promise<boolean> {
+    if (currentTranslation[message] != undefined) {
+        message = currentTranslation[message];
+    }
+    var promise = new Promise<boolean>((resolve, reject) => {
+        Question = [message, {
+            "Ja": function (seId: number) {
+                goTo(comesFrom, 1);
+                resolve(true);
+            },
+            "Nein": function (seId: number) {
+                goTo(comesFrom, 1);
+                resolve(false);
+            }
+        }, function () {
+            goTo(comesFrom, 1);
+            resolve(false);
+        }];
+        goTo("Question", 1);
+        //resolve(confirm(message));
+    })
+    return promise;
+}
+
 function openWindow(url: string) {
     window.open(url);
     mouse[0] = false;
@@ -200,8 +225,8 @@ class drawAdder {
     public fill(color: string, ctx: CanvasRenderingContext2D) {
         ToDraw.push({ "fill": [color, ctx, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
     };
-    public text(posx: any, posy: any, Text: any, color: any, align: any, font: string, ctx: CanvasRenderingContext2D) {
-        ToDraw.push({ "text": [posx, posy, Text, color, align, font, ctx, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
+    public text(posx: any, posy: any, Text: any, color: any, align: any, font: string, ctx: CanvasRenderingContext2D, maxwidth: number | string | undefined = undefined) {
+        ToDraw.push({ "text": [posx, posy, Text, color, align, font, ctx,maxwidth, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur]});
     };
     public polygon(ctx: CanvasRenderingContext2D, color: string, pos: [number, number][]) {
         ToDraw.push({ "polygon": [ctx, color, pos, ctx.globalAlpha, ctx.shadowColor, ctx.shadowBlur] });
@@ -290,7 +315,7 @@ class drawApp {
         ctx.fill();
         ctx.closePath();
     };
-    public text(pox: any, posy: any, Text: string, color: any, align: any, font: string, ctx: CanvasRenderingContext2D) {
+    public text(pox: any, posy: any, Text: string, color: any, align: any, font: string, ctx: CanvasRenderingContext2D, maxwidth: number | undefined = undefined) {
         if (ctx.font != font) {
             ctx.font = font;
         }
@@ -299,7 +324,17 @@ class drawApp {
         if (currentTranslation[Text] != undefined) {
             Text = currentTranslation[Text];
         }
-        ctx.fillText(Text, pox, posy);
+        /*//cut text to fit in maxwidth
+        if (maxwidth != undefined) {
+            var textWidth = ctx.measureText(Text).width;
+            if (textWidth > maxwidth) {
+                while (ctx.measureText(Text + "...").width > maxwidth) {
+                    Text = Text.substring(0, Text.length - 1);
+                }
+                Text = Text + "...";
+            }
+        }*/
+        ctx.fillText(Text, pox, posy, maxwidth);
     };
     public polygon(ctx: CanvasRenderingContext2D, color: string, pos: [number, number][]) {
         ctx.fillStyle = color;
@@ -412,7 +447,7 @@ function onConnect() {
     send("V");
     waitForFirmware = true;
 }
-function onFailure(err:any) {
+function onFailure(err: any) {
     UpdateStaticSettingsIfInSettings();
     settingsInfo["$settings.mqtt.connection"] = "Failed: evtl. Passwort/Topic/Username Falsch";
     console.log("on Failure");
